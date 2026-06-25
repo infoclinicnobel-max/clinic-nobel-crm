@@ -1,0 +1,2893 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Clinic Nobel — CRM</title>
+<link rel="manifest" href="./manifest.json"/>
+<meta name="theme-color" content="#0B1F3A"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Nobel CRM"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4F6FA;-webkit-font-smoothing:antialiased}
+input,select,textarea,button{font-family:inherit}
+input,select,textarea{font-size:16px!important} /* Prevent zoom on iOS */
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+::-webkit-scrollbar{display:none}
+* {scrollbar-width:none}
+html{scroll-behavior:smooth}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.card-enter{animation:fadeIn 0.2s ease}
+.slide-up{animation:slideUp 0.3s ease}
+</style>
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");</script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwsmdshGU3ErQzFNDBUS4oQdUtI3GGhnhSj61-n1vcW95KtNc3-_W9wQp3uOW9ObIbG/exec";
+
+// ── UTILISATEURS ──────────────────────────────────────────────────────────────
+const USERS = [
+  {
+    id:"ib", email:"info.clinicnobel@gmail.com", password:"Veysjayjay34",
+    nom:"Turan", prenom:"Veys", role:"admin", color:"#0B1F3A",
+    access:["dashboard","patients","rdvs","analyses","finances","medecins","hopitaux","equipe","taches"]
+  },
+  {
+    id:"andrea", email:"andrea@clinicnobel.com", password:"Andrealoveist34",
+    nom:"Andréa", prenom:"Andréa", role:"commerciale", color:"#7C3AED",
+    access:["dashboard","patients","rdvs","finances","taches"]
+  },
+  {
+    id:"ceyda", email:"ceyda@clinicnobel.com", password:"Ceydamotiv34",
+    nom:"Ceyda", prenom:"Ceyda", role:"coordinatrice", color:"#0891B2",
+    access:["dashboard","rdvs","patients","taches"]
+  },
+];
+
+const ROLE_LABELS = {admin:"Administrateur", commerciale:"Commerciale", coordinatrice:"Coordinatrice"};
+const ROLE_COLORS = {admin:"#0B1F3A", commerciale:"#7C3AED", coordinatrice:"#0891B2"};
+
+const C = {
+  navy:"#0B1F3A", gold:"#C9A84C", white:"#FFFFFF", bg:"#F4F6FA",
+  border:"#E8ECF2", text:"#0B1F3A", muted:"#7B8BA5",
+  green:"#16A34A", red:"#DC2626", blue:"#1D73C9",
+  purple:"#7C3AED", amber:"#D97706", cyan:"#0891B2",
+};
+
+const PROCEDURES = ["Rhinoplastie","BBL / Lipofilling fessier","Liposuccion Vaser HD 360","Abdominoplastie","Augmentation mammaire","Lifting mammaire","Lifting visage","Blépharoplastie","Hollywood Smile","Implants dentaires","Greffe capillaire FUE Saphir","Greffe capillaire DHI","Chirurgie bariatrique","Chirurgie reconstructrice","Autre"];
+const SOURCES = ["Instagram","Snapchat","TikTok","Google","Bouche à oreille","WhatsApp","Site web","Autre"];
+const STAGES = ["Nouveau","Contacté","Devis envoyé","Consultation planifiée","Confirmé","Arrivé à Istanbul","Post-opératoire","Préopératoire","Clôturé ✓"];
+const SC = {"Nouveau":"#16A34A","Contacté":"#1D73C9","Devis envoyé":"#7C3AED","Consultation planifiée":"#D97706","Confirmé":"#16A34A","Arrivé à Istanbul":"#0891B2","Post-opératoire":"#F97316","Préopératoire":"#8B5CF6","Clôturé ✓":"#16A34A"};
+
+const initials = p => p ? `${p.prenom?.[0]||""}${p.nom?.[0]||""}` : "?";
+const fmtEur = n => n ? `${Number(n).toLocaleString("fr-FR")} €` : "—";
+const todayStr = () => new Date().toISOString().split("T")[0];
+const uid = () => Date.now().toString() + Math.random().toString(36).slice(2,6);
+
+// ── API ───────────────────────────────────────────────────────────────────────
+const api = {
+  get: async (type) => {
+    try {
+      const r = await fetch(`${SCRIPT_URL}?type=${type}&t=${Date.now()}`, {
+        method:"GET", redirect:"follow"
+      });
+      const text = await r.text();
+      const d = JSON.parse(text);
+      return Array.isArray(d) ? d : [];
+    } catch(e) { 
+      console.error("GET error:", e);
+      return []; 
+    }
+  },
+  post: async (type, action, record) => {
+    // Method 1: fetch no-cors with text/plain (works for writing)
+    const body = JSON.stringify({type, action, record});
+    const promises = [
+      fetch(SCRIPT_URL, {
+        method:"POST", mode:"no-cors", cache:"no-cache",
+        headers:{"Content-Type":"text/plain"},
+        body
+      }).catch(()=>{}),
+    ];
+    await Promise.allSettled(promises);
+    await new Promise(r=>setTimeout(r,800));
+  }
+};
+
+// Local cache to persist data across reloads
+const cache = {
+  save: (key, data) => {
+    try { localStorage.setItem("cn_cache_"+key, JSON.stringify({data, ts:Date.now()})); } catch(e){}
+  },
+  load: (key) => {
+    try { 
+      const s = localStorage.getItem("cn_cache_"+key);
+      if(!s) return null;
+      const {data, ts} = JSON.parse(s);
+      // Cache valid for 24h
+      if(Date.now()-ts < 86400000) return data;
+      return null;
+    } catch(e){ return null; }
+  }
+};
+
+// ── COMPOSANTS ────────────────────────────────────────────────────────────────
+const Badge = ({text, color="#64748b", small=false}) => (
+  <span style={{background:color+"22",color,border:`1px solid ${color}44`,padding:small?"1px 8px":"2px 10px",borderRadius:99,fontSize:small?10:11,fontWeight:700,whiteSpace:"nowrap",display:"inline-block"}}>{text}</span>
+);
+const Avatar = ({p, size=36, color}) => (
+  <div style={{width:size,height:size,borderRadius:size*0.3,background:color?color+"33":`linear-gradient(135deg,${C.navy}22,${C.gold}44)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.33,fontWeight:800,color:color||C.navy,flexShrink:0,border:color?`2px solid ${color}44`:"none"}}>
+    {initials(p)}
+  </div>
+);
+const Card = ({children, style={}, onClick}) => (
+  <div onClick={onClick} style={{background:C.white,borderRadius:16,border:`1px solid ${C.border}`,padding:16,marginBottom:10,...style,cursor:onClick?"pointer":"default"}}>{children}</div>
+);
+const SecTitle = ({icon, children}) => (
+  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+    <span style={{fontSize:16}}>{icon}</span>
+    <span style={{fontSize:14,fontWeight:700,color:C.text}}>{children}</span>
+  </div>
+);
+const Spinner = ({text="Chargement…"}) => (
+  <div style={{textAlign:"center",padding:40,color:C.muted,fontSize:14}}>
+    <div style={{fontSize:30,marginBottom:8}}>⏳</div>{text}
+  </div>
+);
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function LoginScreen({onLogin}) {
+  const [email,setEmail] = useState("");
+  const [pass,setPass] = useState("");
+  const [error,setError] = useState("");
+  const [showPass,setShowPass] = useState(false);
+  const handleLogin = () => {
+    const user = USERS.find(u=>u.email===email.trim()&&u.password===pass);
+    if(user){localStorage.setItem("cn_user",JSON.stringify(user));onLogin(user);}
+    else setError("Email ou mot de passe incorrect.");
+  };
+  const inp = {width:"100%",padding:"12px 14px",border:"1px solid #E8ECF2",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box",background:"#F4F6FA"};
+  return (
+    <div style={{minHeight:"100vh",background:"#0B1F3A",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"#fff",borderRadius:24,padding:32,width:"100%",maxWidth:380,boxShadow:"0 24px 80px rgba(0,0,0,0.3)"}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <img src="https://i.ibb.co/b5k523qC/image.jpg" style={{width:100,height:100,borderRadius:20,objectFit:"contain",background:"white",padding:4,margin:"0 auto 12px",display:"block"}} alt="Clinic Nobel"/>
+          <div style={{fontWeight:800,fontSize:20,color:"#0B1F3A"}}>Clinic Nobel</div>
+          <div style={{fontSize:12,color:"#7B8BA5",marginTop:4}}>CRM — Espace sécurisé</div>
+        </div>
+        <div style={{marginBottom:14}}>
+          <label style={{fontSize:11,fontWeight:700,color:"#7B8BA5",textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:6}}>Email</label>
+          <input style={inp} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="votre@email.com" onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+        </div>
+        <div style={{marginBottom:20}}>
+          <label style={{fontSize:11,fontWeight:700,color:"#7B8BA5",textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:6}}>Mot de passe</label>
+          <div style={{position:"relative"}}>
+            <input style={{...inp,paddingRight:44}} type={showPass?"text":"password"} value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+            <button onClick={()=>setShowPass(x=>!x)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",border:"none",background:"none",cursor:"pointer",fontSize:16,color:"#7B8BA5"}}>{showPass?"🙈":"👁️"}</button>
+          </div>
+        </div>
+        {error&&<div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"10px 12px",fontSize:13,color:"#dc2626",marginBottom:16,textAlign:"center"}}>{error}</div>}
+        <button onClick={handleLogin} style={{width:"100%",padding:"16px",border:"none",borderRadius:14,background:"linear-gradient(135deg,#0B1F3A,#1D73C9)",color:"#fff",cursor:"pointer",fontWeight:800,fontSize:16,boxShadow:"0 8px 24px rgba(11,31,58,0.3)",letterSpacing:"0.02em"}}>
+          Se connecter →
+        </button>
+        <div style={{textAlign:"center",marginTop:20,padding:"12px",background:"#f8fafc",borderRadius:10}}>
+          <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:8}}>COMPTES ÉQUIPE</div>
+          {USERS.map(u=>(
+            <div key={u.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+              <div style={{width:8,height:8,borderRadius:99,background:ROLE_COLORS[u.role]}}/>
+              <span style={{fontSize:11,color:C.text,fontWeight:600}}>{u.prenom}</span>
+              <span style={{fontSize:11,color:C.muted}}>— {ROLE_LABELS[u.role]}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── DASHBOARD PERSONNEL ───────────────────────────────────────────────────────
+function DashboardPersonnel({user, patients, rdvs, taches, finances}) {
+  const [tab, setTab] = useState("personnel");
+  const today = todayStr();
+
+  const mesRdvs = rdvs.filter(r=>r.assigneA===user.id && r.date===today);
+  const groupRdvs = rdvs.filter(r=>r.date===today);
+  const mesTaches = taches.filter(t=>t.assigneA===user.id && t.statut!=="Terminée");
+  const groupTaches = taches.filter(t=>t.statut!=="Terminée");
+
+  const getUserInfo = id => USERS.find(u=>u.id===id);
+  const getPatient = id => patients.find(p=>String(p.id)===String(id));
+
+  const TabBtn = ({id, label, count}) => (
+    <button onClick={()=>setTab(id)} style={{flex:1,padding:"10px 8px",border:"none",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,background:tab===id?user.color:C.bg,color:tab===id?C.white:C.muted,transition:"all 0.15s"}}>
+      {label} {count>0&&<span style={{background:tab===id?"rgba(255,255,255,0.3)":user.color+"22",color:tab===id?C.white:user.color,borderRadius:99,padding:"1px 7px",fontSize:11,marginLeft:4}}>{count}</span>}
+    </button>
+  );
+
+  return (
+    <div>
+      {/* Salutation */}
+      <Card style={{background:`linear-gradient(135deg,${user.color},${user.color}cc)`,border:"none",padding:"20px 20px"}}>
+        <div style={{color:"rgba(255,255,255,0.8)",fontSize:12,marginBottom:4}}>Bonjour 👋</div>
+        <div style={{color:C.white,fontSize:22,fontWeight:800}}>{user.prenom}</div>
+        <div style={{color:"rgba(255,255,255,0.7)",fontSize:12,marginTop:4}}>{ROLE_LABELS[user.role]} · Clinic Nobel Istanbul</div>
+        <div style={{display:"flex",gap:12,marginTop:16}}>
+          <div style={{background:"rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 14px",flex:1,textAlign:"center"}}>
+            <div style={{color:C.white,fontSize:20,fontWeight:800}}>{mesRdvs.length}</div>
+            <div style={{color:"rgba(255,255,255,0.7)",fontSize:11}}>Mes RDV aujourd'hui</div>
+          </div>
+          <div style={{background:"rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 14px",flex:1,textAlign:"center"}}>
+            <div style={{color:C.white,fontSize:20,fontWeight:800}}>{mesTaches.length}</div>
+            <div style={{color:"rgba(255,255,255,0.7)",fontSize:11}}>Mes tâches en cours</div>
+          </div>
+          {user.role==="admin"&&<div style={{background:"rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 14px",flex:1,textAlign:"center"}}>
+            <div style={{color:C.white,fontSize:20,fontWeight:800}}>{patients.length}</div>
+            <div style={{color:"rgba(255,255,255,0.7)",fontSize:11}}>Total patients</div>
+          </div>}
+        </div>
+      </Card>
+
+      {/* Tabs Personnel / Groupe */}
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        <TabBtn id="personnel" label="👤 Mon espace" count={mesRdvs.length+mesTaches.length}/>
+        <TabBtn id="groupe" label="👥 Équipe" count={groupRdvs.length}/>
+      </div>
+
+      {tab==="personnel"&&<>
+        <Card>
+          <SecTitle icon="📅">Mes rendez-vous aujourd'hui</SecTitle>
+          {mesRdvs.length===0?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"10px 0"}}>Aucun RDV aujourd'hui 🎉</div>:
+          mesRdvs.map(r=>{
+            const p=getPatient(r.patientId);
+            return (
+              <div key={r.id} style={{display:"flex",gap:10,alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${C.bg}`}}>
+                <div style={{width:46,textAlign:"center",flexShrink:0}}>
+                  <div style={{fontSize:15,fontWeight:800,color:user.color}}>{r.heure}</div>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13,color:C.text}}>{p?`${p.prenom} ${p.nom}`:"Patient"}</div>
+                  <div style={{fontSize:11,color:C.muted}}>{r.type}</div>
+                </div>
+                <Badge text={r.statut} color={r.statut==="Confirmé"?C.green:C.amber}/>
+              </div>
+            );
+          })}
+        </Card>
+
+        <Card>
+          <SecTitle icon="✅">Mes tâches</SecTitle>
+          {mesTaches.length===0?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"10px 0"}}>Aucune tâche en attente ✨</div>:
+          mesTaches.map(t=>(
+            <div key={t.id} style={{display:"flex",gap:10,alignItems:"center",padding:"9px 0",borderBottom:`1px solid ${C.bg}`}}>
+              <div style={{width:16,height:16,borderRadius:99,border:`2px solid ${user.color}`,flexShrink:0}}/>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:600,fontSize:13,color:C.text}}>{t.titre}</div>
+                {t.echeance&&<div style={{fontSize:11,color:C.muted}}>📅 {t.echeance}</div>}
+              </div>
+              <Badge text={t.priorite||"Normale"} color={t.priorite==="Haute"?C.red:t.priorite==="Basse"?C.muted:C.amber} small/>
+            </div>
+          ))}
+        </Card>
+      </>}
+
+      {tab==="groupe"&&<>
+        <Card>
+          <SecTitle icon="👥">RDV équipe aujourd'hui</SecTitle>
+          {groupRdvs.length===0?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"10px 0"}}>Aucun RDV aujourd'hui</div>:
+          groupRdvs.map(r=>{
+            const p=getPatient(r.patientId);
+            const assignee=getUserInfo(r.assigneA);
+            return (
+              <div key={r.id} style={{display:"flex",gap:10,alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${C.bg}`}}>
+                <div style={{width:46,textAlign:"center",flexShrink:0}}>
+                  <div style={{fontSize:15,fontWeight:800,color:C.navy}}>{r.heure}</div>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13,color:C.text}}>{p?`${p.prenom} ${p.nom}`:"Patient"}</div>
+                  <div style={{fontSize:11,color:C.muted}}>{r.type}</div>
+                </div>
+                {assignee&&<Avatar p={{prenom:assignee.prenom,nom:""}} size={28} color={assignee.color}/>}
+                <Badge text={r.statut} color={r.statut==="Confirmé"?C.green:C.amber}/>
+              </div>
+            );
+          })}
+        </Card>
+
+        <Card>
+          <SecTitle icon="✅">Tâches équipe</SecTitle>
+          {groupTaches.length===0?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"10px 0"}}>Aucune tâche en cours</div>:
+          groupTaches.map(t=>{
+            const assignee=getUserInfo(t.assigneA);
+            return (
+              <div key={t.id} style={{display:"flex",gap:10,alignItems:"center",padding:"9px 0",borderBottom:`1px solid ${C.bg}`}}>
+                <Avatar p={{prenom:assignee?.prenom||"?",nom:""}} size={28} color={assignee?.color}/>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:600,fontSize:13,color:C.text}}>{t.titre}</div>
+                  <div style={{fontSize:11,color:C.muted}}>{assignee?.prenom||"?"} · {t.echeance||"Sans date"}</div>
+                </div>
+                <Badge text={t.priorite||"Normale"} color={t.priorite==="Haute"?C.red:t.priorite==="Basse"?C.muted:C.amber} small/>
+              </div>
+            );
+          })}
+        </Card>
+
+        {/* Aperçu équipe */}
+        <Card>
+          <SecTitle icon="🏆">Équipe Clinic Nobel</SecTitle>
+          {USERS.map(u=>{
+            const uRdvs = rdvs.filter(r=>r.assigneA===u.id&&r.date===today).length;
+            const uTaches = taches.filter(t=>t.assigneA===u.id&&t.statut!=="Terminée").length;
+            return (
+              <div key={u.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:`1px solid ${C.bg}`}}>
+                <Avatar p={{prenom:u.prenom,nom:""}} size={38} color={u.color}/>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13,color:C.text}}>{u.prenom}</div>
+                  <div style={{fontSize:11,color:C.muted}}>{ROLE_LABELS[u.role]}</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:12,color:C.text,fontWeight:600}}>{uRdvs} RDV · {uTaches} tâches</div>
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+      </>}
+    </div>
+  );
+}
+
+// ── TÂCHES ────────────────────────────────────────────────────────────────────
+function Taches({user, taches, setTaches, syncing, setSyncing}) {
+  const [tab,setTab] = useState("mes");
+  const [kanban,setKanban] = useState(false);
+  const [showForm,setShowForm] = useState(false);
+  const [f,setF] = useState({titre:"",description:"",assigneA:user.id,priorite:"Normale",echeance:"",statut:"En cours"});
+  const ch = (k,v) => setF(x=>({...x,[k]:v}));
+  const inp = {width:"100%",padding:"9px 11px",border:`1px solid ${C.border}`,borderRadius:8,fontSize:13,outline:"none",background:C.bg,boxSizing:"border-box"};
+  const lbl = {fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:4};
+
+  const mesTaches = taches.filter(t=>t.assigneA===user.id);
+  const groupTaches = taches;
+
+  const addTache = async () => {
+    if(!f.titre.trim()) { alert("Le titre est obligatoire !"); return; }
+    const n={...f,id:uid(),creePar:user.id,cree:todayStr(),statut:"En cours"};
+    setTaches(ts=>{const nt=[...ts,n];cache.save("taches",nt);return nt;});
+    setSyncing(true);
+    try {
+      await api.post("taches","add",n);
+    } catch(e){ console.error("Tache add error:",e); }
+    setSyncing(false);
+    setShowForm(false);
+    setF({titre:"",description:"",assigneA:user.id,priorite:"Normale",echeance:"",statut:"En cours"});
+  };
+
+  const toggleStatut = async (t) => {
+    const newStatut = t.statut==="Terminée"?"En cours":"Terminée";
+    const updated={...t,statut:newStatut};
+    setTaches(ts=>{const nt=ts.map(x=>x.id===t.id?updated:x);cache.save("taches",nt);return nt;});
+    setSyncing(true);
+    try {
+      await api.post("taches","update",updated);
+    } catch(e){ console.error("Tache update error:",e); }
+    setSyncing(false);
+  };
+
+  const deleteTache = async (id) => {
+    if(!window.confirm("Supprimer cette tâche ?")) return;
+    setTaches(ts=>{const nt=ts.filter(t=>t.id!==id);cache.save("taches",nt);return nt;});
+    setSyncing(true);
+    try {
+      await api.post("taches","delete",{id});
+    } catch(e){ console.error("Tache delete error:",e); }
+    setSyncing(false);
+  };
+
+  const displayTaches = tab==="mes"?mesTaches:groupTaches;
+
+  const TacheItem = ({t}) => {
+    const assignee = USERS.find(u=>u.id===t.assigneA);
+    const done = t.statut==="Terminée";
+    return (
+      <div style={{display:"flex",gap:10,alignItems:"flex-start",padding:"10px 0",borderBottom:`1px solid ${C.bg}`,opacity:done?0.5:1}}>
+        <button onClick={()=>toggleStatut(t)} style={{width:20,height:20,borderRadius:99,border:`2px solid ${done?C.green:user.color}`,background:done?C.green:"transparent",cursor:"pointer",flexShrink:0,marginTop:2,display:"flex",alignItems:"center",justifyContent:"center",color:C.white,fontSize:11}}>
+          {done?"✓":""}
+        </button>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:600,fontSize:13,color:C.text,textDecoration:done?"line-through":"none"}}>{t.titre}</div>
+          {t.description&&<div style={{fontSize:11,color:C.muted,marginTop:2}}>{t.description}</div>}
+          <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap",alignItems:"center"}}>
+            {t.echeance&&<span style={{fontSize:10,color:C.muted}}>📅 {t.echeance}</span>}
+            {tab==="groupe"&&assignee&&<Avatar p={{prenom:assignee.prenom,nom:""}} size={18} color={assignee.color}/>}
+            {tab==="groupe"&&assignee&&<span style={{fontSize:10,color:assignee.color,fontWeight:700}}>{assignee.prenom}</span>}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:4,alignItems:"center"}}>
+          <Badge text={t.priorite||"Normale"} color={t.priorite==="Haute"?C.red:t.priorite==="Basse"?C.muted:C.amber} small/>
+          {(user.role==="admin"||t.creePar===user.id)&&<button onClick={()=>deleteTache(t.id)} style={{border:"none",background:"none",cursor:"pointer",color:C.muted,fontSize:13}}>🗑</button>}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div style={{display:"flex",gap:8,marginBottom:14}}>
+        <button onClick={()=>setTab("mes")} style={{flex:1,padding:"9px",border:"none",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:12,background:tab==="mes"?user.color:C.bg,color:tab==="mes"?C.white:C.muted}}>
+          👤 Mes ({mesTaches.length})
+        </button>
+        <button onClick={()=>setTab("groupe")} style={{flex:1,padding:"9px",border:"none",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:12,background:tab==="groupe"?user.color:C.bg,color:tab==="groupe"?C.white:C.muted}}>
+          👥 Équipe ({groupTaches.length})
+        </button>
+        <button onClick={()=>setKanban(x=>!x)} style={{padding:"9px 12px",border:"none",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:12,background:kanban?C.navy:C.bg,color:kanban?C.white:C.muted}}>
+          {kanban?"📋":"🗂️"}
+        </button>
+      </div>
+
+      <button onClick={()=>setShowForm(x=>!x)} style={{width:"100%",padding:"11px",border:"none",borderRadius:10,background:user.color,color:C.white,cursor:"pointer",fontWeight:700,fontSize:13,marginBottom:14}}>
+        + Nouvelle tâche
+      </button>
+
+      {showForm&&<Card>
+        <div style={{marginBottom:12}}><label style={lbl}>Titre</label><input style={inp} value={f.titre} onChange={e=>ch("titre",e.target.value)} placeholder="Titre de la tâche…"/></div>
+        <div style={{marginBottom:12}}><label style={lbl}>Description</label><textarea style={{...inp,minHeight:60,resize:"vertical"}} value={f.description} onChange={e=>ch("description",e.target.value)} placeholder="Détails…"/></div>
+        {user.role==="admin"&&<div style={{marginBottom:12}}><label style={lbl}>Assigner à</label>
+          <select style={inp} value={f.assigneA} onChange={e=>ch("assigneA",e.target.value)}>
+            {USERS.map(u=><option key={u.id} value={u.id}>{u.prenom} — {ROLE_LABELS[u.role]}</option>)}
+          </select>
+        </div>}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+          <div><label style={lbl}>Priorité</label>
+            <select style={inp} value={f.priorite} onChange={e=>ch("priorite",e.target.value)}>
+              {["Haute","Normale","Basse"].map(p=><option key={p}>{p}</option>)}
+            </select>
+          </div>
+          <div><label style={lbl}>Échéance</label><input style={inp} type="date" value={f.echeance} onChange={e=>ch("echeance",e.target.value)}/></div>
+        </div>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={()=>setShowForm(false)} style={{flex:1,padding:10,border:`1px solid ${C.border}`,borderRadius:10,background:C.white,cursor:"pointer",fontWeight:700,color:C.muted}}>Annuler</button>
+          <button onClick={addTache} style={{flex:2,padding:10,border:"none",borderRadius:10,background:user.color,color:C.white,cursor:"pointer",fontWeight:800}}>Créer la tâche</button>
+        </div>
+      </Card>}
+
+      {kanban?(
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          {[{id:"En cours",label:"En cours",color:C.blue,icon:"⚡"},{id:"En attente",label:"Attente",color:C.amber,icon:"⏳"},{id:"Terminée",label:"Terminé",color:C.green,icon:"✅"}].map(col=>{
+            const colTaches=displayTaches.filter(t=>t.statut===col.id);
+            const changeStatut=async(t,s)=>{
+              const u={...t,statut:s};
+              setTaches(ts=>{const nt=ts.map(x=>x.id===t.id?u:x);cache.save("taches",nt);return nt;});
+              try{await api.post("taches","update",u);}catch(e){}
+            };
+            return (
+              <div key={col.id}>
+                <div style={{background:col.color+"15",border:`1px solid ${col.color}33`,borderRadius:10,padding:"8px 10px",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:12}}>{col.icon}</span>
+                  <span style={{fontSize:11,fontWeight:700,color:col.color}}>{col.label}</span>
+                  <span style={{marginLeft:"auto",background:col.color,color:C.white,borderRadius:99,width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800}}>{colTaches.length}</span>
+                </div>
+                {colTaches.map(t=>{
+                  const assignee=USERS.find(u=>u.id===t.assigneA);
+                  const isLate=t.echeance&&t.echeance<todayStr()&&t.statut!=="Terminée";
+                  return (
+                    <div key={t.id} style={{background:C.white,borderRadius:10,padding:"10px",marginBottom:6,border:`1px solid ${C.border}`,borderLeft:`3px solid ${t.priorite==="Haute"?C.red:t.priorite==="Basse"?C.muted:C.amber}`}}>
+                      <div style={{fontWeight:700,fontSize:11,color:C.text,marginBottom:4,lineHeight:1.4}}>{t.titre}</div>
+                      {t.echeance&&<div style={{fontSize:9,color:isLate?C.red:C.muted,marginBottom:4}}>📅 {t.echeance.slice(5)}</div>}
+                      <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+                        {col.id!=="En cours"&&<button onClick={()=>changeStatut(t,"En cours")} style={{border:"none",background:C.blue+"18",color:C.blue,borderRadius:5,padding:"2px 5px",fontSize:9,cursor:"pointer",fontWeight:700}}>▶</button>}
+                        {col.id!=="Terminée"&&<button onClick={()=>changeStatut(t,"Terminée")} style={{border:"none",background:C.green+"18",color:C.green,borderRadius:5,padding:"2px 5px",fontSize:9,cursor:"pointer",fontWeight:700}}>✓</button>}
+                        {(user.role==="admin"||t.creePar===user.id)&&<button onClick={()=>deleteTache(t.id)} style={{border:"none",background:"none",color:C.muted,fontSize:10,cursor:"pointer",marginLeft:"auto"}}>🗑</button>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      ):(
+        <>
+          {displayTaches.length===0?<div style={{textAlign:"center",padding:40,color:C.muted,fontSize:14}}>Aucune tâche. Créez-en une !</div>:
+          <Card>
+            {displayTaches.map(t=><TacheItem key={t.id} t={t}/>)}
+          </Card>}
+          <div style={{fontSize:12,color:C.muted,marginTop:4}}>{displayTaches.length} tâche(s) · 💾 Sync Google Sheets</div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── PATIENTS ──────────────────────────────────────────────────────────────────
+function Patients({user, patients, onSelect, onAdd, onDelete}) {
+  const [q,setQ] = useState("");
+  const [fs,setFs] = useState("Tous");
+  const sel = {padding:"8px 11px",border:`1px solid ${C.border}`,borderRadius:8,fontSize:12,color:C.muted,background:C.white,outline:"none"};
+  const filtered = patients.filter(p=>{
+    const sq=q.toLowerCase();
+    return(!q||`${p.prenom} ${p.nom} ${p.email} ${p.procedure}`.toLowerCase().includes(sq))&&(fs==="Tous"||p.stade===fs);
+  });
+  return (
+    <div>
+      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+        <input style={{flex:1,minWidth:140,padding:"9px 14px",border:`1px solid ${C.border}`,borderRadius:10,fontSize:13,outline:"none",background:C.white}} placeholder="🔍 Rechercher…" value={q} onChange={e=>setQ(e.target.value)}/>
+        <select style={sel} value={fs} onChange={e=>setFs(e.target.value)}>
+          <option value="Tous">Tous</option>
+          {STAGES.map(s=><option key={s}>{s}</option>)}
+        </select>
+        <button onClick={onAdd} style={{padding:"9px 16px",border:"none",borderRadius:10,background:user.color,color:C.white,cursor:"pointer",fontWeight:700,fontSize:13}}>+ Ajouter</button>
+      </div>
+      {filtered.length===0&&<div style={{textAlign:"center",padding:40,color:C.muted,fontSize:14}}>Aucun patient trouvé.</div>}
+      {filtered.map(p=>(
+        <Card key={p.id} style={{cursor:"pointer",padding:"14px 16px"}} onClick={()=>onSelect(p)}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <Avatar p={p} size={40}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <span style={{fontWeight:800,fontSize:14,color:C.text}}>{p.prenom} {p.nom}</span>
+                <Badge text={p.stade} color={SC[p.stade]}/>
+              </div>
+              <div style={{fontSize:12,color:C.muted,marginTop:2}}>{p.procedure} · {p.ville}, {p.pays}</div>
+            </div>
+            <div style={{textAlign:"right",flexShrink:0}}>
+              <div style={{fontWeight:800,fontSize:14,color:C.green}}>{fmtEur(p.budget)}</div>
+              {user.role==="admin"&&<button onClick={e=>{e.stopPropagation();onDelete(p.id)}} style={{border:"none",background:"none",cursor:"pointer",color:C.muted,fontSize:14,marginTop:4}}>🗑</button>}
+            </div>
+          </div>
+        </Card>
+      ))}
+      <div style={{fontSize:12,color:C.muted,marginTop:4}}>{filtered.length} patient(s) · 💾 Sync Google Sheets</div>
+    </div>
+  );
+}
+
+// ── FICHE PATIENT ─────────────────────────────────────────────────────────────
+function FichePatient({user, patient, patients, rdvs, finances, taches, onEdit, onDelete, onStageChange, onBack}) {
+  const [tab,setTab] = useState("info");
+  const p = patients.find(x=>x.id===patient.id)||patient;
+  const sc = SC[p.stade]||C.muted;
+  const pRdvs = (rdvs||[]).filter(r=>r.patientId===p.id).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const pFin = (finances||[]).filter(f=>f.patientId===p.id);
+  const pTaches = (taches||[]).filter(t=>t.patientId===p.id||t.titre?.toLowerCase().includes(p.prenom?.toLowerCase()));
+  const totalPaye = pFin.filter(f=>f.statut==="Complété").reduce((a,f)=>a+Number(f.montant||0),0);
+  const restant = Math.max(Number(p.budget||0)-totalPaye,0);
+  const fmtDate = d=>d?new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"}):"—";
+  const TABS=[{id:"info",l:"Infos"},{id:"rdvs",l:`RDV (${pRdvs.length})`},{id:"finances",l:"Finances"},{id:"taches",l:`Tâches (${pTaches.length})`}];
+  return (
+    <div>
+      <button onClick={onBack} style={{border:"none",background:"none",cursor:"pointer",color:user.color,fontWeight:700,fontSize:13,marginBottom:14,display:"flex",alignItems:"center",gap:6}}>← Retour patients</button>
+      {/* Header */}
+      <div style={{background:`linear-gradient(135deg,${C.navy},#1a3a5c)`,borderRadius:20,padding:"20px",marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+          <div style={{width:52,height:52,borderRadius:14,background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:C.white,flexShrink:0}}>{initials(p)}</div>
+          <div style={{flex:1}}>
+            <div style={{color:C.white,fontWeight:800,fontSize:18}}>{p.prenom} {p.nom}</div>
+            <div style={{color:"rgba(255,255,255,0.6)",fontSize:12,marginTop:2}}>{p.procedure}</div>
+            <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+              <Badge text={p.stade} color={sc}/>
+              {p.source&&<Badge text={p.source} color={C.gold}/>}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:6,flexShrink:0}}>
+            <button onClick={onEdit} style={{width:34,height:34,borderRadius:10,border:"none",background:"rgba(255,255,255,0.15)",color:C.white,cursor:"pointer",fontSize:14}}>✏️</button>
+            {user.role==="admin"&&<button onClick={onDelete} style={{width:34,height:34,borderRadius:10,border:"none",background:"rgba(220,38,38,0.3)",color:C.white,cursor:"pointer",fontSize:14}}>🗑</button>}
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          {[{l:"Budget",v:fmtEur(p.budget),c:C.gold},{l:"Payé",v:fmtEur(totalPaye),c:"#4ade80"},{l:"Restant",v:fmtEur(restant),c:restant>0?"#fbbf24":"#4ade80"}].map(s=>(
+            <div key={s.l} style={{background:"rgba(255,255,255,0.08)",borderRadius:10,padding:"8px",textAlign:"center"}}>
+              <div style={{color:s.c,fontWeight:800,fontSize:13}}>{s.v}</div>
+              <div style={{color:"rgba(255,255,255,0.5)",fontSize:9,marginTop:2}}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Statut */}
+      <Card style={{marginBottom:12}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",marginBottom:8}}>Changer le statut</div>
+        <select value={p.stade} onChange={e=>onStageChange(p.id,e.target.value)} style={{width:"100%",padding:"10px",border:`2px solid ${sc}55`,borderRadius:10,fontSize:13,background:sc+"11",color:sc,fontWeight:700,outline:"none"}}>
+          {STAGES.map(s=><option key={s}>{s}</option>)}
+        </select>
+      </Card>
+      {/* Tabs */}
+      <div style={{display:"flex",gap:4,marginBottom:12,background:C.bg,borderRadius:12,padding:4}}>
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,padding:"8px 4px",border:"none",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:11,background:tab===t.id?C.white:"transparent",color:tab===t.id?C.navy:C.muted,transition:"all 0.15s"}}>
+            {t.l}
+          </button>
+        ))}
+      </div>
+      {tab==="info"&&<Card>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0}}>
+          {[["📧","Email",p.email||"—"],["📱","Téléphone",p.tel||"—"],["📍","Pays",p.pays||"—"],["🏙️","Ville",p.ville||"—"],["📊","Source",p.source||"—"],["✈️","Date arrivée",fmtDate(p.dateArrivee)],["👤","Créé par",USERS.find(u=>u.id===p.creePar)?.prenom||"—"],["📅","Créé le",fmtDate(p.cree)]].map(([ic,lb,vl])=>(
+            <div key={lb} style={{padding:"10px 8px",borderBottom:`1px solid ${C.bg}`}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.muted,textTransform:"uppercase",marginBottom:3}}>{ic} {lb}</div>
+              <div style={{fontSize:13,color:C.text,fontWeight:500}}>{vl}</div>
+            </div>
+          ))}
+        </div>
+        {p.notes&&<div style={{marginTop:12,padding:"12px",background:C.bg,borderRadius:10}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:4}}>📝 NOTES</div>
+          <div style={{fontSize:13,color:C.text,lineHeight:1.7}}>{p.notes}</div>
+        </div>}
+      </Card>}
+      {tab==="rdvs"&&<div>
+        {pRdvs.length===0?<div style={{textAlign:"center",padding:30,color:C.muted,fontSize:13}}>Aucun RDV pour ce patient.</div>:
+        pRdvs.map(r=>(
+          <Card key={r.id} style={{padding:"12px 14px",borderLeft:`3px solid ${C.blue}`}}>
+            <div style={{fontWeight:700,fontSize:13,color:C.text}}>{r.type} — {r.heure}</div>
+            <div style={{fontSize:11,color:C.muted,marginTop:2}}>📅 {fmtDate(r.date)} · {r.medecin||"—"}</div>
+            <div style={{marginTop:6}}><Badge text={r.statut||"Planifié"} color={r.statut==="Confirmé"?C.green:C.amber} small/></div>
+            {r.notes&&<div style={{fontSize:11,color:C.muted,marginTop:6,fontStyle:"italic"}}>💬 {r.notes}</div>}
+          </Card>
+        ))}
+      </div>}
+      {tab==="finances"&&<div>
+        {pFin.length===0?<div style={{textAlign:"center",padding:30,color:C.muted,fontSize:13}}>Aucune transaction.</div>:
+        pFin.sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(f=>(
+          <Card key={f.id} style={{padding:"12px 14px",borderLeft:`3px solid ${f.statut==="Complété"?C.green:C.amber}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontWeight:700,fontSize:13,color:C.text}}>{f.type}</div>
+                <div style={{fontSize:11,color:C.muted}}>{fmtDate(f.date)} · {f.methode}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontWeight:800,fontSize:15,color:f.statut==="Complété"?C.green:C.amber}}>{fmtEur(f.montant)}</div>
+                <Badge text={f.statut} color={f.statut==="Complété"?C.green:C.amber} small/>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>}
+      {tab==="taches"&&<div>
+        {pTaches.length===0?<div style={{textAlign:"center",padding:30,color:C.muted,fontSize:13}}>Aucune tâche liée.</div>:
+        pTaches.map(t=>(
+          <Card key={t.id} style={{padding:"12px 14px",borderLeft:`3px solid ${t.priorite==="Haute"?C.red:C.amber}`}}>
+            <div style={{fontWeight:700,fontSize:13,color:C.text}}>{t.titre}</div>
+            <div style={{fontSize:11,color:C.muted,marginTop:2}}>{t.description||"—"}</div>
+            <div style={{display:"flex",gap:6,marginTop:6}}>
+              <Badge text={t.statut} color={t.statut==="Terminée"?C.green:C.amber} small/>
+              <Badge text={t.priorite||"Normale"} color={t.priorite==="Haute"?C.red:C.muted} small/>
+            </div>
+          </Card>
+        ))}
+      </div>}
+    </div>
+  );
+}
+
+// ── RENDEZ-VOUS ───────────────────────────────────────────────────────────────
+function Rdvs({user, rdvs, patients, onAdd, onDelete, onUpdate}) {
+  const [view,setView] = useState("liste");
+  const [filterTab,setFilterTab] = useState("tous");
+  const [filterDate,setFilterDate] = useState("");
+  const [search,setSearch] = useState("");
+  const [calDate,setCalDate] = useState(new Date());
+  const [selDay,setSelDay] = useState(todayStr());
+  const today = todayStr();
+  const getP = id => patients.find(p=>String(p.id)===String(id));
+  const getU = id => USERS.find(u=>u.id===id);
+  const MOIS=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  const JOURS_SHORT=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+  const fmtDate = d=>d?new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"}):"—";
+
+  // Filtrage
+  const allRdvs = filterTab==="mes" ? rdvs.filter(r=>r.assigneA===user.id) :
+                  filterTab==="medecin" ? rdvs.filter(r=>r.medecin) : rdvs;
+  const filtered = allRdvs.filter(r=>{
+    const p=getP(r.patientId);
+    const sq=search.toLowerCase();
+    return (!search||`${p?.prenom||""} ${p?.nom||""} ${r.type||""} ${r.medecin||""}`.toLowerCase().includes(sq))
+      &&(!filterDate||r.date===filterDate);
+  }).sort((a,b)=>a.date?.localeCompare(b.date||"")||a.heure?.localeCompare(b.heure||""));
+
+  // Stats
+  const rdvsToday = rdvs.filter(r=>r.date===today&&(user.role==="admin"||r.assigneA===user.id));
+  const rdvsWeek = rdvs.filter(r=>r.date>=today&&r.date<=new Date(Date.now()+7*86400000).toISOString().split("T")[0]);
+  const rdvsConfirmes = rdvs.filter(r=>r.statut==="Confirmé");
+
+  // Calendrier mensuel
+  const year=calDate.getFullYear(), month=calDate.getMonth();
+  const firstDow=(new Date(year,month,1).getDay()+6)%7;
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const fmtD=(y,m,d)=>`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  const cells=[];
+  for(let i=0;i<firstDow;i++)cells.push(null);
+  for(let d=1;d<=daysInMonth;d++)cells.push(d);
+  const rdvsForDay=ds=>rdvs.filter(r=>r.date===ds&&(user.role==="admin"||r.assigneA===user.id));
+
+  // Carte RDV
+  const RdvCard=({r})=>{
+    const p=getP(r.patientId);
+    const assignee=getU(r.assigneA);
+    const isPast=r.date<today;
+    const statusColor=r.statut==="Confirmé"?C.green:r.statut==="Terminé"?C.muted:r.statut==="Annulé"?C.red:C.amber;
+    return (
+      <div style={{background:C.white,borderRadius:14,border:`1px solid ${C.border}`,marginBottom:8,overflow:"hidden",opacity:isPast?0.72:1,borderLeft:`4px solid ${assignee?.color||C.blue}`}}>
+        <div style={{padding:"12px 14px",display:"flex",gap:12,alignItems:"center"}}>
+          <div style={{minWidth:52,textAlign:"center",flexShrink:0}}>
+            <div style={{fontSize:9,fontWeight:700,color:C.muted,letterSpacing:"0.05em"}}>{r.date?r.date.slice(5).replace("-","/"):""}</div>
+            <div style={{fontSize:17,fontWeight:800,color:assignee?.color||C.navy,lineHeight:1.1}}>{r.heure}</div>
+            {r.duree&&<div style={{fontSize:9,color:C.muted}}>{r.duree}min</div>}
+          </div>
+          <div style={{width:1,height:40,background:C.border,flexShrink:0}}/>
+          <Avatar p={p||{prenom:"?",nom:""}} size={36}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:700,fontSize:13,color:C.text}}>{p?`${p.prenom} ${p.nom}`:"Patient inconnu"}</div>
+            <div style={{fontSize:11,color:C.muted,marginTop:1}}>{r.type}{r.medecin?` · 🩺 ${r.medecin}`:""}</div>
+            {r.hopital&&<div style={{fontSize:10,color:C.muted}}>🏥 {r.hopital}</div>}
+            <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap",alignItems:"center"}}>
+              {assignee&&<span style={{fontSize:10,color:assignee.color,fontWeight:700,display:"flex",alignItems:"center",gap:3}}><span style={{width:6,height:6,borderRadius:99,background:assignee.color,display:"inline-block"}}/>{assignee.prenom}</span>}
+            </div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
+            <Badge text={r.statut||"Planifié"} color={statusColor} small/>
+            {r.notes&&<span style={{fontSize:9,color:C.muted}}>💬</span>}
+            {(user.role==="admin"||r.assigneA===user.id)&&<button onClick={()=>onDelete(r.id)} style={{border:"none",background:"none",cursor:"pointer",color:C.muted,fontSize:12}}>🗑</button>}
+          </div>
+        </div>
+        {r.notes&&<div style={{padding:"6px 14px 10px",fontSize:11,color:C.muted,fontStyle:"italic",borderTop:`1px solid ${C.bg}`}}>💬 {r.notes}</div>}
+      </div>
+    );
+  };
+
+  // Jour sélectionné (vue calendrier)
+  const selRdvs=rdvsForDay(selDay).sort((a,b)=>a.heure?.localeCompare(b.heure||""));
+
+  return (
+    <div>
+      {/* KPI bar */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
+        {[{ic:"📅",l:"Aujourd'hui",v:rdvsToday.length,c:C.blue},{ic:"📆",l:"Cette semaine",v:rdvsWeek.length,c:C.purple},{ic:"✅",l:"Confirmés",v:rdvsConfirmes.length,c:C.green}].map(s=>(
+          <div key={s.l} style={{background:C.white,borderRadius:12,padding:"10px 8px",textAlign:"center",border:`1px solid ${C.border}`}}>
+            <div style={{fontSize:18,fontWeight:800,color:s.c}}>{s.v}</div>
+            <div style={{fontSize:9,color:C.muted,marginTop:2}}>{s.l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Barre d'outils */}
+      <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:4,background:C.bg,borderRadius:10,padding:3,flex:1}}>
+          {[{id:"liste",ic:"☰"},{id:"calendrier",ic:"📅"},{id:"jour",ic:"⏰"}].map(v=>(
+            <button key={v.id} onClick={()=>setView(v.id)} style={{flex:1,padding:"7px",border:"none",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,background:view===v.id?C.white:"transparent",color:view===v.id?C.navy:C.muted,transition:"all 0.15s"}}>
+              {v.ic} {v.id.charAt(0).toUpperCase()+v.id.slice(1)}
+            </button>
+          ))}
+        </div>
+        <button onClick={onAdd} style={{padding:"9px 14px",border:"none",borderRadius:10,background:C.navy,color:C.white,cursor:"pointer",fontWeight:700,fontSize:13,flexShrink:0}}>+ RDV</button>
+      </div>
+
+      {/* Filtre par rôle */}
+      <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
+        {[{id:"tous",l:"Tous",ic:"👥"},{id:"mes",l:"Mes RDV",ic:"👤"},...(user.role==="admin"?[{id:"medecin",l:"Par médecin",ic:"🩺"}]:[])].map(t=>(
+          <button key={t.id} onClick={()=>setFilterTab(t.id)} style={{padding:"7px 12px",border:"none",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:12,background:filterTab===t.id?user.color:C.bg,color:filterTab===t.id?C.white:C.muted,flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
+            {t.ic} {t.l}
+          </button>
+        ))}
+      </div>
+
+      {/* VUE LISTE */}
+      {view==="liste"&&<>
+        <div style={{display:"flex",gap:8,marginBottom:12}}>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Patient, médecin, type…" style={{flex:1,padding:"9px 12px",border:`1.5px solid ${C.border}`,borderRadius:10,fontSize:13,outline:"none",background:C.white}}/>
+          <input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{padding:"9px",border:`1.5px solid ${C.border}`,borderRadius:10,fontSize:12,background:C.white,outline:"none"}}/>
+          {filterDate&&<button onClick={()=>setFilterDate("")} style={{padding:"9px",border:`1px solid ${C.border}`,borderRadius:10,background:C.white,cursor:"pointer",color:C.muted,fontSize:12}}>✕</button>}
+        </div>
+        {/* Groupé par date */}
+        {(()=>{
+          const groups={};
+          filtered.forEach(r=>{const d=r.date||"Sans date";if(!groups[d])groups[d]=[];groups[d].push(r);});
+          return Object.entries(groups).sort(([a],[b])=>a.localeCompare(b)).map(([date,rList])=>(
+            <div key={date} style={{marginBottom:16}}>
+              <div style={{fontSize:11,fontWeight:800,color:date===today?C.blue:date<today?C.muted:C.navy,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8,display:"flex",alignItems:"center",gap:8}}>
+                <div style={{width:6,height:6,borderRadius:99,background:date===today?C.blue:date<today?C.muted:C.navy}}/>
+                {date===today?"Aujourd'hui":fmtDate(date)} — {rList.length} RDV
+              </div>
+              {rList.map(r=><RdvCard key={r.id} r={r}/>)}
+            </div>
+          ));
+        })()}
+        {filtered.length===0&&<div style={{textAlign:"center",padding:40,color:C.muted,fontSize:14}}>Aucun rendez-vous.</div>}
+      </>}
+
+      {/* VUE CALENDRIER MENSUEL */}
+      {view==="calendrier"&&<>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+          <div style={{display:"flex",gap:4}}>
+            <button onClick={()=>setCalDate(new Date(year,month-1,1))} style={{border:`1px solid ${C.border}`,background:C.white,borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
+            <button onClick={()=>setCalDate(new Date(year,month+1,1))} style={{border:`1px solid ${C.border}`,background:C.white,borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>›</button>
+          </div>
+          <div style={{fontWeight:800,fontSize:15,color:C.navy}}>{MOIS[month]} {year}</div>
+          <button onClick={()=>{setCalDate(new Date());setSelDay(today);}} style={{border:`1px solid ${C.border}`,background:C.white,borderRadius:8,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700}}>Auj.</button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
+          {JOURS_SHORT.map(j=><div key={j} style={{textAlign:"center",fontSize:9,fontWeight:700,color:C.muted,padding:"3px 0"}}>{j}</div>)}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:14}}>
+          {cells.map((d,i)=>{
+            if(!d)return <div key={i}/>;
+            const ds=fmtD(year,month,d);
+            const dr=rdvsForDay(ds);
+            const isToday=ds===today;
+            const isSel=ds===selDay;
+            return (
+              <div key={i} onClick={()=>{setSelDay(ds);setView("jour");}} style={{minHeight:44,borderRadius:9,padding:"4px 2px",cursor:"pointer",textAlign:"center",background:isSel?C.navy:isToday?"#EFF6FF":C.white,border:`1px solid ${isSel?C.navy:isToday?C.blue:C.border}`,transition:"all 0.15s"}}>
+                <div style={{fontSize:11,fontWeight:isToday||isSel?800:400,color:isSel?C.white:isToday?C.blue:C.text,marginBottom:2}}>{d}</div>
+                {dr.slice(0,2).map((r,i)=>{
+                  const a=getU(r.assigneA);
+                  return <div key={i} style={{width:"80%",height:3,borderRadius:99,background:a?.color||C.blue,margin:"1px auto"}}/>;
+                })}
+                {dr.length>2&&<div style={{fontSize:7,color:isSel?"rgba(255,255,255,0.7)":C.muted,fontWeight:700}}>+{dr.length-2}</div>}
+              </div>
+            );
+          })}
+        </div>
+        {/* RDV du jour sélectionné */}
+        {selDay&&<div>
+          <div style={{fontSize:12,fontWeight:800,color:C.navy,marginBottom:8}}>📅 {fmtDate(selDay)} — {rdvsForDay(selDay).length} RDV</div>
+          {rdvsForDay(selDay).length===0?<div style={{background:C.white,borderRadius:12,padding:16,textAlign:"center",color:C.muted,fontSize:13,border:`1px solid ${C.border}`}}>Aucun RDV ce jour 🎉</div>:
+          rdvsForDay(selDay).sort((a,b)=>a.heure?.localeCompare(b.heure||"")).map(r=><RdvCard key={r.id} r={r}/>)}
+        </div>}
+      </>}
+
+      {/* VUE JOUR (timeline) */}
+      {view==="jour"&&<>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+          <button onClick={()=>{const d=new Date(selDay+"T12:00:00");d.setDate(d.getDate()-1);setSelDay(d.toISOString().split("T")[0]);}} style={{border:`1px solid ${C.border}`,background:C.white,borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
+          <div style={{flex:1,textAlign:"center"}}>
+            <div style={{fontWeight:800,fontSize:14,color:C.navy}}>{selDay===today?"📅 Aujourd'hui":fmtDate(selDay)}</div>
+            <div style={{fontSize:11,color:C.muted}}>{selRdvs.length} rendez-vous</div>
+          </div>
+          <button onClick={()=>{const d=new Date(selDay+"T12:00:00");d.setDate(d.getDate()+1);setSelDay(d.toISOString().split("T")[0]);}} style={{border:`1px solid ${C.border}`,background:C.white,borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>›</button>
+        </div>
+        <input type="date" value={selDay} onChange={e=>setSelDay(e.target.value)} style={{width:"100%",padding:"9px 12px",border:`1.5px solid ${C.border}`,borderRadius:10,fontSize:13,outline:"none",background:C.white,marginBottom:12,boxSizing:"border-box"}}/>
+        {/* Timeline */}
+        <div style={{position:"relative",paddingLeft:48}}>
+          <div style={{position:"absolute",left:20,top:0,bottom:0,width:2,background:C.border,borderRadius:99}}/>
+          {selRdvs.length===0?<div style={{background:C.white,borderRadius:12,padding:20,textAlign:"center",color:C.muted,fontSize:13,border:`1px solid ${C.border}`,marginLeft:-48}}>Aucun RDV ce jour 🎉</div>:
+          selRdvs.map(r=>{
+            const p=getP(r.patientId);
+            const a=getU(r.assigneA);
+            return (
+              <div key={r.id} style={{position:"relative",marginBottom:14}}>
+                <div style={{position:"absolute",left:-35,top:8,width:14,height:14,borderRadius:99,background:a?.color||C.blue,border:`2px solid ${C.white}`,boxShadow:`0 0 0 2px ${a?.color||C.blue}44`}}/>
+                <div style={{background:C.white,borderRadius:12,border:`1px solid ${C.border}`,padding:"12px 14px",borderLeft:`3px solid ${a?.color||C.blue}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                    <div>
+                      <div style={{fontWeight:800,fontSize:14,color:C.navy}}>{r.heure}{r.duree?` · ${r.duree}min`:""}</div>
+                      <div style={{fontWeight:600,fontSize:13,color:C.text,marginTop:2}}>{p?`${p.prenom} ${p.nom}`:"—"}</div>
+                      <div style={{fontSize:11,color:C.muted,marginTop:2}}>{r.type}{r.medecin?` · ${r.medecin}`:""}</div>
+                    </div>
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <Badge text={r.statut||"Planifié"} color={r.statut==="Confirmé"?C.green:C.amber} small/>
+                      {(user.role==="admin"||r.assigneA===user.id)&&<button onClick={()=>onDelete(r.id)} style={{border:"none",background:"none",cursor:"pointer",color:C.muted,fontSize:12}}>🗑</button>}
+                    </div>
+                  </div>
+                  {r.notes&&<div style={{fontSize:11,color:C.muted,marginTop:6,fontStyle:"italic"}}>💬 {r.notes}</div>}
+                  {/* Actions rapides */}
+                  <div style={{display:"flex",gap:6,marginTop:8}}>
+                    {p?.tel&&<a href={`https://wa.me/${p.tel.replace(/\D/g,"")}`} target="_blank" style={{fontSize:10,background:"#25D366"+"18",color:"#25D366",padding:"3px 8px",borderRadius:6,fontWeight:700,textDecoration:"none"}}>📲 WhatsApp</a>}
+                    {p?.email&&<a href={`mailto:${p.email}?subject=Confirmation RDV ${r.date} ${r.heure}`} style={{fontSize:10,background:C.blue+"18",color:C.blue,padding:"3px 8px",borderRadius:6,fontWeight:700,textDecoration:"none"}}>📧 Email</a>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </>}
+
+      {/* Plannings spéciaux (admin) */}
+      {user.role==="admin"&&view==="liste"&&<div style={{marginTop:16}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:10}}>PLANNINGS</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {["Dr Anvar Ahmedov","Dr Azar Zeynalov","Dr Akin Ünal","Dr Smile Clinic"].map(medecin=>{
+            const mRdvs=rdvs.filter(r=>r.medecin===medecin&&r.date>=today);
+            return (
+              <div key={medecin} style={{background:C.white,borderRadius:12,padding:12,border:`1px solid ${C.border}`}}>
+                <div style={{fontWeight:700,fontSize:11,color:C.text,marginBottom:4}}>{medecin.replace("Dr ","Dr ")}</div>
+                <div style={{fontSize:18,fontWeight:800,color:C.blue}}>{mRdvs.length}</div>
+                <div style={{fontSize:9,color:C.muted}}>RDV à venir</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>}
+    </div>
+  );
+}
+
+// ── FINANCES PREMIUM ──────────────────────────────────────────────────────────
+function Finances({user, finances, patients, onAdd, onDelete, onUpdate}) {
+  const [tab, setTab] = useState("dashboard");
+  const [search, setSearch] = useState("");
+  const [filterPeriod, setFilterPeriod] = useState("tout");
+  const [filterUser, setFilterUser] = useState("tous");
+  const [filterStatut, setFilterStatut] = useState("tous");
+  const [filterDevise, setFilterDevise] = useState("tous");
+  const [selectedPatient, setSelectedPatient] = useState(null);
+
+  const DEVISES = ["€","$","£","CHF","TRY","AED"];
+  const getP = id => patients.find(p=>String(p.id)===String(id));
+  const getU = id => USERS.find(u=>u.id===id);
+
+  const today = todayStr();
+  const thisWeekStart = (() => { const d=new Date(); d.setDate(d.getDate()-(d.getDay()||7)+1); return d.toISOString().split("T")[0]; })();
+  const thisMonthStart = today.slice(0,7)+"-01";
+  const thisYearStart = today.slice(0,4)+"-01-01";
+
+  const inPeriod = (date) => {
+    if(filterPeriod==="tout") return true;
+    if(filterPeriod==="today") return date===today;
+    if(filterPeriod==="week") return date>=thisWeekStart;
+    if(filterPeriod==="month") return date>=thisMonthStart;
+    if(filterPeriod==="year") return date>=thisYearStart;
+    return true;
+  };
+
+  const filtered = finances.filter(f => {
+    const p = getP(f.patientId);
+    const sq = search.toLowerCase();
+    const matchSearch = !search || 
+      (p && `${p.prenom} ${p.nom}`.toLowerCase().includes(sq)) ||
+      (f.procedure||"").toLowerCase().includes(sq) ||
+      (f.montant||"").toString().includes(sq);
+    const matchPeriod = inPeriod(f.date||"");
+    const matchUser = filterUser==="tous" || f.creePar===filterUser;
+    const matchStatut = filterStatut==="tous" || f.statut===filterStatut;
+    const matchDevise = filterDevise==="tous" || (f.methode||"")===filterDevise;
+    return matchSearch && matchPeriod && matchUser && matchStatut;
+  });
+
+  // Calculs
+  const total = filtered.reduce((a,f)=>a+Number(f.montant||0),0);
+  const recus = filtered.filter(f=>f.statut==="Complété").reduce((a,f)=>a+Number(f.montant||0),0);
+  const attente = filtered.filter(f=>f.statut==="En attente").reduce((a,f)=>a+Number(f.montant||0),0);
+  const acomptes = filtered.filter(f=>f.type==="Acompte").reduce((a,f)=>a+Number(f.montant||0),0);
+  const nAcomptes = filtered.filter(f=>f.type==="Acompte").length;
+  const rembours = filtered.filter(f=>f.type==="Remboursement").reduce((a,f)=>a+Number(f.montant||0),0);
+  const todayRecus = finances.filter(f=>f.date===today&&f.statut==="Complété").reduce((a,f)=>a+Number(f.montant||0),0);
+  const weekRecus = finances.filter(f=>f.date>=thisWeekStart&&f.statut==="Complété").reduce((a,f)=>a+Number(f.montant||0),0);
+  const monthRecus = finances.filter(f=>f.date>=thisMonthStart&&f.statut==="Complété").reduce((a,f)=>a+Number(f.montant||0),0);
+  const panierMoyen = patients.filter(p=>p.budget).length ? Math.round(patients.filter(p=>p.budget).reduce((a,p)=>a+Number(p.budget||0),0)/patients.filter(p=>p.budget).length) : 0;
+  const tauxConv = patients.length ? Math.round((patients.filter(p=>["Confirmé","Arrivé à Istanbul","Post-opératoire","Clôturé ✓"].includes(p.stade)).length/patients.length)*100) : 0;
+  const patientsValides = patients.filter(p=>["Confirmé","Arrivé à Istanbul","Post-opératoire","Clôturé ✓"].includes(p.stade));
+  const patientsOperes = patients.filter(p=>["Arrivé à Istanbul","Post-opératoire","Clôturé ✓"].includes(p.stade));
+
+  // CA par mois (6 derniers mois)
+  const caParMois = Array.from({length:6},(_,i)=>{
+    const d = new Date(); d.setMonth(d.getMonth()-5+i);
+    const key = d.toISOString().slice(0,7);
+    const moisNom = d.toLocaleDateString("fr-FR",{month:"short"});
+    const ca = finances.filter(f=>f.date&&f.date.startsWith(key)&&f.statut==="Complété").reduce((a,f)=>a+Number(f.montant||0),0);
+    return {mois:moisNom, ca};
+  });
+  const maxCA = Math.max(...caParMois.map(m=>m.ca),1);
+
+  // CA par coordinateur
+  const caParUser = USERS.map(u=>({
+    u, ca: finances.filter(f=>f.creePar===u.id&&f.statut==="Complété").reduce((a,f)=>a+Number(f.montant||0),0),
+    nb: finances.filter(f=>f.creePar===u.id).length
+  })).sort((a,b)=>b.ca-a.ca);
+
+  // Alertes
+  const alertes = [
+    ...finances.filter(f=>f.statut==="En attente"&&f.date<today).map(f=>({type:"retard",msg:`Paiement en retard — ${getP(f.patientId)?.prenom||"?"} ${fmtEur(f.montant)}`,color:C.red})),
+    ...finances.filter(f=>f.date===today&&f.statut==="Complété").map(f=>({type:"recu",msg:`✅ Paiement reçu aujourd'hui — ${fmtEur(f.montant)}`,color:C.green})),
+    ...patients.filter(p=>p.stade==="Confirmé"&&!finances.some(f=>f.patientId===p.id&&f.type==="Acompte")).map(p=>({type:"acompte",msg:`⚠️ Acompte manquant — ${p.prenom} ${p.nom}`,color:C.amber})),
+  ].slice(0,5);
+
+  const TABS = [
+    {id:"dashboard",label:"Dashboard",icon:"📊"},
+    {id:"transactions",label:"Transactions",icon:"💳"},
+    {id:"patients",label:"Patients",icon:"👥"},
+    {id:"perf",label:"Performance",icon:"🏆"},
+    {id:"stats",label:"Statistiques",icon:"📈"},
+  ];
+
+  const StatCard = ({icon,label,value,color=C.navy,sub}) => (
+    <div style={{background:C.white,borderRadius:14,border:`1px solid ${C.border}`,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+      <div style={{width:42,height:42,borderRadius:12,background:color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{icon}</div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:18,fontWeight:800,color:C.text,lineHeight:1}}>{value}</div>
+        <div style={{fontSize:11,color:C.muted,marginTop:2}}>{label}</div>
+        {sub&&<div style={{fontSize:10,color,fontWeight:700,marginTop:1}}>{sub}</div>}
+      </div>
+    </div>
+  );
+
+  if(selectedPatient) {
+    const p = getP(selectedPatient);
+    const pFinances = finances.filter(f=>f.patientId===selectedPatient).sort((a,b)=>b.date?.localeCompare(a.date||"")||0);
+    const totalPaye = pFinances.filter(f=>f.statut==="Complété").reduce((a,f)=>a+Number(f.montant||0),0);
+    const restant = Number(p?.budget||0) - totalPaye;
+    return (
+      <div>
+        <button onClick={()=>setSelectedPatient(null)} style={{border:"none",background:"none",cursor:"pointer",color:C.blue,fontWeight:700,fontSize:13,marginBottom:14,display:"flex",alignItems:"center",gap:6}}>← Retour Finance</button>
+        <Card style={{background:`linear-gradient(135deg,${C.navy},#1a3a5c)`,border:"none"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <Avatar p={p||{prenom:"?",nom:""}} size={48}/>
+            <div>
+              <div style={{color:C.white,fontWeight:800,fontSize:16}}>{p?.prenom} {p?.nom}</div>
+              <div style={{color:"rgba(255,255,255,0.6)",fontSize:12}}>{p?.procedure} · {p?.pays}</div>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:14}}>
+            {[
+              {label:"Budget total",value:fmtEur(p?.budget),color:C.gold},
+              {label:"Total payé",value:fmtEur(totalPaye),color:"#4ade80"},
+              {label:"Restant",value:fmtEur(Math.max(restant,0)),color:restant>0?"#fbbf24":"#4ade80"},
+            ].map(s=>(
+              <div key={s.label} style={{background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+                <div style={{color:s.color,fontWeight:800,fontSize:14}}>{s.value}</div>
+                <div style={{color:"rgba(255,255,255,0.6)",fontSize:9,marginTop:2}}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
+          <button onClick={onAdd} style={{padding:"9px 16px",border:"none",borderRadius:10,background:C.navy,color:C.white,cursor:"pointer",fontWeight:700,fontSize:13}}>+ Paiement</button>
+        </div>
+        {pFinances.length===0 ? <div style={{textAlign:"center",padding:30,color:C.muted,fontSize:13}}>Aucune transaction pour ce patient.</div> :
+        pFinances.map(f=>(
+          <Card key={f.id} style={{padding:"12px 16px",borderLeft:`3px solid ${f.statut==="Complété"?C.green:C.amber}`}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:13,color:C.text}}>{f.type} — {f.procedure||"—"}</div>
+                <div style={{fontSize:11,color:C.muted}}>📅 {f.date} · {f.methode} · {getU(f.creePar)?.prenom||"—"}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontWeight:800,fontSize:15,color:f.statut==="Complété"?C.green:C.amber}}>{fmtEur(f.montant)}</div>
+                <Badge text={f.statut} color={f.statut==="Complété"?C.green:C.amber} small/>
+              </div>
+              {user.role==="admin"&&<button onClick={()=>onDelete(f.id)} style={{border:"none",background:"none",cursor:"pointer",color:C.muted,fontSize:13}}>🗑</button>}
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Tabs */}
+      <div style={{display:"flex",gap:4,marginBottom:16,overflowX:"auto",paddingBottom:4}}>
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"7px 12px",border:"none",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:11,background:tab===t.id?C.navy:C.bg,color:tab===t.id?C.white:C.muted,flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
+            <span>{t.icon}</span><span>{t.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* DASHBOARD */}
+      {tab==="dashboard" && <>
+        {/* Alertes */}
+        {alertes.length>0&&<div style={{marginBottom:12}}>
+          {alertes.map((a,i)=>(
+            <div key={i} style={{background:a.color+"12",border:`1px solid ${a.color}33`,borderRadius:10,padding:"8px 12px",marginBottom:6,fontSize:12,color:a.color,fontWeight:600}}>{a.msg}</div>
+          ))}
+        </div>}
+
+        {/* KPIs */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+          <StatCard icon="💶" label="Total encaissé" value={fmtEur(recus)} color={C.green} sub={`+${fmtEur(todayRecus)} aujourd'hui`}/>
+          <StatCard icon="⏳" label="En attente" value={fmtEur(attente)} color={C.amber}/>
+          <StatCard icon="📥" label="Acomptes reçus" value={fmtEur(acomptes)} color={C.blue} sub={`${nAcomptes} transactions`}/>
+          <StatCard icon="📅" label="Ce mois" value={fmtEur(monthRecus)} color={C.purple} sub={`Semaine: ${fmtEur(weekRecus)}`}/>
+          <StatCard icon="🎯" label="Panier moyen" value={fmtEur(panierMoyen)} color={C.cyan}/>
+          <StatCard icon="📊" label="Taux conversion" value={`${tauxConv}%`} color={C.green}/>
+          <StatCard icon="✅" label="Patients validés" value={patientsValides.length} color={C.navy}/>
+          <StatCard icon="🏥" label="Patients opérés" value={patientsOperes.length} color={C.blue}/>
+        </div>
+
+        {/* CA par mois */}
+        <Card>
+          <SecTitle icon="📈">Chiffre d'affaires — 6 derniers mois</SecTitle>
+          <div style={{display:"flex",alignItems:"flex-end",gap:6,height:80}}>
+            {caParMois.map((m,i)=>(
+              <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                <div style={{fontSize:9,fontWeight:700,color:C.navy}}>{m.ca>0?`${Math.round(m.ca/1000)}k`:""}</div>
+                <div style={{width:"100%",borderRadius:"4px 4px 0 0",background:i===5?C.gold:C.navy+"44",height:`${maxCA>0?(m.ca/maxCA)*60:4}px`,minHeight:4,transition:"height 0.3s"}}/>
+                <div style={{fontSize:9,color:C.muted,fontWeight:600}}>{m.mois}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Top coordinateurs */}
+        <Card>
+          <SecTitle icon="🏆">Performance équipe</SecTitle>
+          {caParUser.map((x,i)=>(
+            <div key={x.u.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:i<caParUser.length-1?`1px solid ${C.bg}`:"none"}}>
+              <div style={{width:24,height:24,borderRadius:99,background:i===0?C.gold+"33":C.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:i===0?C.gold:C.muted}}>{i+1}</div>
+              <Avatar p={{prenom:x.u.prenom,nom:""}} size={32} color={x.u.color}/>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:13,color:C.text}}>{x.u.prenom}</div>
+                <div style={{fontSize:11,color:C.muted}}>{x.nb} transactions</div>
+              </div>
+              <div style={{fontWeight:800,fontSize:14,color:C.green}}>{fmtEur(x.ca)}</div>
+            </div>
+          ))}
+        </Card>
+      </>}
+
+      {/* TRANSACTIONS */}
+      {tab==="transactions" && <>
+        {/* Filtres */}
+        <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Rechercher…" style={{flex:1,minWidth:120,padding:"8px 10px",border:`1px solid ${C.border}`,borderRadius:8,fontSize:12,outline:"none",background:C.white}}/>
+          <select value={filterPeriod} onChange={e=>setFilterPeriod(e.target.value)} style={{padding:"8px",border:`1px solid ${C.border}`,borderRadius:8,fontSize:12,background:C.white,outline:"none"}}>
+            <option value="tout">Tout</option>
+            <option value="today">Aujourd'hui</option>
+            <option value="week">Cette semaine</option>
+            <option value="month">Ce mois</option>
+            <option value="year">Cette année</option>
+          </select>
+          <select value={filterStatut} onChange={e=>setFilterStatut(e.target.value)} style={{padding:"8px",border:`1px solid ${C.border}`,borderRadius:8,fontSize:12,background:C.white,outline:"none"}}>
+            <option value="tous">Tous statuts</option>
+            <option value="Complété">Complété</option>
+            <option value="En attente">En attente</option>
+            <option value="Annulé">Annulé</option>
+          </select>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontSize:12,color:C.muted}}>{filtered.length} transaction(s) · <span style={{color:C.green,fontWeight:700}}>{fmtEur(recus)}</span> encaissé</div>
+          <button onClick={onAdd} style={{padding:"8px 14px",border:"none",borderRadius:10,background:C.navy,color:C.white,cursor:"pointer",fontWeight:700,fontSize:12}}>+ Transaction</button>
+        </div>
+        {filtered.length===0?<div style={{textAlign:"center",padding:30,color:C.muted,fontSize:13}}>Aucune transaction.</div>:
+        filtered.sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(f=>{
+          const p=getP(f.patientId);
+          const createdBy=getU(f.creePar);
+          return (
+            <Card key={f.id} style={{padding:"12px 16px",borderLeft:`3px solid ${f.statut==="Complété"?C.green:f.statut==="Annulé"?C.red:C.amber}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <Avatar p={p||{prenom:"?",nom:""}} size={36}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:13,color:C.text,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                    {p?`${p.prenom} ${p.nom}`:"—"}
+                    <Badge text={f.type} color={f.type==="Acompte"?C.blue:f.type==="Remboursement"?C.red:C.green} small/>
+                  </div>
+                  <div style={{fontSize:11,color:C.muted}}>📅 {f.date} · {f.methode} · {createdBy?.prenom||"—"}</div>
+                  {f.procedure&&<div style={{fontSize:11,color:C.muted}}>{f.procedure}</div>}
+                </div>
+                <div style={{textAlign:"right",flexShrink:0}}>
+                  <div style={{fontWeight:800,fontSize:15,color:f.statut==="Complété"?C.green:f.statut==="Annulé"?C.red:C.amber}}>{fmtEur(f.montant)}</div>
+                  <Badge text={f.statut} color={f.statut==="Complété"?C.green:f.statut==="Annulé"?C.red:C.amber} small/>
+                </div>
+                {user.role==="admin"&&<button onClick={()=>onDelete(f.id)} style={{border:"none",background:"none",cursor:"pointer",color:C.muted,fontSize:13,marginLeft:4}}>🗑</button>}
+              </div>
+            </Card>
+          );
+        })}
+      </>}
+
+      {/* PATIENTS FINANCIERS */}
+      {tab==="patients" && <>
+        <div style={{marginBottom:10,fontSize:12,color:C.muted}}>{patients.length} patients · Cliquez pour voir le détail</div>
+        {patients.filter(p=>{
+          if(!search) return true;
+          return `${p.prenom} ${p.nom} ${p.procedure}`.toLowerCase().includes(search.toLowerCase());
+        }).map(p=>{
+          const pFin = finances.filter(f=>f.patientId===p.id);
+          const totalPaye = pFin.filter(f=>f.statut==="Complété").reduce((a,f)=>a+Number(f.montant||0),0);
+          const restant = Math.max(Number(p.budget||0)-totalPaye,0);
+          const pct = p.budget ? Math.round((totalPaye/Number(p.budget))*100) : 0;
+          return (
+            <Card key={p.id} style={{padding:"12px 16px",cursor:"pointer"}} onClick={()=>setSelectedPatient(p.id)}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <Avatar p={p} size={38}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:13,color:C.text}}>{p.prenom} {p.nom}</div>
+                  <div style={{fontSize:11,color:C.muted}}>{p.procedure} · {p.pays}</div>
+                  <div style={{marginTop:6,background:C.bg,borderRadius:99,height:5}}>
+                    <div style={{background:pct>=100?C.green:pct>50?C.amber:C.red,borderRadius:99,height:5,width:`${Math.min(pct,100)}%`,transition:"width 0.3s"}}/>
+                  </div>
+                </div>
+                <div style={{textAlign:"right",flexShrink:0}}>
+                  <div style={{fontSize:13,fontWeight:800,color:C.green}}>{fmtEur(totalPaye)}</div>
+                  {restant>0&&<div style={{fontSize:11,color:C.red,fontWeight:600}}>-{fmtEur(restant)}</div>}
+                  <div style={{fontSize:10,color:C.muted}}>{pct}%</div>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </>}
+
+      {/* PERFORMANCE */}
+      {tab==="perf" && <>
+        <Card style={{overflowX:"auto"}}>
+          <SecTitle icon="🏆">Performance par coordinateur</SecTitle>
+          {USERS.map((u,i)=>{
+            const uFin = finances.filter(f=>f.creePar===u.id);
+            const uCA = uFin.filter(f=>f.statut==="Complété").reduce((a,f)=>a+Number(f.montant||0),0);
+            const uAcomptes = uFin.filter(f=>f.type==="Acompte").reduce((a,f)=>a+Number(f.montant||0),0);
+            const uPatients = patients.filter(p=>p.creePar===u.id);
+            const uOperes = uPatients.filter(p=>["Arrivé à Istanbul","Post-opératoire","Clôturé ✓"].includes(p.stade));
+            const objectif = 50000;
+            const prog = Math.min(Math.round((uCA/objectif)*100),100);
+            return (
+              <div key={u.id} style={{padding:"14px 0",borderBottom:i<USERS.length-1?`1px solid ${C.bg}`:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                  <Avatar p={{prenom:u.prenom,nom:""}} size={36} color={u.color}/>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:800,fontSize:13,color:C.text}}>{u.prenom}</div>
+                    <div style={{fontSize:11,color:u.color,fontWeight:600}}>{ROLE_LABELS[u.role]}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontWeight:800,fontSize:15,color:C.green}}>{fmtEur(uCA)}</div>
+                    <div style={{fontSize:10,color:C.muted}}>{prog}% objectif</div>
+                  </div>
+                </div>
+                <div style={{background:C.bg,borderRadius:99,height:6,marginBottom:8}}>
+                  <div style={{background:prog>=100?C.green:prog>50?u.color:C.amber,borderRadius:99,height:6,width:`${prog}%`,transition:"width 0.5s"}}/>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6}}>
+                  {[
+                    {label:"Patients",value:uPatients.length},
+                    {label:"Opérés",value:uOperes.length},
+                    {label:"Acomptes",value:fmtEur(uAcomptes)},
+                    {label:"Transactions",value:uFin.length},
+                  ].map(s=>(
+                    <div key={s.label} style={{background:C.bg,borderRadius:8,padding:"6px 8px",textAlign:"center"}}>
+                      <div style={{fontWeight:800,fontSize:12,color:C.text}}>{s.value}</div>
+                      <div style={{fontSize:9,color:C.muted}}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+      </>}
+
+      {/* STATISTIQUES */}
+      {tab==="stats" && <>
+        <Card>
+          <SecTitle icon="📊">Répartition des paiements</SecTitle>
+          {["Acompte","Paiement total","Remboursement","Devis"].map(type=>{
+            const n = finances.filter(f=>f.type===type).length;
+            const pct = finances.length ? Math.round((n/finances.length)*100) : 0;
+            const colors = {"Acompte":C.blue,"Paiement total":C.green,"Remboursement":C.red,"Devis":C.amber};
+            return (
+              <div key={type} style={{marginBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
+                  <span style={{color:C.text,fontWeight:600}}>{type}</span>
+                  <span style={{color:C.muted}}>{n} · {pct}%</span>
+                </div>
+                <div style={{background:C.bg,borderRadius:99,height:8}}>
+                  <div style={{background:colors[type],borderRadius:99,height:8,width:`${pct}%`}}/>
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+        <Card>
+          <SecTitle icon="💳">Modes de paiement</SecTitle>
+          {["Virement","Carte bancaire","Espèces","PayPal"].map(m=>{
+            const n = finances.filter(f=>f.methode===m).length;
+            const pct = finances.length ? Math.round((n/finances.length)*100) : 0;
+            return (
+              <div key={m} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.bg}`}}>
+                <span style={{fontSize:13,color:C.text}}>{m}</span>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:60,background:C.bg,borderRadius:99,height:6}}>
+                    <div style={{background:C.navy,borderRadius:99,height:6,width:`${pct}%`}}/>
+                  </div>
+                  <span style={{fontSize:12,color:C.muted,width:30,textAlign:"right"}}>{n}</span>
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <StatCard icon="🔄" label="Remboursements" value={fmtEur(rembours)} color={C.red}/>
+          <StatCard icon="📋" label="Devis envoyés" value={finances.filter(f=>f.type==="Devis").length} color={C.purple}/>
+          <StatCard icon="⚡" label="Paiements en attente" value={finances.filter(f=>f.statut==="En attente").length} color={C.amber}/>
+          <StatCard icon="✅" label="Paiements complets" value={finances.filter(f=>f.statut==="Complété").length} color={C.green}/>
+        </div>
+      </>}
+    </div>
+  );
+}
+
+// ── ANALYSES ──────────────────────────────────────────────────────────────────
+function Analyses({patients, finances}) {
+  const byProc = PROCEDURES.map(p=>({name:p,n:patients.filter(x=>x.procedure===p).length})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n).slice(0,6);
+  const bySrc = SOURCES.map(s=>({name:s,n:patients.filter(x=>x.source===s).length})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+  const taux = patients.length?Math.round((patients.filter(p=>p.stade==="Clôturé ✓").length/patients.length)*100):0;
+  const bMoy = patients.filter(p=>p.budget).length?Math.round(patients.filter(p=>p.budget).reduce((a,p)=>a+Number(p.budget),0)/patients.filter(p=>p.budget).length):0;
+  return (
+    <div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        {[
+          {icon:"📈",label:"Conversion",value:`${taux}%`,color:C.green},
+          {icon:"💶",label:"Budget moyen",value:fmtEur(bMoy),color:C.blue},
+          {icon:"🌍",label:"Pays",value:[...new Set(patients.map(p=>p.pays))].filter(Boolean).length,color:C.purple},
+          {icon:"⭐",label:"Satisfaction",value:"98%",color:C.amber},
+        ].map(s=>(
+          <Card key={s.label} style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:38,height:38,borderRadius:10,background:s.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{s.icon}</div>
+            <div><div style={{fontSize:18,fontWeight:800,color:C.text}}>{s.value}</div><div style={{fontSize:11,color:C.muted}}>{s.label}</div></div>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <SecTitle icon="🏥">Top procédures</SecTitle>
+        {byProc.length===0?<div style={{color:C.muted,fontSize:13}}>Aucune donnée.</div>:byProc.map(x=>(
+          <div key={x.name} style={{marginBottom:10}}>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.muted,marginBottom:3}}><span>{x.name}</span><span style={{fontWeight:700,color:C.text}}>{x.n}</span></div>
+            <div style={{background:C.bg,borderRadius:99,height:6}}><div style={{background:C.blue,borderRadius:99,height:6,width:`${patients.length?(x.n/patients.length)*100:0}%`}}/></div>
+          </div>
+        ))}
+      </Card>
+      <Card>
+        <SecTitle icon="📊">Canaux d'acquisition</SecTitle>
+        {bySrc.length===0?<div style={{color:C.muted,fontSize:13}}>Aucune donnée.</div>:bySrc.map(x=>(
+          <div key={x.name} style={{marginBottom:10}}>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.muted,marginBottom:3}}><span>{x.name}</span><span style={{fontWeight:700,color:C.text}}>{x.n}</span></div>
+            <div style={{background:C.bg,borderRadius:99,height:6}}><div style={{background:C.purple,borderRadius:99,height:6,width:`${patients.length?(x.n/patients.length)*100:0}%`}}/></div>
+          </div>
+        ))}
+      </Card>
+    </div>
+  );
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function ModalPatient({user, patient, onSave, onClose}) {
+  const isEdit = !!patient?.id;
+  const [step, setStep] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const PAYS = ["France","Belgique","Maroc","Canada","Suisse","Algérie","Tunisie","Sénégal","Côte d'Ivoire","Liban","UAE","Réunion","Autre"];
+  const MEDECINS = ["Dr Anvar Ahmedov","Dr Azar Zeynalov","Dr Akin Ünal","Dr Smile Clinic"];
+  const [f, setF] = useState(patient || {
+    prenom:"",nom:"",email:"",tel:"",pays:"France",ville:"",
+    procedure:PROCEDURES[0],stade:"Nouveau",source:SOURCES[0],
+    priorite:"Normale",budget:"",dateArrivee:"",notes:"",
+    medecin:"",hopital:"",devise:"€",assigneA:user.id
+  });
+  const ch = (k,v) => setF(x=>({...x,[k]:v}));
+  const inp = {width:"100%",padding:"11px 13px",border:`1.5px solid ${C.border}`,borderRadius:10,fontSize:14,color:C.text,background:C.white,outline:"none",boxSizing:"border-box",transition:"border 0.15s"};
+  const lbl = {fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:"0.06em",display:"block",marginBottom:5};
+  const onFocus = e => e.target.style.borderColor = C.navy;
+  const onBlur = e => e.target.style.borderColor = C.border;
+  const inpProps = {onFocus, onBlur};
+
+  const STEPS = [
+    {icon:"👤", title:"Identité", desc:"Informations personnelles"},
+    {icon:"📱", title:"Contact", desc:"Coordonnées"},
+    {icon:"🏥", title:"Procédure", desc:"Intervention & médecin"},
+    {icon:"💶", title:"Finance", desc:"Budget & paiement"},
+    {icon:"📝", title:"Résumé", desc:"Vérification & validation"},
+  ];
+
+  const handleSave = async () => {
+    if(!f.prenom||!f.nom){alert("Prénom et nom obligatoires !");return;}
+    setSaving(true);
+    await onSave(f);
+    setSaving(false);
+  };
+
+  const canNext = () => {
+    if(step===0) return f.prenom.trim()&&f.nom.trim();
+    return true;
+  };
+
+  // En mode édition, tout sur une seule page
+  if(isEdit) return (
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,0.6)",zIndex:1000,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(4px)"}}>
+      <div style={{background:C.bg,borderRadius:"24px 24px 0 0",padding:"8px 20px 28px",width:"100%",maxHeight:"95vh",overflowY:"auto",boxShadow:"0 -8px 40px rgba(11,31,58,0.25)"}}>
+        <div style={{width:40,height:4,borderRadius:99,background:C.border,margin:"12px auto 20px"}}/>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.text}}>Modifier le patient</h2>
+          <button onClick={onClose} style={{border:"none",background:C.border,borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:14}}>✕</button>
+        </div>
+        <div style={{background:C.white,borderRadius:14,padding:16,marginBottom:12}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>IDENTITÉ</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+            <div><label style={lbl}>Prénom *</label><input style={inp} {...inpProps} value={f.prenom} onChange={e=>ch("prenom",e.target.value)}/></div>
+            <div><label style={lbl}>Nom *</label><input style={inp} {...inpProps} value={f.nom} onChange={e=>ch("nom",e.target.value)}/></div>
+          </div>
+          <div style={{marginBottom:10}}><label style={lbl}>Email</label><input style={inp} {...inpProps} type="email" value={f.email||""} onChange={e=>ch("email",e.target.value)}/></div>
+          <div style={{marginBottom:10}}><label style={lbl}>Téléphone</label><input style={inp} {...inpProps} value={f.tel||""} onChange={e=>ch("tel",e.target.value)}/></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div><label style={lbl}>Pays</label><select style={inp} value={f.pays||"France"} onChange={e=>ch("pays",e.target.value)}>{PAYS.map(p=><option key={p}>{p}</option>)}</select></div>
+            <div><label style={lbl}>Ville</label><input style={inp} {...inpProps} value={f.ville||""} onChange={e=>ch("ville",e.target.value)}/></div>
+          </div>
+        </div>
+        <div style={{background:C.white,borderRadius:14,padding:16,marginBottom:12}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>PROCÉDURE</div>
+          <div style={{marginBottom:10}}><label style={lbl}>Procédure</label><select style={inp} value={f.procedure} onChange={e=>ch("procedure",e.target.value)}>{PROCEDURES.map(p=><option key={p}>{p}</option>)}</select></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+            <div><label style={lbl}>Statut</label><select style={inp} value={f.stade} onChange={e=>ch("stade",e.target.value)}>{STAGES.map(s=><option key={s}>{s}</option>)}</select></div>
+            <div><label style={lbl}>Source</label><select style={inp} value={f.source||SOURCES[0]} onChange={e=>ch("source",e.target.value)}>{SOURCES.map(s=><option key={s}>{s}</option>)}</select></div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div><label style={lbl}>Budget (€)</label><input style={inp} {...inpProps} type="number" value={f.budget||""} onChange={e=>ch("budget",e.target.value)}/></div>
+            <div><label style={lbl}>Date arrivée</label><input style={inp} {...inpProps} type="date" value={f.dateArrivee||""} onChange={e=>ch("dateArrivee",e.target.value)}/></div>
+          </div>
+        </div>
+        <div style={{background:C.white,borderRadius:14,padding:16,marginBottom:16}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>NOTES</div>
+          <textarea style={{...inp,minHeight:70,resize:"vertical"}} value={f.notes||""} onChange={e=>ch("notes",e.target.value)} placeholder="Notes supplémentaires…"/>
+        </div>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onClose} style={{flex:1,padding:12,border:`1px solid ${C.border}`,borderRadius:12,background:C.white,cursor:"pointer",fontWeight:700,color:C.muted}}>Annuler</button>
+          <button onClick={handleSave} disabled={saving} style={{flex:2,padding:12,border:"none",borderRadius:12,background:saving?"#94a3b8":user.color,color:C.white,cursor:saving?"not-allowed":"pointer",fontWeight:800,fontSize:14}}>
+            {saving?"💾 Sauvegarde…":"✅ Enregistrer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Mode création — Assistant 5 étapes
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,0.7)",zIndex:1000,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(4px)"}}>
+      <div style={{background:C.bg,borderRadius:"24px 24px 0 0",width:"100%",maxHeight:"95vh",overflowY:"auto",boxShadow:"0 -8px 40px rgba(11,31,58,0.3)"}}>
+        {/* Header de l'assistant */}
+        <div style={{background:`linear-gradient(135deg,${C.navy},#1a3a5c)`,borderRadius:"24px 24px 0 0",padding:"20px 20px 16px",position:"sticky",top:0,zIndex:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div>
+              <div style={{color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em"}}>Nouveau patient · Étape {step+1}/{STEPS.length}</div>
+              <div style={{color:C.white,fontSize:18,fontWeight:800,marginTop:2}}>{STEPS[step].icon} {STEPS[step].title}</div>
+              <div style={{color:"rgba(255,255,255,0.5)",fontSize:12,marginTop:1}}>{STEPS[step].desc}</div>
+            </div>
+            <button onClick={onClose} style={{border:"none",background:"rgba(255,255,255,0.15)",color:C.white,width:34,height:34,borderRadius:10,cursor:"pointer",fontSize:14}}>✕</button>
+          </div>
+          {/* Barre de progression */}
+          <div style={{display:"flex",gap:3}}>
+            {STEPS.map((_,i)=>(
+              <div key={i} style={{flex:1,height:3,borderRadius:99,background:i<=step?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.2)",transition:"background 0.3s"}}/>
+            ))}
+          </div>
+        </div>
+
+        <div style={{padding:"20px 20px 28px"}}>
+          {/* ÉTAPE 0 — Identité */}
+          {step===0&&<div>
+            <div style={{background:C.white,borderRadius:16,padding:16,marginBottom:12}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                <div>
+                  <label style={lbl}>Prénom *</label>
+                  <input style={inp} {...inpProps} value={f.prenom} onChange={e=>ch("prenom",e.target.value)} placeholder="Jean" autoFocus/>
+                </div>
+                <div>
+                  <label style={lbl}>Nom *</label>
+                  <input style={inp} {...inpProps} value={f.nom} onChange={e=>ch("nom",e.target.value)} placeholder="Dupont"/>
+                </div>
+              </div>
+              <div style={{marginBottom:12}}>
+                <label style={lbl}>Sexe</label>
+                <div style={{display:"flex",gap:8}}>
+                  {["Homme","Femme","Non précisé"].map(s=>(
+                    <button key={s} onClick={()=>ch("sexe",s)} style={{flex:1,padding:"9px",border:`1.5px solid ${f.sexe===s?C.navy:C.border}`,borderRadius:10,cursor:"pointer",fontWeight:f.sexe===s?700:400,background:f.sexe===s?C.navy+"08":C.white,color:f.sexe===s?C.navy:C.muted,fontSize:12,transition:"all 0.15s"}}>
+                      {s==="Homme"?"👨":s==="Femme"?"👩":"🧑"} {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{background:C.white,borderRadius:16,padding:16}}>
+              <div style={{marginBottom:12}}>
+                <label style={lbl}>Source / Canal d'acquisition</label>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  {SOURCES.map(s=>{
+                    const icons={"Instagram":"📸","Snapchat":"👻","TikTok":"🎵","Google":"🔍","Bouche à oreille":"👥","WhatsApp":"💬","Site web":"🌐","Autre":"📌"};
+                    return (
+                      <button key={s} onClick={()=>ch("source",s)} style={{padding:"9px 8px",border:`1.5px solid ${f.source===s?C.purple:C.border}`,borderRadius:10,cursor:"pointer",fontWeight:f.source===s?700:400,background:f.source===s?C.purple+"08":C.white,color:f.source===s?C.purple:C.muted,fontSize:11,textAlign:"left",display:"flex",alignItems:"center",gap:6,transition:"all 0.15s"}}>
+                        <span style={{fontSize:14}}>{icons[s]||"📌"}</span>{s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>}
+
+          {/* ÉTAPE 1 — Contact */}
+          {step===1&&<div>
+            <div style={{background:C.white,borderRadius:16,padding:16,marginBottom:12}}>
+              <div style={{marginBottom:12}}>
+                <label style={lbl}>📧 Email</label>
+                <input style={inp} {...inpProps} type="email" value={f.email||""} onChange={e=>ch("email",e.target.value)} placeholder="jean.dupont@email.com"/>
+              </div>
+              <div style={{marginBottom:12}}>
+                <label style={lbl}>📱 Téléphone / WhatsApp</label>
+                <input style={inp} {...inpProps} value={f.tel||""} onChange={e=>ch("tel",e.target.value)} placeholder="+33 6 00 00 00 00"/>
+              </div>
+            </div>
+            <div style={{background:C.white,borderRadius:16,padding:16}}>
+              <div style={{marginBottom:12}}>
+                <label style={lbl}>🌍 Pays</label>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  {["France","Belgique","Maroc","Canada","Suisse","Algérie","Tunisie","Autre"].map(p=>(
+                    <button key={p} onClick={()=>ch("pays",p)} style={{padding:"9px",border:`1.5px solid ${f.pays===p?C.blue:C.border}`,borderRadius:10,cursor:"pointer",fontWeight:f.pays===p?700:400,background:f.pays===p?C.blue+"08":C.white,color:f.pays===p?C.blue:C.muted,fontSize:12,transition:"all 0.15s"}}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                {!["France","Belgique","Maroc","Canada","Suisse","Algérie","Tunisie"].includes(f.pays)&&(
+                  <input style={{...inp,marginTop:8}} {...inpProps} value={f.pays||""} onChange={e=>ch("pays",e.target.value)} placeholder="Préciser le pays…"/>
+                )}
+              </div>
+              <div>
+                <label style={lbl}>🏙️ Ville</label>
+                <input style={inp} {...inpProps} value={f.ville||""} onChange={e=>ch("ville",e.target.value)} placeholder="Paris"/>
+              </div>
+            </div>
+          </div>}
+
+          {/* ÉTAPE 2 — Procédure */}
+          {step===2&&<div>
+            <div style={{background:C.white,borderRadius:16,padding:16,marginBottom:12}}>
+              <label style={lbl}>🏥 Procédure souhaitée</label>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {PROCEDURES.map(p=>(
+                  <button key={p} onClick={()=>ch("procedure",p)} style={{padding:"11px 14px",border:`1.5px solid ${f.procedure===p?C.navy:C.border}`,borderRadius:10,cursor:"pointer",fontWeight:f.procedure===p?700:400,background:f.procedure===p?C.navy:C.white,color:f.procedure===p?C.white:C.text,fontSize:13,textAlign:"left",transition:"all 0.15s"}}>
+                    {f.procedure===p?"✅ ":""}{p}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{background:C.white,borderRadius:16,padding:16}}>
+              <div style={{marginBottom:12}}>
+                <label style={lbl}>🩺 Médecin souhaité</label>
+                <select style={inp} value={f.medecin||""} onChange={e=>ch("medecin",e.target.value)}>
+                  <option value="">Pas encore défini</option>
+                  {MEDECINS.map(m=><option key={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>✈️ Date d'arrivée prévue</label>
+                <input style={inp} {...inpProps} type="date" value={f.dateArrivee||""} onChange={e=>ch("dateArrivee",e.target.value)}/>
+              </div>
+            </div>
+          </div>}
+
+          {/* ÉTAPE 3 — Finance */}
+          {step===3&&<div>
+            <div style={{background:C.white,borderRadius:16,padding:16,marginBottom:12}}>
+              <div style={{marginBottom:12}}>
+                <label style={lbl}>💶 Budget estimé</label>
+                <div style={{position:"relative"}}>
+                  <input style={{...inp,paddingRight:50}} {...inpProps} type="number" value={f.budget||""} onChange={e=>ch("budget",e.target.value)} placeholder="5000"/>
+                  <span style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",fontSize:18,fontWeight:700,color:C.muted}}>€</span>
+                </div>
+              </div>
+              <div style={{marginBottom:12}}>
+                <label style={lbl}>📊 Priorité commerciale</label>
+                <div style={{display:"flex",gap:8}}>
+                  {[{v:"Haute",c:C.red,ic:"🔴"},{v:"Normale",c:C.amber,ic:"🟡"},{v:"Basse",c:C.green,ic:"🟢"}].map(p=>(
+                    <button key={p.v} onClick={()=>ch("priorite",p.v)} style={{flex:1,padding:"10px",border:`1.5px solid ${f.priorite===p.v?p.c:C.border}`,borderRadius:10,cursor:"pointer",fontWeight:f.priorite===p.v?700:400,background:f.priorite===p.v?p.c+"12":C.white,color:f.priorite===p.v?p.c:C.muted,fontSize:12,transition:"all 0.15s"}}>
+                      {p.ic} {p.v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={lbl}>📋 Statut initial</label>
+                <select style={inp} value={f.stade} onChange={e=>ch("stade",e.target.value)}>
+                  {STAGES.map(s=><option key={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+            {user.role==="admin"&&<div style={{background:C.white,borderRadius:16,padding:16}}>
+              <label style={lbl}>👤 Assigner à</label>
+              <div style={{display:"flex",gap:8}}>
+                {USERS.map(u=>(
+                  <button key={u.id} onClick={()=>ch("assigneA",u.id)} style={{flex:1,padding:"10px 6px",border:`1.5px solid ${f.assigneA===u.id?u.color:C.border}`,borderRadius:10,cursor:"pointer",fontWeight:f.assigneA===u.id?700:400,background:f.assigneA===u.id?u.color+"12":C.white,color:f.assigneA===u.id?u.color:C.muted,fontSize:11,transition:"all 0.15s",textAlign:"center"}}>
+                    <div style={{fontSize:18,marginBottom:3}}>{u.prenom[0]}</div>
+                    {u.prenom}
+                  </button>
+                ))}
+              </div>
+            </div>}
+          </div>}
+
+          {/* ÉTAPE 4 — Résumé */}
+          {step===4&&<div>
+            {/* Carte résumé style premium */}
+            <div style={{background:`linear-gradient(135deg,${C.navy},#1a3a5c)`,borderRadius:18,padding:"20px",marginBottom:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
+                <div style={{width:54,height:54,borderRadius:14,background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:C.white}}>{f.prenom?.[0]||"?"}{f.nom?.[0]||"?"}</div>
+                <div>
+                  <div style={{color:C.white,fontSize:18,fontWeight:800}}>{f.prenom} {f.nom}</div>
+                  <div style={{color:"rgba(255,255,255,0.6)",fontSize:13,marginTop:2}}>{f.procedure}</div>
+                </div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {[
+                  {ic:"🌍",l:f.pays||"—"},
+                  {ic:"📱",l:f.tel||"—"},
+                  {ic:"💶",l:f.budget?`${f.budget} €`:"—"},
+                  {ic:"📊",l:f.source||"—"},
+                ].map((s,i)=>(
+                  <div key={i} style={{background:"rgba(255,255,255,0.08)",borderRadius:10,padding:"8px 10px",display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:14}}>{s.ic}</span>
+                    <span style={{color:"rgba(255,255,255,0.8)",fontSize:12,fontWeight:500}}>{s.l}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Notes finales */}
+            <div style={{background:C.white,borderRadius:16,padding:16,marginBottom:14}}>
+              <label style={lbl}>📝 Notes & informations complémentaires</label>
+              <textarea style={{...inp,minHeight:80,resize:"vertical"}} value={f.notes||""} onChange={e=>ch("notes",e.target.value)} placeholder="Souhaits particuliers, précisions médicales, langue préférée…"/>
+            </div>
+            {/* Résumé en liste */}
+            <div style={{background:C.white,borderRadius:16,padding:16}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>📋 RÉCAPITULATIF</div>
+              {[
+                ["👤","Nom complet",`${f.prenom} ${f.nom}`],
+                ["📧","Email",f.email||"—"],
+                ["📱","Téléphone",f.tel||"—"],
+                ["🌍","Pays / Ville",`${f.pays||"—"}${f.ville?", "+f.ville:""}`],
+                ["🏥","Procédure",f.procedure],
+                ["📊","Source",f.source||"—"],
+                ["💶","Budget",f.budget?`${f.budget} €`:"—"],
+                ["✈️","Date arrivée",f.dateArrivee||"—"],
+                ["📈","Statut",f.stade],
+                ["🩺","Médecin",f.medecin||"Non défini"],
+              ].map(([ic,lb,vl])=>(
+                <div key={lb} style={{display:"flex",gap:10,padding:"7px 0",borderBottom:`1px solid ${C.bg}`}}>
+                  <span style={{width:20,textAlign:"center",fontSize:13}}>{ic}</span>
+                  <span style={{fontSize:12,color:C.muted,flex:"0 0 100px"}}>{lb}</span>
+                  <span style={{fontSize:12,color:C.text,fontWeight:600,flex:1}}>{vl}</span>
+                </div>
+              ))}
+            </div>
+          </div>}
+
+          {/* Navigation */}
+          <div style={{display:"flex",gap:10,marginTop:20}}>
+            {step>0&&<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"13px",border:`1px solid ${C.border}`,borderRadius:12,background:C.white,cursor:"pointer",fontWeight:700,color:C.muted,fontSize:14}}>← Retour</button>}
+            {step<4?(
+              <button onClick={()=>canNext()&&setStep(s=>s+1)} style={{flex:2,padding:"13px",border:"none",borderRadius:12,background:canNext()?C.navy:"#94a3b8",color:C.white,cursor:canNext()?"pointer":"not-allowed",fontWeight:800,fontSize:14,transition:"background 0.2s"}}>
+                Suivant → {STEPS[step+1]?.icon}
+              </button>
+            ):(
+              <button onClick={handleSave} disabled={saving} style={{flex:2,padding:"13px",border:"none",borderRadius:12,background:saving?"#94a3b8":C.green,color:C.white,cursor:saving?"not-allowed":"pointer",fontWeight:800,fontSize:15,transition:"background 0.2s"}}>
+                {saving?"💾 Création…":"✅ Créer le dossier patient"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModalRdv({user, patients, onSave, onClose, taches, setTaches}) {
+  const MEDECINS = ["Dr Anvar Ahmedov","Dr Azar Zeynalov","Dr Akin Ünal","Dr Smile Clinic"];
+  const HOPITAUX = ["Medicana International","Memorial Hospital","Acibadem","Dental Plus Clinic"];
+  const [f,setF] = useState({patientId:"",type:"Consultation vidéo",date:todayStr(),heure:"10:00",medecin:"",hopital:"",salle:"",duree:"60",statut:"Confirmé",notes:"",assigneA:user.id,creerTache:false,creerRappel:true});
+  const [saving,setSaving] = useState(false);
+  const ch = (k,v) => setF(x=>({...x,[k]:v}));
+  const inp = {width:"100%",padding:"10px 12px",border:`1.5px solid ${C.border}`,borderRadius:10,fontSize:13,outline:"none",background:"#F8FAFC",boxSizing:"border-box",color:C.text};
+  const lbl = {fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:5};
+
+  const handleSave = async () => {
+    if(!f.patientId||!f.date||!f.heure){alert("Patient, date et heure obligatoires !");return;}
+    setSaving(true);
+    await onSave(f);
+    // Créer une tâche de rappel automatique
+    if(f.creerRappel&&setTaches){
+      const p=patients.find(x=>x.id===f.patientId);
+      const rappel={id:uid(),titre:`Rappel RDV — ${p?.prenom||""} ${p?.nom||""}`,description:`RDV ${f.type} le ${f.date} à ${f.heure}`,assigneA:f.assigneA,priorite:"Haute",echeance:f.date,statut:"En cours",creePar:user.id,cree:todayStr()};
+      setTaches&&setTaches(ts=>{const nt=[...ts,rappel];cache.save("taches",nt);return nt;});
+      try{await api.post("taches","add",rappel);}catch(e){}
+    }
+    setSaving(false);
+  };
+
+  const selectedPatient=patients.find(p=>p.id===f.patientId);
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,0.75)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:12,backdropFilter:"blur(4px)"}}>
+      <div style={{background:C.bg,borderRadius:20,width:"100%",maxWidth:460,maxHeight:"94vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+        {/* Header */}
+        <div style={{background:`linear-gradient(135deg,${C.blue},#1558a8)`,borderRadius:"20px 20px 0 0",padding:"18px 20px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{color:"rgba(255,255,255,0.7)",fontSize:11,fontWeight:700,textTransform:"uppercase"}}>Clinic Nobel</div>
+              <div style={{color:C.white,fontSize:17,fontWeight:800,marginTop:2}}>📅 Nouveau rendez-vous</div>
+            </div>
+            <button onClick={onClose} style={{border:"none",background:"rgba(255,255,255,0.15)",color:C.white,width:32,height:32,borderRadius:9,cursor:"pointer",fontSize:14}}>✕</button>
+          </div>
+        </div>
+
+        <div style={{padding:"16px 18px 24px"}}>
+          {/* Patient */}
+          <div style={{background:C.white,borderRadius:14,padding:14,marginBottom:10}}>
+            <label style={lbl}>👤 Patient</label>
+            <select style={inp} value={f.patientId} onChange={e=>ch("patientId",e.target.value)}>
+              <option value="">Sélectionner un patient…</option>
+              {patients.map(p=><option key={p.id} value={p.id}>{p.prenom} {p.nom} — {p.procedure}</option>)}
+            </select>
+            {selectedPatient&&<div style={{marginTop:8,padding:"8px 10px",background:C.blue+"08",borderRadius:8,display:"flex",alignItems:"center",gap:8}}>
+              <Avatar p={selectedPatient} size={28}/>
+              <div>
+                <div style={{fontWeight:700,fontSize:12,color:C.text}}>{selectedPatient.prenom} {selectedPatient.nom}</div>
+                <div style={{fontSize:10,color:C.muted}}>{selectedPatient.procedure} · {selectedPatient.pays}</div>
+              </div>
+            </div>}
+          </div>
+
+          {/* Type & Statut */}
+          <div style={{background:C.white,borderRadius:14,padding:14,marginBottom:10}}>
+            <div style={{marginBottom:10}}>
+              <label style={lbl}>Type de rendez-vous</label>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                {["Consultation vidéo","Pré-opératoire","Opération","Suivi post-op","Contrôle","Urgence"].map(t=>(
+                  <button key={t} onClick={()=>ch("type",t)} style={{padding:"8px 6px",border:`1.5px solid ${f.type===t?C.blue:C.border}`,borderRadius:8,cursor:"pointer",fontWeight:f.type===t?700:400,background:f.type===t?C.blue+"0e":C.white,color:f.type===t?C.blue:C.muted,fontSize:11,transition:"all 0.15s"}}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label style={lbl}>Statut</label>
+              <div style={{display:"flex",gap:6}}>
+                {[{v:"Confirmé",c:C.green},{v:"Planifié",c:C.amber},{v:"Annulé",c:C.red}].map(s=>(
+                  <button key={s.v} onClick={()=>ch("statut",s.v)} style={{flex:1,padding:"8px",border:`1.5px solid ${f.statut===s.v?s.c:C.border}`,borderRadius:8,cursor:"pointer",fontWeight:f.statut===s.v?700:400,background:f.statut===s.v?s.c+"12":C.white,color:f.statut===s.v?s.c:C.muted,fontSize:11,transition:"all 0.15s"}}>
+                    {s.v}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Date, heure, durée */}
+          <div style={{background:C.white,borderRadius:14,padding:14,marginBottom:10}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+              <div><label style={lbl}>📅 Date</label><input style={inp} type="date" value={f.date} onChange={e=>ch("date",e.target.value)}/></div>
+              <div><label style={lbl}>⏰ Heure</label><input style={inp} type="time" value={f.heure} onChange={e=>ch("heure",e.target.value)}/></div>
+              <div><label style={lbl}>⌛ Durée (min)</label>
+                <select style={inp} value={f.duree} onChange={e=>ch("duree",e.target.value)}>
+                  {["15","30","45","60","90","120","180"].map(d=><option key={d} value={d}>{d} min</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Médecin & Hôpital */}
+          <div style={{background:C.white,borderRadius:14,padding:14,marginBottom:10}}>
+            <div style={{marginBottom:10}}>
+              <label style={lbl}>🩺 Médecin</label>
+              <select style={inp} value={f.medecin} onChange={e=>ch("medecin",e.target.value)}>
+                <option value="">Non défini</option>
+                {MEDECINS.map(m=><option key={m}>{m}</option>)}
+              </select>
+            </div>
+            <div style={{marginBottom:10}}>
+              <label style={lbl}>🏥 Hôpital</label>
+              <select style={inp} value={f.hopital} onChange={e=>ch("hopital",e.target.value)}>
+                <option value="">Non défini</option>
+                {HOPITAUX.map(h=><option key={h}>{h}</option>)}
+              </select>
+            </div>
+            {user.role==="admin"&&<div>
+              <label style={lbl}>👤 Assigné à</label>
+              <div style={{display:"flex",gap:6}}>
+                {USERS.map(u=>(
+                  <button key={u.id} onClick={()=>ch("assigneA",u.id)} style={{flex:1,padding:"8px 4px",border:`1.5px solid ${f.assigneA===u.id?u.color:C.border}`,borderRadius:8,cursor:"pointer",fontWeight:f.assigneA===u.id?700:400,background:f.assigneA===u.id?u.color+"12":C.white,color:f.assigneA===u.id?u.color:C.muted,fontSize:10,textAlign:"center",transition:"all 0.15s"}}>
+                    <div style={{fontWeight:800,fontSize:14}}>{u.prenom[0]}</div>
+                    {u.prenom}
+                  </button>
+                ))}
+              </div>
+            </div>}
+          </div>
+
+          {/* Notes */}
+          <div style={{background:C.white,borderRadius:14,padding:14,marginBottom:10}}>
+            <label style={lbl}>📝 Notes</label>
+            <textarea style={{...inp,minHeight:60,resize:"vertical",fontFamily:"inherit"}} value={f.notes} onChange={e=>ch("notes",e.target.value)} placeholder="Instructions, préparation, informations importantes…"/>
+          </div>
+
+          {/* Automatisations */}
+          <div style={{background:C.white,borderRadius:14,padding:14,marginBottom:16}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.muted,marginBottom:10}}>⚡ AUTOMATISATIONS</div>
+            {[{k:"creerRappel",l:"📋 Créer une tâche de rappel automatique"},{k:"creerTache",l:"✅ Créer tâche post-RDV pour le coordinateur"}].map(opt=>(
+              <label key={opt.k} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",cursor:"pointer",borderBottom:`1px solid ${C.bg}`}}>
+                <div onClick={()=>ch(opt.k,!f[opt.k])} style={{width:22,height:22,borderRadius:6,border:`2px solid ${f[opt.k]?C.blue:C.border}`,background:f[opt.k]?C.blue:C.white,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s",flexShrink:0}}>
+                  {f[opt.k]&&<span style={{color:C.white,fontSize:12,fontWeight:800}}>✓</span>}
+                </div>
+                <span style={{fontSize:12,color:C.text}}>{opt.l}</span>
+              </label>
+            ))}
+            {/* Liens rapides confirmation */}
+            {selectedPatient&&<div style={{marginTop:10,display:"flex",gap:8}}>
+              {selectedPatient.tel&&<a href={`https://wa.me/${selectedPatient.tel.replace(/\D/g,"")}?text=Bonjour ${selectedPatient.prenom}, votre RDV est confirmé le ${f.date} à ${f.heure}. Clinic Nobel Istanbul.`} target="_blank" style={{flex:1,padding:"8px",background:"#25D366"+"15",color:"#25D366",border:`1px solid #25D36633`,borderRadius:8,fontSize:11,fontWeight:700,textDecoration:"none",textAlign:"center"}}>📲 WhatsApp</a>}
+              {selectedPatient.email&&<a href={`mailto:${selectedPatient.email}?subject=Confirmation RDV Clinic Nobel&body=Bonjour ${selectedPatient.prenom},%0A%0AVotre rendez-vous est confirmé le ${f.date} à ${f.heure}.%0AType: ${f.type}%0AMédecin: ${f.medecin||"à définir"}%0A%0AClinic Nobel Istanbul`} style={{flex:1,padding:"8px",background:C.blue+"12",color:C.blue,border:`1px solid ${C.blue}33`,borderRadius:8,fontSize:11,fontWeight:700,textDecoration:"none",textAlign:"center"}}>📧 Email</a>}
+            </div>}
+          </div>
+
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={onClose} style={{flex:1,padding:12,border:`1px solid ${C.border}`,borderRadius:12,background:C.white,cursor:"pointer",fontWeight:700,color:C.muted}}>Annuler</button>
+            <button onClick={handleSave} disabled={saving} style={{flex:2,padding:12,border:"none",borderRadius:12,background:saving?"#94a3b8":C.blue,color:C.white,cursor:saving?"not-allowed":"pointer",fontWeight:800,fontSize:14}}>
+              {saving?"💾 Création…":"✅ Créer le rendez-vous"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModalFinance({user, patients, onSave, onClose}) {
+  const [f,setF] = useState({patientId:"",type:"Acompte",procedure:"",montant:"",date:todayStr(),statut:"En attente",methode:"Virement"});
+  const [saving,setSaving] = useState(false);
+  const ch = (k,v) => setF(x=>({...x,[k]:v}));
+  const inp = {width:"100%",padding:"9px 11px",border:`1px solid ${C.border}`,borderRadius:8,fontSize:13,outline:"none",background:C.bg,boxSizing:"border-box"};
+  const lbl = {fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:4};
+  const row = (lb,el) => <div style={{marginBottom:12}}><label style={lbl}>{lb}</label>{el}</div>;
+  const handleSave = async () => { setSaving(true); await onSave(f); setSaving(false); };
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,0.75)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:C.white,borderRadius:20,padding:24,width:"100%",maxWidth:420,maxHeight:"92vh",overflowY:"auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <h2 style={{margin:0,fontSize:17,fontWeight:800,color:C.text}}>Nouvelle transaction</h2>
+          <button onClick={onClose} style={{border:"none",background:C.bg,borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:16}}>✕</button>
+        </div>
+        {row("Patient",<select style={inp} value={f.patientId} onChange={e=>ch("patientId",e.target.value)}>
+          <option value="">Sélectionner…</option>
+          {patients.map(p=><option key={p.id} value={p.id}>{p.prenom} {p.nom}</option>)}
+        </select>)}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div>{row("Type",<select style={inp} value={f.type} onChange={e=>ch("type",e.target.value)}>
+            {["Acompte","Paiement total","Remboursement","Devis"].map(t=><option key={t}>{t}</option>)}
+          </select>)}</div>
+          <div>{row("Montant (€)",<input style={inp} type="number" value={f.montant} onChange={e=>ch("montant",e.target.value)}/>)}</div>
+        </div>
+        {row("Procédure",<input style={inp} value={f.procedure} onChange={e=>ch("procedure",e.target.value)} placeholder="Rhinoplastie…"/>)}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div>{row("Date",<input style={inp} type="date" value={f.date} onChange={e=>ch("date",e.target.value)}/>)}</div>
+          <div>{row("Méthode",<select style={inp} value={f.methode} onChange={e=>ch("methode",e.target.value)}>
+            {["Virement","Carte bancaire","Espèces","PayPal"].map(m=><option key={m}>{m}</option>)}
+          </select>)}</div>
+        </div>
+        {row("Statut",<select style={inp} value={f.statut} onChange={e=>ch("statut",e.target.value)}>
+          {["En attente","Complété","Annulé"].map(s=><option key={s}>{s}</option>)}
+        </select>)}
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onClose} style={{flex:1,padding:11,border:`1px solid ${C.border}`,borderRadius:10,background:C.white,cursor:"pointer",fontWeight:700,color:C.muted}}>Annuler</button>
+          <button onClick={handleSave} disabled={saving} style={{flex:2,padding:11,border:"none",borderRadius:10,background:saving?"#94a3b8":user.color,color:C.white,cursor:saving?"not-allowed":"pointer",fontWeight:800}}>
+            {saving?"💾 Sauvegarde…":"Enregistrer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+// ── MÉDECINS ──────────────────────────────────────────────────────────────────
+function Medecins({patients, rdvs}) {
+  const MEDECINS_DATA = [
+    {id:1,nom:"Dr Anvar Ahmedov",spec:"Chirurgie esthétique",email:"anvar.ahmedov@nobelclinic.com",tel:"+90 532 555 0001",hopital:"Medicana International",color:"#1D73C9",icon:"🔬",procedures:["Rhinoplastie","BBL","Liposuccion","Abdominoplastie","Augmentation mammaire","Lifting visage"]},
+    {id:2,nom:"Dr Azar Zeynalov",spec:"Chirurgie esthétique",email:"azar.zeynalov@nobelclinic.com",tel:"+90 532 555 0002",hopital:"Memorial Hospital",color:"#7C3AED",icon:"✨",procedures:["Rhinoplastie","Blépharoplastie","Lifting mammaire","Lifting visage","Chirurgie reconstructrice"]},
+    {id:3,nom:"Dr Akin Ünal",spec:"Chirurgie bariatrique",email:"akin.unal@nobelclinic.com",tel:"+90 532 555 0003",hopital:"Acibadem",color:"#D97706",icon:"⚕️",procedures:["Chirurgie bariatrique","Sleeve gastrectomie","Bypass gastrique","Anneau gastrique"]},
+    {id:4,nom:"Dr Smile Clinic",spec:"Chirurgie dentaire",email:"smile@nobelclinic.com",tel:"+90 532 555 0004",hopital:"Dental Plus",color:"#16A34A",icon:"🦷",procedures:["Hollywood Smile","Implants dentaires","Facettes dentaires","Blanchiment","Couronnes zircone"]},
+  ];
+  const [selected,setSelected]=useState(null);
+  if(selected){
+    const m=MEDECINS_DATA.find(x=>x.id===selected);
+    const mRdvs=(rdvs||[]).filter(r=>r.medecin===m.nom);
+    const mPatients=(patients||[]).filter(p=>mRdvs.some(r=>r.patientId===p.id));
+    const rdvsThisMonth=mRdvs.filter(r=>r.date&&r.date.startsWith(todayStr().slice(0,7)));
+    return (
+      <div>
+        <button onClick={()=>setSelected(null)} style={{border:"none",background:"none",cursor:"pointer",color:m.color,fontWeight:700,fontSize:13,marginBottom:14,display:"flex",alignItems:"center",gap:6}}>← Retour médecins</button>
+        <div style={{background:`linear-gradient(135deg,${m.color},${m.color}cc)`,borderRadius:20,padding:"24px 20px",marginBottom:14}}>
+          <div style={{fontSize:44,marginBottom:10}}>{m.icon}</div>
+          <div style={{color:C.white,fontSize:22,fontWeight:800,marginBottom:4}}>{m.nom}</div>
+          <Badge text={m.spec} color={C.white}/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:14}}>
+            {[{l:"RDV total",v:mRdvs.length},{l:"Ce mois",v:rdvsThisMonth.length},{l:"Patients",v:mPatients.length}].map(s=>(
+              <div key={s.l} style={{background:"rgba(255,255,255,0.12)",borderRadius:10,padding:"10px",textAlign:"center"}}>
+                <div style={{color:C.white,fontWeight:800,fontSize:18}}>{s.v}</div>
+                <div style={{color:"rgba(255,255,255,0.6)",fontSize:9,marginTop:2}}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <Card>
+          <SecTitle icon="📋" children="Contact"/>
+          <div style={{fontSize:13,color:C.text,lineHeight:2.4}}>
+            <div>📧 {m.email}</div><div>📱 {m.tel}</div><div>🏥 {m.hopital}</div>
+          </div>
+        </Card>
+        <Card>
+          <SecTitle icon="⚕️" children="Procédures"/>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {m.procedures.map(p=><span key={p} style={{background:m.color+"15",color:m.color,border:`1px solid ${m.color}33`,padding:"4px 12px",borderRadius:99,fontSize:12,fontWeight:600}}>{p}</span>)}
+          </div>
+        </Card>
+        {mRdvs.length>0&&<Card>
+          <SecTitle icon="📅" children="Derniers rendez-vous"/>
+          {mRdvs.sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,5).map(r=>{
+            const pat=(patients||[]).find(p=>String(p.id)===String(r.patientId));
+            return (
+              <div key={r.id} style={{display:"flex",gap:10,alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.bg}`}}>
+                <Avatar p={pat||{prenom:"?",nom:""}} size={32}/>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:600,fontSize:13,color:C.text}}>{pat?`${pat.prenom} ${pat.nom}`:"—"}</div>
+                  <div style={{fontSize:11,color:C.muted}}>{r.type} · {r.date} · {r.heure}</div>
+                </div>
+                <Badge text={r.statut||"Planifié"} color={r.statut==="Confirmé"?C.green:C.amber} small/>
+              </div>
+            );
+          })}
+        </Card>}
+      </div>
+    );
+  }
+  return (
+    <div>
+      <p style={{fontSize:13,color:C.muted,marginBottom:14}}>Équipe médicale Clinic Nobel Istanbul</p>
+      {MEDECINS_DATA.map(m=>{
+        const mRdvs=(rdvs||[]).filter(r=>r.medecin===m.nom);
+        return (
+          <Card key={m.id} onClick={()=>setSelected(m.id)} style={{borderLeft:`4px solid ${m.color}`}}>
+            <div style={{display:"flex",alignItems:"center",gap:14}}>
+              <div style={{width:52,height:52,borderRadius:14,background:m.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{m.icon}</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:15,color:C.text,marginBottom:4}}>{m.nom}</div>
+                <Badge text={m.spec} color={m.color} small/>
+                <div style={{fontSize:12,color:C.muted,marginTop:6}}>📱 {m.tel} · 🏥 {m.hopital}</div>
+              </div>
+              <div style={{textAlign:"right",flexShrink:0}}>
+                <div style={{fontWeight:800,fontSize:16,color:m.color}}>{mRdvs.length}</div>
+                <div style={{fontSize:10,color:C.muted}}>RDV</div>
+              </div>
+            </div>
+            <div style={{marginTop:10,display:"flex",flexWrap:"wrap",gap:6}}>
+              {m.procedures.slice(0,3).map(p=><span key={p} style={{background:C.bg,color:C.muted,padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:600}}>{p}</span>)}
+              {m.procedures.length>3&&<span style={{background:C.bg,color:C.muted,padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:600}}>+{m.procedures.length-3}</span>}
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── HÔPITAUX ──────────────────────────────────────────────────────────────────
+function Hopitaux({patients,rdvs}){
+  const HOPITAUX=[
+    {id:1,nom:"Medicana International",ville:"Istanbul",adresse:"Beylikdüzü, Istanbul",tel:"+90 212 867 3700",email:"info@medicana.com.tr",salles:12,color:"#1D73C9",icon:"🏥",medecins:["Dr Anvar Ahmedov"],note:"Hôpital partenaire principal"},
+    {id:2,nom:"Memorial Hospital",ville:"Istanbul",adresse:"Şişli, Istanbul",tel:"+90 212 314 6666",email:"info@memorial.com.tr",salles:18,color:"#7C3AED",icon:"🏨",medecins:["Dr Azar Zeynalov"],note:"Chirurgie esthétique avancée"},
+    {id:3,nom:"Acibadem",ville:"Istanbul",adresse:"Kadıköy, Istanbul",tel:"+90 216 544 4444",email:"info@acibadem.com.tr",salles:24,color:"#0891B2",icon:"⚕️",medecins:["Dr Akin Ünal"],note:"Spécialiste bariatrique"},
+    {id:4,nom:"Dental Plus Clinic",ville:"Istanbul",adresse:"Beşiktaş, Istanbul",tel:"+90 212 555 0044",email:"info@dentalplus.com.tr",salles:6,color:"#16A34A",icon:"🦷",medecins:["Dr Smile Clinic"],note:"Clinique dentaire partenaire"},
+  ];
+  const [selected,setSelected]=useState(null);
+  if(selected){
+    const h=HOPITAUX.find(x=>x.id===selected);
+    const hRdvs=(rdvs||[]).filter(r=>h.medecins.some(m=>r.medecin===m));
+    return (
+      <div>
+        <button onClick={()=>setSelected(null)} style={{border:"none",background:"none",cursor:"pointer",color:h.color,fontWeight:700,fontSize:13,marginBottom:14,display:"flex",alignItems:"center",gap:6}}>← Retour hôpitaux</button>
+        <div style={{background:`linear-gradient(135deg,${h.color},${h.color}cc)`,borderRadius:20,padding:"24px 20px",marginBottom:14}}>
+          <div style={{fontSize:44,marginBottom:10}}>{h.icon}</div>
+          <div style={{color:C.white,fontSize:20,fontWeight:800,marginBottom:4}}>{h.nom}</div>
+          <div style={{color:"rgba(255,255,255,0.7)",fontSize:13,marginBottom:10}}>{h.adresse}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {[{l:"Salles opératoires",v:h.salles},{l:"RDV programmés",v:hRdvs.length}].map(s=>(
+              <div key={s.l} style={{background:"rgba(255,255,255,0.12)",borderRadius:10,padding:"10px",textAlign:"center"}}>
+                <div style={{color:C.white,fontWeight:800,fontSize:18}}>{s.v}</div>
+                <div style={{color:"rgba(255,255,255,0.6)",fontSize:10,marginTop:2}}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <Card>
+          <SecTitle icon="📋" children="Informations"/>
+          <div style={{fontSize:13,color:C.text,lineHeight:2.4}}>
+            <div>📍 {h.adresse}</div><div>📱 {h.tel}</div><div>📧 {h.email}</div><div>📝 {h.note}</div>
+          </div>
+        </Card>
+        <Card>
+          <SecTitle icon="🩺" children="Médecins associés"/>
+          {h.medecins.map(m=><div key={m} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0"}}>
+            <div style={{fontSize:20}}>👨‍⚕️</div><div style={{fontWeight:600,fontSize:13,color:C.text}}>{m}</div>
+          </div>)}
+        </Card>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <p style={{fontSize:13,color:C.muted,marginBottom:14}}>Hôpitaux partenaires Clinic Nobel Istanbul</p>
+      {HOPITAUX.map(h=>(
+        <Card key={h.id} onClick={()=>setSelected(h.id)} style={{borderLeft:`4px solid ${h.color}`}}>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:52,height:52,borderRadius:14,background:h.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{h.icon}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:800,fontSize:14,color:C.text,marginBottom:4}}>{h.nom}</div>
+              <div style={{fontSize:12,color:C.muted}}>📍 {h.adresse}</div>
+              <div style={{fontSize:12,color:C.muted,marginTop:2}}>🏥 {h.salles} salles · 📱 {h.tel}</div>
+            </div>
+            <div style={{color:C.muted,fontSize:20}}>›</div>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ── AGENDA CALENDRIER ─────────────────────────────────────────────────────────
+function Agenda({user, rdvs, taches, patients}) {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState("month"); // month | week
+  const [selectedDay, setSelectedDay] = useState(null);
+
+  const getPatient = id => patients.find(p=>String(p.id)===String(id));
+  const getUser = id => USERS.find(u=>u.id===id);
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const MOIS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  const JOURS = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+
+  // Jours du mois
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month+1, 0);
+  const startDow = (firstDay.getDay()+6)%7; // Lundi = 0
+  const daysInMonth = lastDay.getDate();
+
+  // Filtrer les événements du jour
+  const getEventsForDay = (dateStr) => {
+    const rdvDay = rdvs.filter(r => r.date === dateStr);
+    const tachDay = taches.filter(t => t.echeance === dateStr && t.statut !== "Terminée");
+    return {rdvs: rdvDay, taches: tachDay};
+  };
+
+  const formatDate = (y,m,d) => `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+
+  const prevMonth = () => setCurrentDate(new Date(year, month-1, 1));
+  const nextMonth = () => setCurrentDate(new Date(year, month+1, 1));
+  const goToday = () => { setCurrentDate(new Date()); setSelectedDay(todayStr()); };
+
+  const todayFmt = todayStr();
+
+  // Construire la grille
+  const cells = [];
+  for(let i=0; i<startDow; i++) cells.push(null);
+  for(let d=1; d<=daysInMonth; d++) cells.push(d);
+
+  // Vue semaine
+  const getWeekDays = () => {
+    const today = selectedDay ? new Date(selectedDay+"T12:00:00") : new Date();
+    const dow = (today.getDay()+6)%7;
+    const monday = new Date(today); monday.setDate(today.getDate()-dow);
+    return Array.from({length:7},(_,i)=>{
+      const d = new Date(monday); d.setDate(monday.getDate()+i);
+      return formatDate(d.getFullYear(), d.getMonth(), d.getDate());
+    });
+  };
+
+  const weekDays = getWeekDays();
+
+  const selectedEvents = selectedDay ? getEventsForDay(selectedDay) : null;
+
+  return (
+    <div>
+      {/* Header navigation */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={prevMonth} style={{border:`1px solid ${C.border}`,background:C.white,borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
+          <button onClick={nextMonth} style={{border:`1px solid ${C.border}`,background:C.white,borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>›</button>
+        </div>
+        <div style={{fontWeight:800,fontSize:16,color:C.navy}}>{MOIS[month]} {year}</div>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={goToday} style={{border:`1px solid ${C.border}`,background:C.white,borderRadius:8,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700,color:C.navy}}>Auj.</button>
+          <button onClick={()=>setViewMode(viewMode==="month"?"week":"month")} style={{border:"none",background:C.navy,borderRadius:8,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700,color:C.white}}>
+            {viewMode==="month"?"Semaine":"Mois"}
+          </button>
+        </div>
+      </div>
+
+      {viewMode==="month" && <>
+        {/* Grille jours semaine */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
+          {JOURS.map(j=><div key={j} style={{textAlign:"center",fontSize:10,fontWeight:700,color:C.muted,padding:"4px 0"}}>{j}</div>)}
+        </div>
+        {/* Grille mois */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:16}}>
+          {cells.map((d,i)=>{
+            if(!d) return <div key={i}/>;
+            const dateStr = formatDate(year,month,d);
+            const {rdvs:dr, taches:dt} = getEventsForDay(dateStr);
+            const total = dr.length + dt.length;
+            const isToday = dateStr===todayFmt;
+            const isSelected = dateStr===selectedDay;
+            return (
+              <div key={i} onClick={()=>setSelectedDay(isSelected?null:dateStr)}
+                style={{minHeight:44,borderRadius:8,padding:"4px 2px",cursor:"pointer",textAlign:"center",
+                  background:isSelected?C.navy:isToday?"#EFF6FF":C.white,
+                  border:`1px solid ${isSelected?C.navy:isToday?C.blue:C.border}`,
+                  transition:"all 0.15s"}}>
+                <div style={{fontSize:12,fontWeight:isToday||isSelected?800:500,color:isSelected?C.white:isToday?C.blue:C.text,marginBottom:2}}>{d}</div>
+                {dr.length>0&&<div style={{width:6,height:6,borderRadius:99,background:isSelected?C.white:C.blue,margin:"0 auto 2px"}}/>}
+                {dt.length>0&&<div style={{width:6,height:6,borderRadius:99,background:isSelected?C.white:C.amber,margin:"0 auto"}}/>}
+                {total>1&&<div style={{fontSize:8,color:isSelected?"rgba(255,255,255,0.8)":C.muted,fontWeight:700}}>{total}</div>}
+              </div>
+            );
+          })}
+        </div>
+      </>}
+
+      {viewMode==="week" && <>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:16}}>
+          {weekDays.map((dateStr,i)=>{
+            const d = new Date(dateStr+"T12:00:00");
+            const day = d.getDate();
+            const {rdvs:dr, taches:dt} = getEventsForDay(dateStr);
+            const isToday = dateStr===todayFmt;
+            const isSelected = dateStr===selectedDay;
+            return (
+              <div key={i} onClick={()=>setSelectedDay(isSelected?null:dateStr)}
+                style={{borderRadius:10,padding:"8px 4px",cursor:"pointer",textAlign:"center",
+                  background:isSelected?C.navy:isToday?"#EFF6FF":C.white,
+                  border:`1px solid ${isSelected?C.navy:isToday?C.blue:C.border}`}}>
+                <div style={{fontSize:9,fontWeight:700,color:isSelected?C.white:C.muted,marginBottom:2}}>{JOURS[i]}</div>
+                <div style={{fontSize:14,fontWeight:800,color:isSelected?C.white:isToday?C.blue:C.text,marginBottom:4}}>{day}</div>
+                {dr.length>0&&<div style={{fontSize:9,background:isSelected?"rgba(255,255,255,0.2)":C.blue+"18",color:isSelected?C.white:C.blue,borderRadius:4,padding:"1px 3px",marginBottom:2,fontWeight:700}}>{dr.length} RDV</div>}
+                {dt.length>0&&<div style={{fontSize:9,background:isSelected?"rgba(255,255,255,0.2)":C.amber+"18",color:isSelected?C.white:C.amber,borderRadius:4,padding:"1px 3px",fontWeight:700}}>{dt.length} tâche{dt.length>1?"s":""}</div>}
+              </div>
+            );
+          })}
+        </div>
+      </>}
+
+      {/* Légende */}
+      <div style={{display:"flex",gap:16,marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:C.muted}}>
+          <div style={{width:8,height:8,borderRadius:99,background:C.blue}}/> RDV
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:C.muted}}>
+          <div style={{width:8,height:8,borderRadius:99,background:C.amber}}/> Tâches
+        </div>
+      </div>
+
+      {/* Détail jour sélectionné */}
+      {selectedDay && selectedEvents && (
+        <div>
+          <div style={{fontSize:13,fontWeight:800,color:C.navy,marginBottom:10}}>
+            📅 {new Date(selectedDay+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}
+          </div>
+
+          {selectedEvents.rdvs.length===0 && selectedEvents.taches.length===0 && (
+            <div style={{background:C.white,borderRadius:12,padding:20,textAlign:"center",color:C.muted,fontSize:13,border:`1px solid ${C.border}`}}>
+              Aucun événement ce jour 🎉
+            </div>
+          )}
+
+          {selectedEvents.rdvs.map(r=>{
+            const pat = getPatient(r.patientId);
+            const assignee = getUser(r.assigneA);
+            return (
+              <div key={r.id} style={{background:C.white,borderRadius:12,padding:14,marginBottom:8,border:`1px solid ${C.border}`,borderLeft:`4px solid ${C.blue}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                  <div>
+                    <div style={{fontWeight:800,fontSize:13,color:C.navy,marginBottom:2}}>📅 {r.heure} — {r.type}</div>
+                    {pat&&<div style={{fontSize:12,color:C.text,marginBottom:2}}>👤 {pat.prenom} {pat.nom}</div>}
+                    {r.medecin&&<div style={{fontSize:12,color:C.muted}}>🩺 {r.medecin}</div>}
+                    {assignee&&<div style={{fontSize:11,marginTop:4}}><span style={{background:assignee.color+"18",color:assignee.color,padding:"2px 8px",borderRadius:99,fontWeight:700}}>{assignee.prenom}</span></div>}
+                  </div>
+                  <span style={{background:C.blue+"18",color:C.blue,padding:"3px 8px",borderRadius:99,fontSize:10,fontWeight:700,flexShrink:0}}>{r.statut||"Planifié"}</span>
+                </div>
+                {r.notes&&<div style={{fontSize:11,color:C.muted,marginTop:6,fontStyle:"italic"}}>💬 {r.notes}</div>}
+              </div>
+            );
+          })}
+
+          {selectedEvents.taches.map(t=>{
+            const assignee = getUser(t.assigneA);
+            const priColors = {Haute:C.red, Normale:C.blue, Basse:C.green};
+            return (
+              <div key={t.id} style={{background:C.white,borderRadius:12,padding:14,marginBottom:8,border:`1px solid ${C.border}`,borderLeft:`4px solid ${priColors[t.priorite]||C.amber}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                  <div>
+                    <div style={{fontWeight:800,fontSize:13,color:C.navy,marginBottom:2}}>✅ {t.titre}</div>
+                    {t.description&&<div style={{fontSize:12,color:C.muted,marginBottom:4}}>{t.description}</div>}
+                    {assignee&&<div style={{fontSize:11}}><span style={{background:assignee.color+"18",color:assignee.color,padding:"2px 8px",borderRadius:99,fontWeight:700}}>{assignee.prenom}</span></div>}
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
+                    <span style={{background:(priColors[t.priorite]||C.amber)+"18",color:priColors[t.priorite]||C.amber,padding:"3px 8px",borderRadius:99,fontSize:10,fontWeight:700}}>{t.priorite}</span>
+                    <span style={{background:"#f1f5f9",color:C.muted,padding:"3px 8px",borderRadius:99,fontSize:10,fontWeight:600}}>{t.statut}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── VUE ÉQUIPE (ADMIN SEULEMENT) ──────────────────────────────────────────────
+function VueEquipe({patients, rdvs, taches, finances}) {
+  const [membre, setMembre] = useState("all");
+  const today = todayStr();
+
+  const membres = USERS.filter(u=>u.role!=="admin");
+  const selectedUser = membre==="all" ? null : USERS.find(u=>u.id===membre);
+
+  const filterByUser = (arr, key="assigneA") => 
+    membre==="all" ? arr : arr.filter(x=>x[key]===membre||x.creePar===membre);
+
+  const displayRdvs = filterByUser(rdvs).sort((a,b)=>a.date.localeCompare(b.date));
+  const displayTaches = filterByUser(taches);
+  const displayPatients = membre==="all" ? patients : patients.filter(p=>p.creePar===membre);
+  const displayFinances = filterByUser(finances,"creePar");
+
+  const getP = id => patients.find(p=>String(p.id)===String(id));
+  const getU = id => USERS.find(u=>u.id===id);
+
+  const recus = displayFinances.filter(f=>f.statut==="Complété").reduce((a,f)=>a+Number(f.montant||0),0);
+
+  return (
+    <div>
+      {/* Header PDG */}
+      <Card style={{background:"linear-gradient(135deg,#0B1F3A,#1a3a5c)",border:"none",marginBottom:16}}>
+        <div style={{color:"rgba(255,255,255,0.7)",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:4}}>Tableau de bord PDG</div>
+        <div style={{color:"#C9A84C",fontSize:20,fontWeight:800}}>Veys Turan</div>
+        <div style={{color:"rgba(255,255,255,0.6)",fontSize:12,marginTop:2}}>Vue complète de l'équipe Clinic Nobel Istanbul</div>
+        <div style={{display:"flex",gap:10,marginTop:14,flexWrap:"wrap"}}>
+          <div style={{background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"10px 14px",flex:1,textAlign:"center",minWidth:80}}>
+            <div style={{color:"white",fontSize:20,fontWeight:800}}>{patients.length}</div>
+            <div style={{color:"rgba(255,255,255,0.6)",fontSize:10}}>Patients total</div>
+          </div>
+          <div style={{background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"10px 14px",flex:1,textAlign:"center",minWidth:80}}>
+            <div style={{color:"white",fontSize:20,fontWeight:800}}>{rdvs.filter(r=>r.date===today).length}</div>
+            <div style={{color:"rgba(255,255,255,0.6)",fontSize:10}}>RDV aujourd'hui</div>
+          </div>
+          <div style={{background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"10px 14px",flex:1,textAlign:"center",minWidth:80}}>
+            <div style={{color:"#C9A84C",fontSize:18,fontWeight:800}}>{fmtEur(finances.filter(f=>f.statut==="Complété").reduce((a,f)=>a+Number(f.montant||0),0))}</div>
+            <div style={{color:"rgba(255,255,255,0.6)",fontSize:10}}>Revenus totaux</div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Filtres membres */}
+      <div style={{display:"flex",gap:8,marginBottom:16,overflowX:"auto",paddingBottom:4}}>
+        <button onClick={()=>setMembre("all")} style={{padding:"8px 16px",border:"none",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:12,background:membre==="all"?"#0B1F3A":C.bg,color:membre==="all"?C.white:C.muted,flexShrink:0}}>
+          👥 Toute l'équipe
+        </button>
+        {membres.map(u=>(
+          <button key={u.id} onClick={()=>setMembre(u.id)} style={{padding:"8px 16px",border:"none",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:12,background:membre===u.id?u.color:C.bg,color:membre===u.id?C.white:C.muted,flexShrink:0,display:"flex",alignItems:"center",gap:6}}>
+            <div style={{width:8,height:8,borderRadius:99,background:membre===u.id?C.white:u.color}}/>
+            {u.prenom}
+          </button>
+        ))}
+      </div>
+
+      {/* Stats du membre sélectionné */}
+      {selectedUser&&<Card style={{borderLeft:`4px solid ${selectedUser.color}`,marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <Avatar p={{prenom:selectedUser.prenom,nom:""}} size={44} color={selectedUser.color}/>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:800,fontSize:16,color:C.text}}>{selectedUser.prenom}</div>
+            <div style={{fontSize:12,color:selectedUser.color,fontWeight:600}}>{ROLE_LABELS[selectedUser.role]}</div>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <div style={{textAlign:"center",background:selectedUser.color+"11",borderRadius:8,padding:"6px 10px"}}>
+              <div style={{fontWeight:800,fontSize:16,color:selectedUser.color}}>{displayRdvs.length}</div>
+              <div style={{fontSize:10,color:C.muted}}>RDV</div>
+            </div>
+            <div style={{textAlign:"center",background:selectedUser.color+"11",borderRadius:8,padding:"6px 10px"}}>
+              <div style={{fontWeight:800,fontSize:16,color:selectedUser.color}}>{displayTaches.filter(t=>t.statut!=="Terminée").length}</div>
+              <div style={{fontSize:10,color:C.muted}}>Tâches</div>
+            </div>
+          </div>
+        </div>
+      </Card>}
+
+      {/* RDV */}
+      <Card>
+        <SecTitle icon="📅">Rendez-vous {membre==="all"?"équipe":selectedUser?.prenom}</SecTitle>
+        {displayRdvs.length===0?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"10px 0"}}>Aucun rendez-vous.</div>:
+        displayRdvs.slice(0,8).map(r=>{
+          const p=getP(r.patientId);
+          const assignee=getU(r.assigneA);
+          return (
+            <div key={r.id} style={{display:"flex",gap:10,alignItems:"center",padding:"9px 0",borderBottom:`1px solid ${C.bg}`}}>
+              <div style={{width:46,textAlign:"center",flexShrink:0}}>
+                <div style={{fontSize:9,color:C.muted}}>{r.date?r.date.split("-").slice(1).reverse().join("/"):""}</div>
+                <div style={{fontSize:14,fontWeight:800,color:assignee?.color||C.navy}}>{r.heure}</div>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:13,color:C.text}}>{p?`${p.prenom} ${p.nom}`:"—"}</div>
+                <div style={{fontSize:11,color:C.muted}}>{r.type}</div>
+              </div>
+              {membre==="all"&&assignee&&<Avatar p={{prenom:assignee.prenom,nom:""}} size={24} color={assignee.color}/>}
+              <Badge text={r.statut} color={r.statut==="Confirmé"?C.green:C.amber} small/>
+            </div>
+          );
+        })}
+      </Card>
+
+      {/* Tâches */}
+      <Card>
+        <SecTitle icon="✅">Tâches {membre==="all"?"équipe":selectedUser?.prenom}</SecTitle>
+        {displayTaches.length===0?<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"10px 0"}}>Aucune tâche.</div>:
+        displayTaches.map(t=>{
+          const assignee=getU(t.assigneA);
+          const done=t.statut==="Terminée";
+          return (
+            <div key={t.id} style={{display:"flex",gap:10,alignItems:"center",padding:"9px 0",borderBottom:`1px solid ${C.bg}`,opacity:done?0.5:1}}>
+              <div style={{width:16,height:16,borderRadius:99,border:`2px solid ${done?C.green:assignee?.color||C.blue}`,background:done?C.green:"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:C.white,fontSize:10}}>{done?"✓":""}</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:600,fontSize:13,color:C.text,textDecoration:done?"line-through":"none"}}>{t.titre}</div>
+                {t.echeance&&<div style={{fontSize:10,color:C.muted}}>📅 {t.echeance}</div>}
+              </div>
+              {membre==="all"&&assignee&&<div style={{display:"flex",alignItems:"center",gap:4}}>
+                <Avatar p={{prenom:assignee.prenom,nom:""}} size={22} color={assignee.color}/>
+                <span style={{fontSize:10,color:assignee.color,fontWeight:700}}>{assignee.prenom}</span>
+              </div>}
+              <Badge text={t.priorite||"Normale"} color={t.priorite==="Haute"?C.red:t.priorite==="Basse"?C.muted:C.amber} small/>
+            </div>
+          );
+        })}
+      </Card>
+
+      {/* Finances */}
+      {displayFinances.length>0&&<Card>
+        <SecTitle icon="💶">Finances {membre==="all"?"équipe":selectedUser?.prenom}</SecTitle>
+        {displayFinances.slice(0,5).map(f=>{
+          const p=getP(f.patientId);
+          return (
+            <div key={f.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderBottom:`1px solid ${C.bg}`}}>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:600,fontSize:13,color:C.text}}>{f.procedure||f.type}</div>
+                <div style={{fontSize:11,color:C.muted}}>{p?`${p.prenom} ${p.nom}`:"—"} · {f.date}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontWeight:800,fontSize:14,color:f.statut==="Complété"?C.green:C.amber}}>{fmtEur(f.montant)}</div>
+                <Badge text={f.statut} color={f.statut==="Complété"?C.green:C.amber} small/>
+              </div>
+            </div>
+          );
+        })}
+        <div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between"}}>
+          <span style={{fontSize:12,color:C.muted,fontWeight:600}}>Total encaissé</span>
+          <span style={{fontSize:14,fontWeight:800,color:C.green}}>{fmtEur(recus)}</span>
+        </div>
+      </Card>}
+    </div>
+  );
+}
+
+// ── MESSAGERIE ────────────────────────────────────────────────────────────────
+function Messagerie({user,patients}){
+  const [selUser,setSelUser]=useState(null);
+  const [msg,setMsg]=useState("");
+  const [messages,setMessages]=useState(()=>{try{return JSON.parse(localStorage.getItem("cn_messages")||"{}");}catch(e){return{};}});
+  const autres=USERS.filter(u=>u.id!==user.id);
+  const getThread=(uid)=>messages[`${[user.id,uid].sort().join("_")}`]||[];
+  const sendMsg=()=>{
+    if(!msg.trim()||!selUser)return;
+    const key=[user.id,selUser.id].sort().join("_");
+    const newMsg={id:uid(),from:user.id,text:msg.trim(),ts:Date.now()};
+    const updated={...messages,[key]:[...getThread(selUser.id),newMsg]};
+    setMessages(updated);
+    localStorage.setItem("cn_messages",JSON.stringify(updated));
+    setMsg("");
+  };
+  const thread=selUser?getThread(selUser.id):[];
+  if(selUser){
+    return (
+      <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 160px)"}}>
+        <button onClick={()=>setSelUser(null)} style={{border:"none",background:"none",cursor:"pointer",color:C.blue,fontWeight:700,fontSize:13,marginBottom:12,display:"flex",alignItems:"center",gap:6,padding:0}}>← Messagerie</button>
+        <div style={{background:`linear-gradient(135deg,${selUser.color},${selUser.color}cc)`,borderRadius:14,padding:"12px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+          <Avatar p={{prenom:selUser.prenom,nom:selUser.nom}} size={40} color={selUser.color} style={{background:"rgba(255,255,255,0.2)"}}/>
+          <div>
+            <div style={{color:C.white,fontWeight:800,fontSize:14}}>{selUser.prenom} {selUser.nom}</div>
+            <div style={{color:"rgba(255,255,255,0.7)",fontSize:11}}>{ROLE_LABELS[selUser.role]} · En ligne</div>
+          </div>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:"0 0 8px"}}>
+          {thread.length===0&&<div style={{textAlign:"center",padding:30,color:C.muted,fontSize:13}}>Démarrez la conversation 💬</div>}
+          {thread.map(m=>{
+            const isMine=m.from===user.id;
+            const sender=USERS.find(u=>u.id===m.from);
+            return (
+              <div key={m.id} style={{display:"flex",justifyContent:isMine?"flex-end":"flex-start",marginBottom:8}}>
+                {!isMine&&<Avatar p={{prenom:sender?.prenom||"?",nom:""}} size={28} color={sender?.color} style={{marginRight:8,alignSelf:"flex-end",flexShrink:0}}/>}
+                <div style={{maxWidth:"75%"}}>
+                  <div style={{background:isMine?C.navy:C.white,color:isMine?C.white:C.text,borderRadius:isMine?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"10px 14px",fontSize:13,border:isMine?"none":`1px solid ${C.border}`,boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
+                    {m.text}
+                  </div>
+                  <div style={{fontSize:9,color:C.muted,marginTop:3,textAlign:isMine?"right":"left"}}>{new Date(m.ts).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{display:"flex",gap:8,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
+          <input value={msg} onChange={e=>setMsg(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendMsg()} placeholder="Écrire un message…" style={{flex:1,padding:"11px 14px",border:`1.5px solid ${C.border}`,borderRadius:12,fontSize:13,outline:"none",background:C.white}}/>
+          <button onClick={sendMsg} style={{width:44,height:44,border:"none",borderRadius:12,background:C.navy,color:C.white,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>➤</button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <div style={{fontSize:13,color:C.muted,marginBottom:14}}>Messagerie interne Clinic Nobel</div>
+      {autres.map(u=>{
+        const thread=getThread(u.id);
+        const lastMsg=thread[thread.length-1];
+        const unread=thread.filter(m=>m.from!==user.id).length;
+        return (
+          <div key={u.id} onClick={()=>setSelUser(u)} style={{background:C.white,borderRadius:14,padding:"14px 16px",marginBottom:8,cursor:"pointer",border:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:12}}>
+            <div style={{position:"relative"}}>
+              <Avatar p={{prenom:u.prenom,nom:u.nom}} size={44} color={u.color}/>
+              <div style={{position:"absolute",bottom:0,right:0,width:10,height:10,borderRadius:99,background:C.green,border:`2px solid ${C.white}`}}/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:14,color:C.text}}>{u.prenom} {u.nom}</div>
+              <div style={{fontSize:11,color:C.muted,marginTop:2}}>{lastMsg?lastMsg.text.slice(0,40)+"…":"Aucun message"}</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              {unread>0&&<div style={{width:20,height:20,borderRadius:99,background:C.blue,color:C.white,fontSize:10,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>{unread}</div>}
+              {lastMsg&&<div style={{fontSize:9,color:C.muted,marginTop:4}}>{new Date(lastMsg.ts).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</div>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
+function Notifications({user,patients,rdvs,taches,finances}){
+  const today=todayStr();
+  const notifs=[
+    ...rdvs.filter(r=>r.date===today&&(user.role==="admin"||r.assigneA===user.id)).map(r=>{
+      const p=patients.find(x=>String(x.id)===String(r.patientId));
+      return {id:"rdv_"+r.id,ic:"📅",title:"RDV aujourd'hui",desc:`${p?.prenom||"?"} ${p?.nom||""} à ${r.heure}`,color:C.blue,ts:r.heure};
+    }),
+    ...taches.filter(t=>t.echeance===today&&t.statut!=="Terminée"&&(user.role==="admin"||t.assigneA===user.id)).map(t=>({
+      id:"tache_"+t.id,ic:"✅",title:"Tâche échue aujourd'hui",desc:t.titre,color:C.amber,ts:"now"
+    })),
+    ...taches.filter(t=>t.echeance<today&&t.statut!=="Terminée"&&(user.role==="admin"||t.assigneA===user.id)).map(t=>({
+      id:"late_"+t.id,ic:"⚠️",title:"Tâche en retard",desc:`${t.titre} — échue le ${t.echeance}`,color:C.red,ts:t.echeance
+    })),
+    ...finances.filter(f=>f.date===today&&f.statut==="Complété").map(f=>{
+      const p=patients.find(x=>String(x.id)===String(f.patientId));
+      return {id:"fin_"+f.id,ic:"💶",title:"Paiement reçu",desc:`${p?.prenom||"?"} — ${fmtEur(f.montant)}`,color:C.green,ts:f.date};
+    }),
+    ...finances.filter(f=>f.statut==="En attente"&&f.date<today).map(f=>{
+      const p=patients.find(x=>String(x.id)===String(f.patientId));
+      return {id:"debt_"+f.id,ic:"🔴",title:"Paiement en retard",desc:`${p?.prenom||"?"} — ${fmtEur(f.montant)} dû`,color:C.red,ts:f.date};
+    }),
+    ...patients.filter(p=>p.cree===today).map(p=>({
+      id:"pat_"+p.id,ic:"👤",title:"Nouveau patient",desc:`${p.prenom} ${p.nom} — ${p.procedure}`,color:C.purple,ts:"now"
+    })),
+    ...patients.filter(p=>p.stade==="Confirmé"&&!finances.some(f=>f.patientId===p.id&&f.type==="Acompte")).map(p=>({
+      id:"acc_"+p.id,ic:"💰",title:"Acompte manquant",desc:`${p.prenom} ${p.nom} — dossier confirmé sans acompte`,color:C.amber,ts:"action"
+    })),
+  ];
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+        <div style={{fontSize:13,color:C.muted}}>{notifs.length} notification(s)</div>
+        <div style={{background:C.red,color:C.white,borderRadius:99,padding:"2px 10px",fontSize:11,fontWeight:700}}>{notifs.length}</div>
+      </div>
+      {notifs.length===0&&<div style={{textAlign:"center",padding:40,color:C.muted,fontSize:14}}>Aucune notification 🎉</div>}
+      {notifs.map(n=>(
+        <div key={n.id} style={{background:C.white,borderRadius:14,padding:"14px 16px",marginBottom:8,border:`1px solid ${C.border}`,borderLeft:`4px solid ${n.color}`,display:"flex",alignItems:"flex-start",gap:12}}>
+          <div style={{width:38,height:38,borderRadius:10,background:n.color+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{n.ic}</div>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,fontSize:13,color:C.text}}>{n.title}</div>
+            <div style={{fontSize:12,color:C.muted,marginTop:2}}>{n.desc}</div>
+          </div>
+          <div style={{width:8,height:8,borderRadius:99,background:n.color,flexShrink:0,marginTop:6}}/>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── RECHERCHE GLOBALE ─────────────────────────────────────────────────────────
+function RechercheGlobale({patients,rdvs,taches,finances,onSelectPatient}){
+  const [q,setQ]=useState("");
+  const [cat,setCat]=useState("tous");
+  const sq=q.toLowerCase().trim();
+  const results=sq.length<2?[]:([
+    ...(cat==="tous"||cat==="patients"?patients.filter(p=>`${p.prenom} ${p.nom} ${p.email||""} ${p.tel||""} ${p.procedure||""}`.toLowerCase().includes(sq)).map(p=>({type:"patient",ic:"👤",title:`${p.prenom} ${p.nom}`,sub:`${p.procedure} · ${p.pays}`,color:C.blue,data:p})):[]),
+    ...(cat==="tous"||cat==="rdvs"?rdvs.filter(r=>{const p=patients.find(x=>String(x.id)===String(r.patientId));return `${p?.prenom||""} ${p?.nom||""} ${r.type||""} ${r.medecin||""}`.toLowerCase().includes(sq);}).map(r=>{const p=patients.find(x=>String(x.id)===String(r.patientId));return{type:"rdv",ic:"📅",title:`${p?.prenom||"?"} ${p?.nom||""} — ${r.type}`,sub:`${r.date} à ${r.heure}`,color:C.purple,data:r};}):[]),
+    ...(cat==="tous"||cat==="taches"?taches.filter(t=>`${t.titre} ${t.description||""}`.toLowerCase().includes(sq)).map(t=>({type:"tache",ic:"✅",title:t.titre,sub:t.description||"—",color:C.amber,data:t})):[]),
+    ...(cat==="tous"||cat==="finances"?finances.filter(f=>{const p=patients.find(x=>String(x.id)===String(f.patientId));return `${p?.prenom||""} ${p?.nom||""} ${f.procedure||""}`.toLowerCase().includes(sq);}).map(f=>{const p=patients.find(x=>String(x.id)===String(f.patientId));return{type:"finance",ic:"💶",title:`${p?.prenom||"?"} — ${f.type}`,sub:`${fmtEur(f.montant)} · ${f.date}`,color:C.green,data:f};}):[]),
+  ]).slice(0,20);
+  return (
+    <div>
+      <div style={{background:`linear-gradient(135deg,${C.navy},#1a3a5c)`,borderRadius:16,padding:"16px",marginBottom:14}}>
+        <div style={{position:"relative"}}>
+          <input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="🔍 Rechercher patients, RDV, tâches, finances…" style={{width:"100%",padding:"12px 16px 12px 44px",border:"none",borderRadius:12,fontSize:14,outline:"none",background:"rgba(255,255,255,0.95)",boxSizing:"border-box"}}/>
+          <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:18}}>🔍</span>
+          {q&&<button onClick={()=>setQ("")} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",border:"none",background:"none",cursor:"pointer",color:C.muted,fontSize:16}}>✕</button>}
+        </div>
+      </div>
+      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
+        {[{id:"tous",l:"Tout"},{id:"patients",l:"👤 Patients"},{id:"rdvs",l:"📅 RDV"},{id:"taches",l:"✅ Tâches"},{id:"finances",l:"💶 Finances"}].map(c=>(
+          <button key={c.id} onClick={()=>setCat(c.id)} style={{padding:"7px 12px",border:"none",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:11,background:cat===c.id?C.navy:C.bg,color:cat===c.id?C.white:C.muted,flexShrink:0,whiteSpace:"nowrap"}}>
+            {c.l}
+          </button>
+        ))}
+      </div>
+      {q.length>=2&&results.length===0&&<div style={{textAlign:"center",padding:30,color:C.muted,fontSize:14}}>Aucun résultat pour "{q}"</div>}
+      {q.length<2&&<div style={{textAlign:"center",padding:30,color:C.muted,fontSize:13}}>Tapez au moins 2 caractères pour rechercher…</div>}
+      {results.map((r,i)=>(
+        <div key={i} onClick={r.type==="patient"?()=>onSelectPatient(r.data):undefined} style={{background:C.white,borderRadius:12,padding:"12px 14px",marginBottom:6,border:`1px solid ${C.border}`,borderLeft:`3px solid ${r.color}`,cursor:r.type==="patient"?"pointer":"default",display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:36,height:36,borderRadius:9,background:r.color+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{r.ic}</div>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,fontSize:13,color:C.text}}>{r.title}</div>
+            <div style={{fontSize:11,color:C.muted,marginTop:1}}>{r.sub}</div>
+          </div>
+          <Badge text={r.type} color={r.color} small/>
+        </div>
+      ))}
+      {results.length>0&&<div style={{fontSize:11,color:C.muted,textAlign:"center",marginTop:8}}>{results.length} résultat(s)</div>}
+    </div>
+  );
+}
+function App() {
+  const [user,setUser] = useState(()=>{
+    try{ const s=localStorage.getItem("cn_user"); return s?JSON.parse(s):null; }catch(e){return null;}
+  });
+  const [view,setView] = useState("dashboard");
+  const [patients,setPatients] = useState(()=>cache.load("patients")||[]);
+  const [rdvs,setRdvs] = useState(()=>cache.load("rdvs")||[]);
+  const [finances,setFinances] = useState(()=>cache.load("finances")||[]);
+  const [taches,setTaches] = useState(()=>cache.load("taches")||[]);
+  // Don't show loading if we have cached data
+  const [loading,setLoading] = useState(()=>!(cache.load("patients")));
+  const [syncing,setSyncing] = useState(false);
+  const [saveStatus,setSaveStatus] = useState("saved"); // "saved" | "saving" | "unsaved"
+  const [pendingSaves,setPendingSaves] = useState([]);
+  const [modal,setModal] = useState(null);
+  const [selected,setSelected] = useState(null);
+  const [menuOpen,setMenuOpen] = useState(false);
+
+  useEffect(()=>{ if(user) loadAll(); },[user]);
+
+  const loadAll = async (showLoad=true) => {
+    if(showLoad) setLoading(true);
+    try {
+      const [p,r,f,t] = await Promise.all([
+        api.get("patients"), api.get("rdvs"), api.get("finances"), api.get("taches")
+      ]);
+      const patients_data = p.filter(x=>x.prenom);
+      const rdvs_data = r.filter(x=>x.type);
+      const finances_data = f.filter(x=>x.type);
+      const taches_data = t.filter(x=>x.titre);
+      setPatients(patients_data);
+      setRdvs(rdvs_data);
+      setFinances(finances_data);
+      setTaches(taches_data);
+      cache.save("patients", patients_data);
+      cache.save("rdvs", rdvs_data);
+      cache.save("finances", finances_data);
+      cache.save("taches", taches_data);
+    } catch(e) {
+      console.log("Network error, keeping cache data");
+    }
+    if(showLoad) setLoading(false);
+  };
+
+  const syncPost = async (type, action, record) => {
+    setSyncing(true);
+    setSaveStatus("saving");
+    try {
+      await api.post(type, action, record);
+      setSaveStatus("saved");
+    } catch(e) {
+      console.error("Sync error:", e);
+      setSaveStatus("unsaved");
+    }
+    setSyncing(false);
+    setTimeout(()=>setSaveStatus("saved"), 5000);
+  };
+
+  // Manual sync - reload from Google Sheets
+  const manualSave = async () => {
+    setSaveStatus("saving");
+    setSyncing(true);
+    try {
+      await loadAll(false);
+      setSaveStatus("saved");
+      alert("✅ Données synchronisées avec Google Sheets !");
+    } catch(e) {
+      setSaveStatus("unsaved");
+      alert("❌ Erreur réseau. Les données locales sont préservées.");
+    }
+    setSyncing(false);
+  };
+
+  // Force sync - vide le cache local et recharge tout depuis Google Sheets
+  const forceSync = async () => {
+    if(!window.confirm("Vider le cache local et recharger toutes les données depuis Google Sheets ?")) return;
+    ["patients","rdvs","finances","taches"].forEach(k => {
+      try { localStorage.removeItem("cn_cache_"+k); } catch(e){}
+    });
+    setPatients([]); setRdvs([]); setFinances([]); setTaches([]);
+    setSaveStatus("saving");
+    setSyncing(true);
+    setLoading(true);
+    try {
+      const [p,r,f,t] = await Promise.all([
+        api.get("patients"), api.get("rdvs"), api.get("finances"), api.get("taches")
+      ]);
+      const pd = p.filter(x=>x.prenom);
+      const rd = r.filter(x=>x.type);
+      const fd = f.filter(x=>x.type);
+      const td = t.filter(x=>x.titre);
+      setPatients(pd); setRdvs(rd); setFinances(fd); setTaches(td);
+      cache.save("patients",pd); cache.save("rdvs",rd);
+      cache.save("finances",fd); cache.save("taches",td);
+      setSaveStatus("saved");
+      alert(`✅ Synchronisation complète !\n${pd.length} patients · ${rd.length} RDV · ${td.length} tâches`);
+    } catch(e) {
+      setSaveStatus("unsaved");
+      alert("❌ Erreur réseau. Vérifiez votre connexion.");
+    }
+    setSyncing(false);
+    setLoading(false);
+  };
+
+  const savePatient = async (f) => {
+    if(f.id){
+      const updated = {...f,dernierContact:todayStr()};
+      setPatients(ps=>{
+        const newPs = ps.map(p=>p.id===f.id?{...p,...updated}:p);
+        cache.save("patients", newPs);
+        return newPs;
+      });
+      await syncPost("patients","update",updated);
+    } else {
+      const n={...f,id:uid(),cree:todayStr(),dernierContact:todayStr(),creePar:user.id};
+      setPatients(ps=>{
+        const newPs=[...ps,n];
+        cache.save("patients", newPs);
+        return newPs;
+      });
+      await syncPost("patients","add",n);
+    }
+    setModal(null);
+  };
+  const deletePatient = async (id) => {
+    setPatients(ps=>{const np=ps.filter(p=>p.id!==id);cache.save("patients",np);return np;});
+    await syncPost("patients","delete",{id});
+    setSelected(null); setView("patients");
+  };
+  const changeStage = async (id,stade) => {
+    const p=patients.find(x=>x.id===id); if(!p) return;
+    const u={...p,stade,dernierContact:todayStr()};
+    setPatients(ps=>{const np=ps.map(x=>x.id===id?u:x);cache.save("patients",np);return np;});
+    await syncPost("patients","update",u);
+  };
+  const saveRdv = async (f) => {
+    if(!f.patientId||!f.date||!f.heure) { alert("Patient, date et heure obligatoires !"); return; }
+    const n={...f,id:uid(),creePar:user.id};
+    setRdvs(rs=>{const nr=[...rs,n];cache.save("rdvs",nr);return nr;});
+    await syncPost("rdvs","add",n);
+    setModal(null);
+  };
+  const updateRdv = async (f) => {
+    setRdvs(rs=>{const nr=rs.map(r=>r.id===f.id?{...r,...f}:r);cache.save("rdvs",nr);return nr;});
+    await syncPost("rdvs","update",f);
+    setModal(null);
+  };
+  const deleteRdv = async (id) => {
+    if(!window.confirm("Supprimer ce rendez-vous ?")) return;
+    setRdvs(rs=>{const nr=rs.filter(r=>r.id!==id);cache.save("rdvs",nr);return nr;});
+    await syncPost("rdvs","delete",{id});
+  };
+  const saveFinance = async (f) => {
+    if(!f.montant) { alert("Montant obligatoire !"); return; }
+    const n={...f,id:uid(),creePar:user.id};
+    setFinances(fs=>{const nf=[...fs,n];cache.save("finances",nf);return nf;});
+    await syncPost("finances","add",n);
+    setModal(null);
+  };
+  const updateFinance = async (f) => {
+    setFinances(fs=>{const nf=fs.map(x=>x.id===f.id?{...x,...f}:x);cache.save("finances",nf);return nf;});
+    await syncPost("finances","update",f);
+    setModal(null);
+  };
+  const deleteFinance = async (id) => {
+    if(!window.confirm("Supprimer cette transaction ?")) return;
+    setFinances(fs=>{const nf=fs.filter(f=>f.id!==id);cache.save("finances",nf);return nf;});
+    await syncPost("finances","delete",{id});
+  };
+
+  const NAV_ITEMS = [
+    {id:"dashboard",label:"Mon espace",icon:"🏠",roles:["admin","commerciale","coordinatrice"]},
+    {id:"equipe",label:"Mon équipe",icon:"👁️",roles:["admin"]},
+    {id:"patients",label:"Les patients",icon:"👥",roles:["admin","commerciale","coordinatrice"]},
+    {id:"rdvs",label:"Rendez-vous",icon:"📅",roles:["admin","commerciale","coordinatrice"]},
+    {id:"taches",label:"Tâches",icon:"✅",roles:["admin","commerciale","coordinatrice"]},
+    {id:"agenda",label:"Agenda",icon:"🗓️",roles:["admin","commerciale","coordinatrice"]},
+    {id:"finances",label:"Finances",icon:"💳",roles:["admin","commerciale"]},
+    {id:"analyses",label:"Analyses",icon:"📈",roles:["admin","commerciale"]},
+    {id:"messagerie",label:"Messagerie",icon:"💬",roles:["admin","commerciale","coordinatrice"]},
+    {id:"notifications",label:"Notifications",icon:"🔔",roles:["admin","commerciale","coordinatrice"]},
+    {id:"recherche",label:"Recherche",icon:"🔍",roles:["admin","commerciale","coordinatrice"]},
+    {id:"hopitaux",label:"Hôpitaux",icon:"🏥",roles:["admin"]},
+    {id:"medecins",label:"Médecins",icon:"🩺",roles:["admin","commerciale","coordinatrice"]},
+  ].filter(n=>!user||n.roles.includes(user.role));
+
+  const goTo = v => { setView(v); setSelected(null); setMenuOpen(false); };
+  const logout = () => { localStorage.removeItem("cn_user"); setUser(null); };
+  const activeView = selected?"fiche":view;
+  const TITLES = {dashboard:"Mon espace",equipe:"Vue équipe — Veys Turan PDG",patients:"Les patients",rdvs:"Rendez-vous",taches:"Tâches",agenda:"Agenda",analyses:"Analyses",finances:"Finances",hopitaux:"Hôpitaux partenaires",medecins:"Médecins",messagerie:"Messagerie",notifications:"Notifications",recherche:"Recherche globale"};
+
+  if(!user) return <LoginScreen onLogin={u=>{const full=USERS.find(x=>x.id===u.id)||u; setUser(full);}} />;
+
+  const userFull = USERS.find(u2=>u2.id===user.id)||user;
+
+  return (
+    <div style={{minHeight:"100vh",background:C.bg}}>
+      {/* TOP BAR MOBILE */}
+      <div style={{background:C.white,borderBottom:`1px solid ${C.border}`,padding:"0 12px",height:56,display:"flex",alignItems:"center",gap:8,position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(11,31,58,0.08)"}}>
+        <button onClick={()=>setMenuOpen(x=>!x)} style={{border:"none",background:"none",cursor:"pointer",width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,flexShrink:0}}>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            <div style={{width:20,height:2,background:C.navy,borderRadius:99}}/>
+            <div style={{width:14,height:2,background:C.navy,borderRadius:99}}/>
+            <div style={{width:20,height:2,background:C.navy,borderRadius:99}}/>
+          </div>
+        </button>
+        <div style={{flex:1,display:"flex",alignItems:"center",gap:8}}>
+          <img src="https://i.ibb.co/b5k523qC/image.jpg" style={{width:30,height:30,borderRadius:8,objectFit:"contain"}} alt="CN"/>
+          <span style={{fontWeight:800,fontSize:15,color:C.navy}}>Clinic Nobel</span>
+        </div>
+        <button onClick={manualSave} style={{border:"none",borderRadius:20,cursor:"pointer",fontSize:11,padding:"6px 10px",background:saveStatus==="saved"?C.green+"18":saveStatus==="saving"?C.amber+"18":"#fee2e2",color:saveStatus==="saved"?C.green:saveStatus==="saving"?C.amber:C.red,fontWeight:700,display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
+          <span style={{fontSize:12}}>{saveStatus==="saving"?"⏳":saveStatus==="saved"?"✅":"💾"}</span>
+          <span style={{display:"none",fontSize:11}}>{saveStatus==="saving"?"Sync…":saveStatus==="saved"?"OK":"Sauv."}</span>
+        </button>
+        <button onClick={()=>goTo("recherche")} style={{border:"none",background:"#f1f5f9",cursor:"pointer",width:34,height:34,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>🔍</button>
+        <button onClick={()=>goTo("notifications")} style={{border:"none",background:"#f1f5f9",cursor:"pointer",width:34,height:34,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0,position:"relative"}}>
+          🔔
+          {(taches.filter(t=>t.echeance<=todayStr()&&t.statut!=="Terminée"&&(userFull.role==="admin"||t.assigneA===userFull.id)).length+rdvs.filter(r=>r.date===todayStr()).length)>0&&
+            <div style={{position:"absolute",top:4,right:4,width:8,height:8,borderRadius:99,background:C.red,border:`2px solid ${C.white}`}}/>}
+        </button>
+        <button onClick={forceSync} title="Forcer la synchronisation" style={{border:"none",background:"#f1f5f9",cursor:"pointer",width:34,height:34,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>🔄</button>
+        <div onClick={()=>setMenuOpen(true)} style={{width:36,height:36,borderRadius:99,background:`linear-gradient(135deg,${userFull.color},${userFull.color}99)`,display:"flex",alignItems:"center",justifyContent:"center",color:C.white,fontWeight:800,fontSize:13,cursor:"pointer",flexShrink:0}}>
+          {userFull.prenom[0]}
+        </div>
+      </div>
+
+      {/* SIDEBAR MOBILE */}
+      {menuOpen&&<div onClick={()=>setMenuOpen(false)} style={{position:"fixed",inset:0,background:"rgba(11,31,58,0.5)",zIndex:89,backdropFilter:"blur(4px)"}}/>}
+      <div style={{position:"fixed",top:0,left:0,bottom:0,width:"80%",maxWidth:300,background:C.white,transform:menuOpen?"translateX(0)":"translateX(-100%)",transition:"transform 0.25s cubic-bezier(0.4,0,0.2,1)",zIndex:90,display:"flex",flexDirection:"column",overflowY:"auto",boxShadow:"4px 0 30px rgba(11,31,58,0.15)"}}>
+        
+        {/* Profile header */}
+        <div style={{background:`linear-gradient(135deg,${userFull.color},${userFull.color}99)`,padding:"48px 20px 20px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:52,height:52,borderRadius:16,background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",color:C.white,fontWeight:800,fontSize:20}}>
+              {userFull.prenom[0]}
+            </div>
+            <div>
+              <div style={{fontWeight:800,fontSize:16,color:C.white}}>{userFull.prenom}</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.8)",marginTop:2}}>{ROLE_LABELS[userFull.role]}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",marginTop:2}}>✅ Google Sheets actif</div>
+            </div>
+            <button onClick={()=>setMenuOpen(false)} style={{marginLeft:"auto",border:"none",background:"rgba(255,255,255,0.2)",color:C.white,width:32,height:32,borderRadius:8,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+          </div>
+          <div style={{marginTop:16}}>
+            <img src="https://i.ibb.co/b5k523qC/image.jpg" style={{width:36,height:36,borderRadius:8,objectFit:"contain",background:"rgba(255,255,255,0.9)",padding:2}} alt="CN"/>
+          </div>
+        </div>
+
+        {/* Nav items */}
+        <div style={{flex:1,padding:"12px 10px"}}>
+          {NAV_ITEMS.map(item=>{
+            const isActive=view===item.id||(item.id==="patients"&&activeView==="fiche");
+            return (
+              <button key={item.id} onClick={()=>goTo(item.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"13px 14px",borderRadius:12,border:"none",cursor:"pointer",marginBottom:4,textAlign:"left",fontSize:14,background:isActive?userFull.color+"18":"transparent",color:isActive?userFull.color:C.text,fontWeight:isActive?700:500,transition:"all 0.15s"}}>
+                <span style={{fontSize:20,width:28,textAlign:"center"}}>{item.icon}</span>
+                <span>{item.label}</span>
+                {isActive&&<div style={{marginLeft:"auto",width:6,height:6,borderRadius:99,background:userFull.color}}/>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Bottom actions */}
+        <div style={{padding:"12px 14px",borderTop:`1px solid ${C.border}`}}>
+          {userFull.access?.includes("patients")&&<button onClick={()=>{setModal({type:"patient"});setMenuOpen(false);}} style={{width:"100%",padding:"13px",border:"none",borderRadius:12,background:userFull.color,color:C.white,cursor:"pointer",fontWeight:800,fontSize:14,marginBottom:8}}>
+            + Nouveau patient
+          </button>}
+          <button onClick={logout} style={{width:"100%",padding:"11px",border:`1px solid ${C.border}`,borderRadius:12,background:C.white,cursor:"pointer",fontWeight:600,fontSize:13,color:C.muted,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            🚪 Se déconnecter
+          </button>
+        </div>
+      </div>
+
+      {/* CONTENU */}
+      <div style={{maxWidth:600,margin:"0 auto",padding:"16px 14px 100px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+          {activeView==="fiche"&&<button onClick={()=>setSelected(null)} style={{width:36,height:36,borderRadius:10,border:`1px solid ${C.border}`,background:C.white,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>←</button>}
+          <div>
+            <h1 style={{margin:0,fontSize:20,fontWeight:800,color:C.text,lineHeight:1.2}}>
+              {activeView==="fiche"&&selected?`${selected.prenom} ${selected.nom}`:TITLES[view]||""}
+            </h1>
+            {activeView==="fiche"&&selected&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>{selected.procedure}</div>}
+          </div>
+        </div>
+        {loading?<Spinner text="Chargement depuis Google Sheets…"/>:<>
+          {activeView==="dashboard"&&<DashboardPersonnel user={userFull} patients={patients} rdvs={rdvs} taches={taches} finances={finances}/>}
+          {activeView==="patients"&&<Patients user={userFull} patients={patients} onSelect={p=>setSelected(p)} onAdd={()=>setModal({type:"patient"})} onDelete={deletePatient}/>}
+          {activeView==="fiche"&&selected&&<FichePatient user={userFull} patient={selected} patients={patients} rdvs={rdvs} finances={finances} taches={taches} onEdit={()=>setModal({type:"patient",data:selected})} onDelete={()=>deletePatient(selected.id)} onStageChange={changeStage} onBack={()=>setSelected(null)}/>}
+          {activeView==="rdvs"&&<Rdvs user={userFull} rdvs={rdvs} patients={patients} onAdd={()=>setModal({type:"rdv"})} onDelete={deleteRdv}/>}
+          {activeView==="taches"&&<Taches user={userFull} taches={taches} setTaches={setTaches} syncing={syncing} setSyncing={setSyncing}/>}
+          {activeView==="agenda"&&<Agenda user={userFull} rdvs={rdvs} taches={taches} patients={patients}/>}
+          {activeView==="analyses"&&<Analyses patients={patients} finances={finances}/>}
+          {activeView==="finances"&&<Finances user={userFull} finances={finances} patients={patients} onAdd={()=>setModal({type:"finance"})} onDelete={deleteFinance}/>}
+          {activeView==="hopitaux"&&<Hopitaux patients={patients} rdvs={rdvs}/>}
+          {activeView==="equipe"&&<VueEquipe patients={patients} rdvs={rdvs} taches={taches} finances={finances}/>}
+          {activeView==="medecins"&&<Medecins patients={patients} rdvs={rdvs}/>}
+          {activeView==="messagerie"&&<Messagerie user={userFull} patients={patients}/>}
+          {activeView==="notifications"&&<Notifications user={userFull} patients={patients} rdvs={rdvs} taches={taches} finances={finances}/>}
+          {activeView==="recherche"&&<RechercheGlobale patients={patients} rdvs={rdvs} taches={taches} finances={finances} onSelectPatient={p=>{setSelected(p);setView("patients");}}/>}
+        </>}
+      </div>
+
+      {modal?.type==="patient"&&<ModalPatient user={userFull} patient={modal.data||null} onSave={savePatient} onClose={()=>setModal(null)}/>}
+      {modal?.type==="rdv"&&<ModalRdv user={userFull} patients={patients} onSave={saveRdv} onClose={()=>setModal(null)} taches={taches} setTaches={setTaches}/>}
+      {modal?.type==="finance"&&<ModalFinance user={userFull} patients={patients} onSave={saveFinance} onClose={()=>setModal(null)}/>}
+
+      {/* BOTTOM NAV MOBILE */}
+      <div style={{position:"fixed",bottom:0,left:0,right:0,background:C.white,borderTop:`1px solid ${C.border}`,zIndex:100,display:"flex",alignItems:"center",justifyContent:"space-around",padding:"6px 0 calc(6px + env(safe-area-inset-bottom))",boxShadow:"0 -4px 20px rgba(11,31,58,0.08)"}}>
+        {[
+          {id:"dashboard",icon:"🏠",label:"Accueil"},
+          {id:"patients",icon:"👥",label:"Patients"},
+          {id:"rdvs",icon:"📅",label:"RDV"},
+          {id:"agenda",icon:"🗓️",label:"Agenda"},
+          {id:"taches",icon:"✅",label:"Tâches"},
+          ...(userFull.role==="admin"?[{id:"equipe",icon:"👁️",label:"Équipe"}]:[{id:"finances",icon:"💳",label:"Finances"}])
+        ].filter(n=>NAV_ITEMS.find(x=>x.id===n.id)).map(item=>{
+          const isActive = view===item.id||(item.id==="patients"&&activeView==="fiche");
+          return (
+            <button key={item.id} onClick={()=>goTo(item.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,border:"none",background:"none",cursor:"pointer",padding:"4px 8px",flex:1,minWidth:0}}>
+              <div style={{width:36,height:36,borderRadius:12,background:isActive?userFull.color+"18":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,transition:"all 0.15s"}}>
+                {item.icon}
+              </div>
+              <span style={{fontSize:9,fontWeight:isActive?700:500,color:isActive?userFull.color:C.muted,letterSpacing:"0.02em"}}>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Floating sync indicator */}
+      {syncing&&<div style={{position:"fixed",bottom:76,left:"50%",transform:"translateX(-50%)",background:C.navy,color:C.white,padding:"8px 18px",borderRadius:99,fontSize:12,fontWeight:700,zIndex:999,boxShadow:"0 4px 20px rgba(0,0,0,0.25)",display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap"}}>
+        <span style={{fontSize:14}}>⏳</span> Sync Google Sheets…
+      </div>}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
