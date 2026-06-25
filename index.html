@@ -2269,7 +2269,7 @@ function Agenda({user, rdvs, taches, patients, finances, onAddRdv, onSelectPatie
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState("mois");
   const [selectedDay, setSelectedDay] = useState(todayStr());
-  const [filterUser, setFilterUser] = useState("mon");
+  const [filterUser, setFilterUser] = useState(user.role==="admin"?"tous":"mon");
   const [filterType, setFilterType] = useState("tous");
   const [search, setSearch] = useState("");
   const [selEvent, setSelEvent] = useState(null);
@@ -2312,17 +2312,14 @@ function Agenda({user, rdvs, taches, patients, finances, onAddRdv, onSelectPatie
 
   // ── Filtre selon rôle & paramètres ────────────────────────────────────────
   const filtered = allEvents.filter(e => {
-    // Filtre utilisateur
+    // Filtre utilisateur — "mon" = mes événements assignés (avec fallback si non assigné)
     if(filterUser==="mon"){
-      if(user.role==="coordinatrice") {
-        const allowedTypes=["Arrivée","Départ","Opération","Chirurgie","Intervention","Contrôle"];
-        if(!allowedTypes.some(t=>e.type?.includes(t))) return false;
-      } else if(user.role==="commerciale") {
-        if(e.assigneA!==user.id&&e.source!=="finance") return false;
-      } else {
-        if(e.assigneA!==user.id&&e.source==="rdv") {}
-      }
+      // Un événement est "à moi" si je lui suis assigné OU si personne ne l'est (fallback)
+      const isMine = e.assigneA===user.id || !e.assigneA || e.assigneA==="";
+      // L'admin voit tout même en "mon" ; les autres voient leurs événements
+      if(user.role!=="admin" && !isMine) return false;
     }
+    // filterUser === "equipe" ou "tous" : aucun filtre utilisateur (tout le monde visible)
     // Filtre type
     if(filterType!=="tous"){
       const typeMap={rdvs:"rdv",taches:"tache",finances:"finance",chirurgies:"rdv",arrivees:"rdv",departs:"rdv"};
@@ -2569,7 +2566,7 @@ function Agenda({user, rdvs, taches, patients, finances, onAddRdv, onSelectPatie
       <div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto",paddingBottom:2}}>
         {[
           {id:"mon",l:"👤 Mon agenda"},
-          ...(user.role==="admin"?[{id:"equipe",l:"👥 Équipe"},{id:"tous",l:"🌐 Tout"}]:[]),
+          {id:"tous",l:"🌐 Tout l'agenda"},
         ].map(f=>(
           <button key={f.id} onClick={()=>setFilterUser(f.id)} style={{padding:"6px 10px",border:"none",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,background:filterUser===f.id?user.color:C.bg,color:filterUser===f.id?C.white:C.muted,flexShrink:0,whiteSpace:"nowrap"}}>
             {f.l}
