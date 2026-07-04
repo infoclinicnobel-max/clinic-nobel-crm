@@ -1,0 +1,9 @@
+KIT PWA — CLINIC NOBEL CRM
+Contenu : index.html (corrigé) · manifest.json · sw.js · icon-192.png · icon-512.png · icon-512-maskable.png · apple-touch-icon.png
+Installation :
+1) Copier TOUS ces fichiers à la RACINE du dépôt (GitHub / Netlify), au même niveau.
+   index.html remplace l'existant ; les autres fichiers sont nouveaux.
+2) Déployer, ouvrir le site en HTTPS.
+3) PC Chrome : icône "Installer" dans la barre d'adresse → l'app s'ouvre sans barre Chrome.
+   Android Chrome : menu ⋮ → "Installer l'application" → icône Clinic Nobel sur l'écran d'accueil.
+Vérification : F12 → Application → Manifest → nom + 3 icônes visibles, aucune erreur.
