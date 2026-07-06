@@ -552,6 +552,13 @@ const I18N = {
     "comm.settleOverdue": "Attention : ce montant dépasse le reste à régler. Continuer quand même ?",
     "comm.regulNeeded": "Nouveaux encaissements après règlement annuel — une régularisation est nécessaire.",
     "team.mod.commissions": "Commissions",
+    "team.compareTool": "Comparer deux utilisateurs",
+    "team.cmpPickA": "Utilisateur A…",
+    "team.cmpPickB": "Utilisateur B…",
+    "team.cmpCustom": "Permissions personnalisées",
+    "team.cmpSame": "Permissions effectives identiques",
+    "team.cmpDiff": "différence(s) détectée(s)",
+    "team.cmpHint": "Ligne rouge = les deux utilisateurs n'ont pas le même accès. Vérifie le rôle et la personnalisation de chacun, puis demande à l'utilisateur de se reconnecter.",
     "date.monthsShort": "mois",
     "analytics.satisfaction": "Satisfaction",
     "analytics.topProcedures": "Top procédures",
@@ -1182,6 +1189,13 @@ const I18N = {
     "comm.settleOverdue": "Warning: this amount exceeds the remaining balance. Continue anyway?",
     "comm.regulNeeded": "New payments after the yearly settlement — a regularization is required.",
     "team.mod.commissions": "Commissions",
+    "team.compareTool": "Compare two users",
+    "team.cmpPickA": "User A…",
+    "team.cmpPickB": "User B…",
+    "team.cmpCustom": "Custom permissions",
+    "team.cmpSame": "Identical effective permissions",
+    "team.cmpDiff": "difference(s) detected",
+    "team.cmpHint": "Red row = the two users do not have the same access. Check each user's role and customization, then ask the user to log in again.",
     "date.monthsShort": "mo",
     "analytics.satisfaction": "Satisfaction",
     "analytics.topProcedures": "Top procedures",
@@ -1812,6 +1826,13 @@ const I18N = {
     "comm.settleOverdue": "Dikkat: bu tutar kalan bakiyeyi aşıyor. Yine de devam edilsin mi?",
     "comm.regulNeeded": "Yıllık ödemeden sonra yeni tahsilatlar — düzeltme gerekli.",
     "team.mod.commissions": "Komisyonlar",
+    "team.compareTool": "İki kullanıcıyı karşılaştır",
+    "team.cmpPickA": "Kullanıcı A…",
+    "team.cmpPickB": "Kullanıcı B…",
+    "team.cmpCustom": "Özel izinler",
+    "team.cmpSame": "Etkin izinler aynı",
+    "team.cmpDiff": "fark tespit edildi",
+    "team.cmpHint": "Kırmızı satır = iki kullanıcının erişimi aynı değil. Rolü ve özelleştirmeyi kontrol edin, sonra yeniden giriş isteyin.",
     "date.monthsShort": "ay",
     "analytics.satisfaction": "Memnuniyet",
     "analytics.topProcedures": "En popüler işlemler",
@@ -2442,6 +2463,13 @@ const I18N = {
     "comm.settleOverdue": "Atención: este importe supera el resto por liquidar. ¿Continuar de todos modos?",
     "comm.regulNeeded": "Nuevos cobros tras la liquidación anual — se requiere una regularización.",
     "team.mod.commissions": "Comisiones",
+    "team.compareTool": "Comparar dos usuarios",
+    "team.cmpPickA": "Usuario A…",
+    "team.cmpPickB": "Usuario B…",
+    "team.cmpCustom": "Permisos personalizados",
+    "team.cmpSame": "Permisos efectivos idénticos",
+    "team.cmpDiff": "diferencia(s) detectada(s)",
+    "team.cmpHint": "Fila roja = los dos usuarios no tienen el mismo acceso. Verifica el rol y la personalización, luego pide reconectarse.",
     "date.monthsShort": "meses",
     "analytics.satisfaction": "Satisfacción",
     "analytics.topProcedures": "Procedimientos principales",
@@ -2907,6 +2935,30 @@ const DEFAULT_ROLES = {
 
 // État RBAC mutable au niveau module (mis à jour en direct sans reload)
 let RBAC = { roles:{}, overrides:{} };
+// ═══ FIX SYNC PERMISSIONS ═══
+// La feuille "permissions" (roles + overrides) était ÉCRITE par le CRM mais
+// JAMAIS relue : les rôles modifiés ne se propageaient pas aux autres appareils
+// (localStorage local uniquement) → deux utilisateurs "identiques" pouvaient
+// voir des menus différents. Désormais, le serveur est la source de vérité,
+// relue à chaque chargement et à chaque connexion.
+async function refreshPermissionsFromServer(){
+  try{
+    const r = await fetch(`${SCRIPT_URL}?type=permissions&token=${encodeURIComponent(AUTH_TOKEN)}&t=${Date.now()}`, {method:"GET", redirect:"follow"});
+    const d = JSON.parse(await r.text());
+    if(!d || Array.isArray(d) || typeof d!=="object") return false;
+    let changed = false;
+    if(d.roles && typeof d.roles==="object" && Object.keys(d.roles).length){
+      cfgStore.save("roles", d.roles); changed = true;
+    }
+    if(d.overrides && typeof d.overrides==="object"){
+      // Remplacement intégral : purge aussi les overrides locaux obsolètes
+      cfgStore.save("overrides", d.overrides); changed = true;
+    }
+    if(changed) loadRBAC();
+    try{ localStorage.setItem("cn_perm_sync", String(Date.now())); }catch(e){}
+    return changed;
+  }catch(e){ return false; }
+}
 function loadRBAC(){
   const stored = cfgStore.load("roles") || {};
   RBAC.roles = {};
@@ -2983,7 +3035,10 @@ const isFullRole = (roleId) => { const r=rolePerms(roleId); return !!(r && (r.fu
 function userOverride(user){ return user && RBAC.overrides ? RBAC.overrides[user.id] : null; }
 function effPermsObj(user){
   const ov = userOverride(user);
-  if(ov && ov.perms) return ov.perms;
+  // Un override n'est prioritaire que s'il contient réellement des règles :
+  // un objet vide (données corrompues / ancienne synchro) ne doit pas
+  // transformer le rôle en "tout interdit".
+  if(ov && ov.perms && Object.keys(ov.perms).length>0) return ov.perms;
   return rolePerms(user.role).perms || {};
 }
 // ═══ RÈGLES DURES — RÔLE CHIRURGIEN (lecture seule, données sensibles masquées) ═══
@@ -3227,6 +3282,11 @@ function mergeServerUsers(list){
       ov[canonId] = { ...(ov[canonId]||{}), perms, scopes, editOwn,
         role:clean.role, statut:clean.statut, fonction:clean.fonction, telephone:clean.telephone,
         photo:clean.photo, nom:clean.nom, prenom:clean.prenom, color:clean.color };
+    } else if(ov[canonId] && (ov[canonId].perms||ov[canonId].scopes||ov[canonId].editOwn)){
+      // Le serveur ne connaît plus de personnalisation pour cet utilisateur :
+      // on purge l'override local obsolète (l'utilisateur revient à son rôle),
+      // en préservant le bloc meta (commission) qui vit dans la feuille permissions.
+      delete ov[canonId].perms; delete ov[canonId].scopes; delete ov[canonId].editOwn;
     }
     const extRec = {...clean, id:canonId, perms, scopes, editOwn};
     const ei = ext.findIndex(x=> x.id===canonId || (x.email&&clean.email&&String(x.email).toLowerCase()===String(clean.email).toLowerCase()));
@@ -3548,6 +3608,7 @@ function LoginScreen({onLogin, lang, onLangChange}) {
         if(res && res.ok && res.user){
           setAuthToken(res.token||"");
           mergeServerUsers([{...res.user, password:pass}]); // cache local (permet reconnexion hors-ligne)
+          try{ await refreshPermissionsFromServer(); }catch(e){}  // permissions fraîches dès la connexion
           user = USERS.find(u=>u.id===res.user.id) || res.user;
         } else if(res && res.error){
           setError(res.error==="compte désactivé"?"Ce compte est désactivé. Contactez l'administrateur.":"Email ou mot de passe incorrect.");
@@ -9232,6 +9293,10 @@ function GestionUtilisateurs({user, onApplied, permVer}) {
   const [rolePv,setRolePv] = useState(()=>JSON.parse(JSON.stringify({perms:rolePerms("commerciale").perms||{},scopes:rolePerms("commerciale").scopes||{},editOwn:rolePerms("commerciale").editOwn||{}})));
   const [toast,setToast] = useState("");
   const flash = (m)=>{ setToast(m); setTimeout(()=>setToast(""),2500); };
+  // Outil de diagnostic : comparer les permissions effectives de deux utilisateurs
+  const [cmpOpen,setCmpOpen] = useState(false);
+  const [cmpA,setCmpA] = useState("");
+  const [cmpB,setCmpB] = useState("");
 
   if(!isFullRole(user.role)) return <div style={{textAlign:"center",padding:50,color:C.muted}}>🔒 {tt("team.adminOnly")}</div>;
 
@@ -9272,6 +9337,51 @@ function GestionUtilisateurs({user, onApplied, permVer}) {
 
       {tab==="users"&&<>
         <button onClick={()=>setModalUser(null)} style={{width:"100%",padding:"11px",border:"none",borderRadius:10,background:user.color,color:C.white,cursor:"pointer",fontWeight:700,fontSize:13,marginBottom:14}}>+ {tt("team.newUser")}</button>
+        {/* ══ Diagnostic : comparer les permissions effectives de deux utilisateurs ══ */}
+        {isFullRole(user.role)&&<div style={{background:C.white,borderRadius:14,border:`1px solid ${C.border}`,padding:"12px 14px",marginBottom:14}}>
+          <button onClick={()=>setCmpOpen(!cmpOpen)} style={{border:"none",background:"none",cursor:"pointer",fontWeight:800,fontSize:13,color:C.navy,padding:0}}>🔬 {tt("team.compareTool")} {cmpOpen?"▾":"▸"}</button>
+          {cmpOpen&&(()=>{
+            const sel = {padding:"8px 10px",border:`1.5px solid ${C.border}`,borderRadius:9,fontSize:12,background:C.white,minWidth:0};
+            const uA = USERS.find(x=>x.id===cmpA), uB = USERS.find(x=>x.id===cmpB);
+            const src = (u2)=>{ const ov=userOverride(u2); return (ov&&ov.perms&&Object.keys(ov.perms).length>0) ? tt("team.cmpCustom") : `${tt("team.role")} : ${roleLabel(u2.role)||u2.role}`; };
+            const rows = (uA&&uB) ? PERM_MODULES.map(m=>{
+              const a=can(uA,m.k,"view"), b=can(uB,m.k,"view");
+              return {k:m.k, icon:m.icon, label:moduleLabel(m.k)||m.l, a, b, diff:a!==b};
+            }) : [];
+            const diffs = rows.filter(r=>r.diff);
+            return (<div style={{marginTop:10}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                <select style={sel} value={cmpA} onChange={e=>setCmpA(e.target.value)}><option value="">{tt("team.cmpPickA")}</option>{USERS.map(x=><option key={x.id} value={x.id}>{x.prenom} {x.nom} ({x.id})</option>)}</select>
+                <select style={sel} value={cmpB} onChange={e=>setCmpB(e.target.value)}><option value="">{tt("team.cmpPickB")}</option>{USERS.map(x=><option key={x.id} value={x.id}>{x.prenom} {x.nom} ({x.id})</option>)}</select>
+              </div>
+              {uA&&uB&&<div>
+                <div style={{fontSize:11,color:C.muted,marginBottom:8}}>
+                  <b style={{color:C.text}}>{uA.prenom}</b> → {src(uA)} · <b style={{color:C.text}}>{uB.prenom}</b> → {src(uB)}
+                  {" · "}{diffs.length===0
+                    ? <b style={{color:C.green}}>✓ {tt("team.cmpSame")}</b>
+                    : <b style={{color:C.red}}>⚠️ {diffs.length} {tt("team.cmpDiff")}</b>}
+                </div>
+                <div style={{overflowX:"auto"}}>
+                  <table style={{borderCollapse:"collapse",width:"100%",minWidth:340,fontSize:11}}>
+                    <thead><tr>
+                      <th style={{textAlign:"left",padding:"5px 8px",color:C.muted}}>{tt("team.module")}</th>
+                      <th style={{padding:"5px 8px",color:C.muted}}>{uA.prenom}</th>
+                      <th style={{padding:"5px 8px",color:C.muted}}>{uB.prenom}</th>
+                    </tr></thead>
+                    <tbody>{rows.map(r=>(
+                      <tr key={r.k} style={{background:r.diff?"#FEF2F2":"transparent"}}>
+                        <td style={{padding:"5px 8px",fontWeight:700,color:C.text,whiteSpace:"nowrap"}}>{r.icon} {r.label}{r.diff?" ⚠️":""}</td>
+                        <td style={{padding:"5px 8px",textAlign:"center",fontWeight:800,color:r.a?C.green:C.red}}>{r.a?"✓":"✗"}</td>
+                        <td style={{padding:"5px 8px",textAlign:"center",fontWeight:800,color:r.b?C.green:C.red}}>{r.b?"✓":"✗"}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+                {diffs.length>0&&<div style={{fontSize:10,color:C.muted,marginTop:6}}>{tt("team.cmpHint")}</div>}
+              </div>}
+            </div>);
+          })()}
+        </div>}
         {users.map(u=>{
           const actif = userStatut(u)==="Actif";
           return (
@@ -9497,7 +9607,9 @@ function App() {
       cache.save("rdvs", rdvs_data);
       cache.save("taches", taches_data);
       if(f){ const finances_data = f.filter(x=>x.type); setFinances(finances_data); cache.save("finances", finances_data); }
-      if(Array.isArray(u) && u.length){ mergeServerUsers(u); setPermVer(v=>v+1); }
+      if(Array.isArray(u) && u.length){ mergeServerUsers(u); }
+      await refreshPermissionsFromServer();   // rôles + overrides : serveur = source de vérité
+      setPermVer(v=>v+1);
       try{ localStorage.setItem("cn_lastSync", String(Date.now())); }catch(_){}
     } catch(e) {
       console.log("Network error, keeping cache data", e);
