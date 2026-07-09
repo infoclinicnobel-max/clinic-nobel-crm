@@ -11637,7 +11637,10 @@ function AccueilPremiumDrHouse({ user, onOpenAI }){
   if(!open){
     // Mobile : la lampe ouvre DIRECTEMENT le chat IA (plus de plein écran après
     // la première fermeture). PC : comportement actuel conservé (rejoue la scène).
-    const lampClick = ()=>{ try{ if(window.innerWidth<=768){ onOpenAI && onOpenAI(""); return; } }catch(e){} setOpen(true); };
+    // La lampe REJOUE la scène complète (lampe + fumée + halo + apparition) à
+    // CHAQUE clic, sur mobile comme sur PC : le remontage relance les animations
+    // CSS et le useEffect [open] remet la machine à écrire à zéro.
+    const lampClick = ()=>{ setOpen(true); };
     return (
       <button onClick={lampClick} aria-label="Dr House" title={tt("ai.dh.reopen")}
         style={{position:"fixed",bottom:146,right:16,zIndex:1001,width:58,height:58,borderRadius:"50%",border:`2px solid ${GOLD}`,
