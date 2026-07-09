@@ -3701,17 +3701,17 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLkDLgMclG0xr53SYDh
 const USERS = [
   {
     id:"ib", email:"info.clinicnobel@gmail.com", password:"Veysjayjay34",
-    nom:"Turan", prenom:"Veys", role:"admin", color:"#0B1F3A",
+    nom:"Turan", prenom:"Veys", sexe:"Homme", role:"admin", color:"#0B1F3A",
     access:["dashboard","patients","rdvs","analyses","finances","medecins","hopitaux","equipe","taches"]
   },
   {
     id:"andrea", email:"andrea@clinicnobel.com", password:"Andrealoveist34",
-    nom:"Andréa", prenom:"Andréa", role:"commerciale", color:"#7C3AED",
+    nom:"Andréa", prenom:"Andréa", sexe:"Femme", role:"commerciale", color:"#7C3AED",
     access:["dashboard","patients","rdvs","finances","taches"]
   },
   {
     id:"ceyda", email:"ceyda@clinicnobel.com", password:"Ceydamotiv34",
-    nom:"Ceyda", prenom:"Ceyda", role:"coordinatrice", color:"#0891B2",
+    nom:"Ceyda", prenom:"Ceyda", sexe:"Femme", role:"coordinatrice", color:"#0891B2",
     access:["dashboard","rdvs","patients","taches"]
   },
 ];
@@ -4156,7 +4156,7 @@ function mergeServerUsers(list){
     const perms=parse(su.perms), scopes=parse(su.scopes), editOwn=parse(su.editOwn);
     const clean = { id:String(su.id), prenom:su.prenom||"", nom:su.nom||"", email:String(su.email),
       password: su.password!==undefined&&su.password!=="" ? String(su.password) : undefined,
-      telephone:su.telephone||"", fonction:su.fonction||"", role:su.role||"invite", statut:su.statut||"Actif",
+      telephone:su.telephone||"", fonction:su.fonction||"", sexe:su.sexe||"", role:su.role||"invite", statut:su.statut||"Actif",
       color:su.color||ROLE_COLORS[su.role]||"#0B1F3A", photo:su.photo||"", creePar:su.creePar||"", cree:su.cree||"" };
     const live = USERS.find(x=> sameUser(x, clean));
     const canonId = live ? live.id : clean.id;
