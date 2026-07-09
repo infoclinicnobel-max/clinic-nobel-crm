@@ -69,33 +69,12 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 }
 .dh-short{display:none}
 @media (max-width:768px){
-  /* ── Dr House MOBILE : assistant flottant compact, JAMAIS plein écran ── */
-  .dh-wrap{inset:auto !important;top:auto !important;left:auto !important;
-    right:10px !important;bottom:calc(146px + env(safe-area-inset-bottom)) !important;
-    width:min(92vw,340px) !important;max-height:45vh !important;overflow-y:auto !important;
-    -webkit-overflow-scrolling:touch;
-    border-radius:18px !important;border:1px solid #D4AF3755;
-    background:linear-gradient(160deg, rgba(20,20,28,0.97), rgba(10,10,16,0.96)) !important;
-    backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
-    display:block !important;align-items:initial !important;
-    padding:12px 12px calc(14px + env(safe-area-inset-bottom)/2) !important;
-    box-shadow:0 14px 44px rgba(0,0,0,0.45);z-index:1150 !important}
-  /* Personnage petit, à droite, jamais au-dessus du contenu principal */
-  .dh-scene{position:absolute !important;height:150px !important;max-width:150px !important;
-    right:0 !important;top:2px !important;bottom:auto !important;
-    -webkit-mask-image:radial-gradient(ellipse 70% 70% at 50% 42%, #000 45%, transparent 78%);
-    mask-image:radial-gradient(ellipse 70% 70% at 50% 42%, #000 45%, transparent 78%)}
-  .dh-scene img{height:150px !important}
-  /* Carte intégrée au panneau compact */
-  .dh-card{max-width:100% !important;margin:0 !important;padding:0 !important;
-    background:transparent !important;border:none !important;box-shadow:none !important;
-    padding-right:96px !important;min-height:130px}
-  /* Grande mise en scène désactivée sur mobile */
-  .dh-halo,.dh-smoke,.dh-particle{display:none !important}
-  /* Texte court uniquement : machine à écrire/puces/question/onde masquées */
-  .dh-type,.dh-bullets,.dh-final,.dh-audio{display:none !important}
-  .dh-short{display:block;font-size:14px;line-height:1.55;color:#F5F1E8;font-weight:700;margin:6px 0 10px}
-  .dh-close{top:6px !important;right:6px !important}
+  /* ── Dr House MOBILE : intro PLEIN ÉCRAN au premier lancement (immersif) ──
+     Lampe, fumée, halo, particules et apparition progressive conservés.
+     Après fermeture : seule la petite lampe reste, et elle ouvre le CHAT. */
+  .dh-scene{height:56vh;right:-6vw;bottom:0}
+  .dh-card{max-width:94vw !important;margin:12px auto 0 !important}
+  .dh-wrap{align-items:flex-start !important;padding-top:14px !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch;padding-bottom:calc(20px + env(safe-area-inset-bottom)) !important}
 }
 /* ── Phase 18 : Dr House compagnon permanent ── */
 @keyframes dhAvatarFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
@@ -11656,8 +11635,11 @@ function AccueilPremiumDrHouse({ user, onOpenAI }){
 
   // ── État réduit : lampe magique animée en bas à droite ──
   if(!open){
+    // Mobile : la lampe ouvre DIRECTEMENT le chat IA (plus de plein écran après
+    // la première fermeture). PC : comportement actuel conservé (rejoue la scène).
+    const lampClick = ()=>{ try{ if(window.innerWidth<=768){ onOpenAI && onOpenAI(""); return; } }catch(e){} setOpen(true); };
     return (
-      <button onClick={()=>setOpen(true)} aria-label="Dr House" title={tt("ai.dh.reopen")}
+      <button onClick={lampClick} aria-label="Dr House" title={tt("ai.dh.reopen")}
         style={{position:"fixed",bottom:146,right:16,zIndex:1001,width:58,height:58,borderRadius:"50%",border:`2px solid ${GOLD}`,
           padding:0,overflow:"hidden",cursor:"pointer",background:"#0A0A12",animation:"dhLampGlow 2.6s ease-in-out infinite, dhLampPop 5s ease-in-out infinite"}}>
         {imgOk
