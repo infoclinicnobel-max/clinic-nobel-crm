@@ -11579,8 +11579,9 @@ const AI_DH_AUDIO = "data:audio/mp4;base64,AAAAHGZ0eXBNNEEgAAACAE00QSBpc29taXNvM
 
 function AccueilPremiumDrHouse({ user, onOpenAI }){
   const tt = t;
-  const seenKey = "ia_drhouse_seen";
-  const [open, setOpen] = React.useState(()=>{ try{ return !cfgStore.load(seenKey); }catch(e){ return true; } });
+  // L'accueil Dr House s'affiche à CHAQUE ouverture du CRM (rechargement, PWA,
+  // nouvelle session) : aucun verrou localStorage n'empêche l'animation.
+  const [open, setOpen] = React.useState(true);
   const [typed, setTyped] = React.useState("");
   const [lineIdx, setLineIdx] = React.useState(0);
   const [showBullets, setShowBullets] = React.useState(false);
@@ -11622,7 +11623,7 @@ function AccueilPremiumDrHouse({ user, onOpenAI }){
   }, [open]);
 
   const playAudio = ()=>{ try{ const a=audioRef.current; if(a){ a.currentTime=0; const p=a.play(); if(p&&p.catch) p.catch(()=>{}); setNeedsClick(false);} }catch(e){} };
-  const close = ()=>{ setOpen(false); try{ cfgStore.save(seenKey,"1"); }catch(e){} try{ const a=audioRef.current; a&&a.pause&&a.pause(); }catch(e){} };
+  const close = ()=>{ setOpen(false); try{ const a=audioRef.current; a&&a.pause&&a.pause(); }catch(e){} };
   const [dhQ, setDhQ] = React.useState("");
   // La fenêtre ne "se ferme" pas : elle se transforme en conversation — la question
   // part directement au chat Dr House (aiChatRespond) sans repasser par l'accueil.
@@ -11741,7 +11742,8 @@ function AccueilPremiumDrHouse({ user, onOpenAI }){
         {/* Barre "Posez votre question" : vrai champ — Enter ou ➤ envoie directement au chat Dr House */}
         <div style={{display:"flex",alignItems:"center",gap:10,width:"100%",marginTop:14,padding:"6px 8px 6px 15px",borderRadius:99,border:`1px solid ${GOLD}44`,background:"rgba(255,255,255,0.06)"}}>
           <span style={{fontSize:15,color:GOLD}}>＋</span>
-          <input value={dhQ} onChange={e=>setDhQ(e.target.value)} autoFocus
+          {/* Pas d'autoFocus : le clavier mobile ne s'ouvre que sur clic volontaire */}
+          <input value={dhQ} onChange={e=>setDhQ(e.target.value)}
             onKeyDown={e=>{ if(e.key==="Enter" && dhQ.trim()){ openAssistant(); } }}
             placeholder={tt("ai.chatPlaceholder")}
             style={{flex:1,fontSize:13,color:"#F5F1E8",background:"transparent",border:"none",outline:"none",minWidth:0}}/>
@@ -11780,7 +11782,7 @@ function AssistantIA({ user, patient, finances, activeView, onClose, rdvs=[], ta
     }
   }, []);
   // Curseur placé automatiquement dans le champ quand le chat est visible.
-  React.useEffect(()=>{ if(aiTab==="chat"){ try{ chatInputRef.current && chatInputRef.current.focus(); }catch(e){} } }, [aiTab]);
+  React.useEffect(()=>{ if(aiTab==="chat"){ try{ if(window.innerWidth>900){ chatInputRef.current && chatInputRef.current.focus(); } }catch(e){} } }, [aiTab]); // focus auto: desktop seulement (pas de clavier mobile imposé)
   const [convTopic, setConvTopic] = React.useState(null);   // mémoire de conversation (sujet courant)
   const [favorites, setFavorites] = React.useState(()=>{ try{ return cfgStore.load("ia_favorites")||[]; }catch(e){ return []; } });
   const [history, setHistory] = React.useState(()=>{ try{ return cfgStore.load("ia_history")||[]; }catch(e){ return []; } });
