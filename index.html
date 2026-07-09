@@ -341,6 +341,10 @@ const I18N = {
     "sys.backupSent": "Sauvegarde demandée (copie horodatée dans Google Drive).",
     "sys.hint": "Admin/PDG conservent l'accès complet pendant la maintenance. La sauvegarde nocturne automatique s'exécute à 3h (déclencheur Apps Script).",
     "sys.banner": "Clinic Nobel est actuellement en maintenance. Certaines fonctionnalités sont momentanément indisponibles. (Lecture seule)",
+    "sync.partialCache": "Synchronisation impossible pour le moment — vos données locales sont affichées. Réessayez.",
+    "sync.retryMsg": "Synchronisation impossible (serveur injoignable ou lent). Vos données actuelles sont conservées. Réessayez dans un instant.",
+    "sync.lastOk": "Dernière synchronisation réussie",
+    "sys.syncErrors": "Derniers échecs de synchronisation",
     "sys.blockTitle": "Clinic Nobel est actuellement en maintenance.",
     "sys.blockText": "Certaines fonctionnalités sont momentanément indisponibles. Merci de réessayer un peu plus tard.",
     "ai.docs.title": "Documents Clinic Nobel",
@@ -1179,6 +1183,10 @@ const I18N = {
     "sys.backupSent": "Backup requested (timestamped copy in Google Drive).",
     "sys.hint": "Admin/CEO keep full access during maintenance. The automatic nightly backup runs at 3am (Apps Script trigger).",
     "sys.banner": "Clinic Nobel is currently under maintenance. Some features are temporarily unavailable. (Read only)",
+    "sync.partialCache": "Sync unavailable right now — your local data is shown. Retry.",
+    "sync.retryMsg": "Sync failed (server unreachable or slow). Your current data is kept. Retry in a moment.",
+    "sync.lastOk": "Last successful sync",
+    "sys.syncErrors": "Recent sync failures",
     "sys.blockTitle": "Clinic Nobel is currently under maintenance.",
     "sys.blockText": "Some features are temporarily unavailable. Please try again a little later.",
     "ai.docs.title": "Clinic Nobel documents",
@@ -2017,6 +2025,10 @@ const I18N = {
     "sys.backupSent": "Yedekleme istendi (Google Drive'da tarihli kopya).",
     "sys.hint": "Bakım sırasında Admin/PDG tam erişimini korur. Otomatik gece yedeklemesi saat 3'te çalışır (Apps Script tetikleyicisi).",
     "sys.banner": "Clinic Nobel şu anda bakımda. Bazı özellikler geçici olarak kullanılamıyor. (Salt okunur)",
+    "sync.partialCache": "Şu anda senkronizasyon yapılamıyor — yerel verileriniz gösteriliyor. Tekrar deneyin.",
+    "sync.retryMsg": "Senkronizasyon başarısız (sunucu ulaşılamaz veya yavaş). Mevcut verileriniz korundu. Birazdan tekrar deneyin.",
+    "sync.lastOk": "Son başarılı senkronizasyon",
+    "sys.syncErrors": "Son senkronizasyon hataları",
     "sys.blockTitle": "Clinic Nobel şu anda bakımda.",
     "sys.blockText": "Bazı özellikler geçici olarak kullanılamıyor. Lütfen biraz sonra tekrar deneyin.",
     "ai.docs.title": "Clinic Nobel belgeleri",
@@ -2855,6 +2867,10 @@ const I18N = {
     "sys.backupSent": "Copia solicitada (copia con fecha en Google Drive).",
     "sys.hint": "Admin/PDG mantienen acceso completo durante el mantenimiento. La copia nocturna automática se ejecuta a las 3h (activador Apps Script).",
     "sys.banner": "Clinic Nobel está actualmente en mantenimiento. Algunas funciones no están disponibles temporalmente. (Solo lectura)",
+    "sync.partialCache": "Sincronización no disponible ahora — se muestran sus datos locales. Reintente.",
+    "sync.retryMsg": "Sincronización fallida (servidor inaccesible o lento). Sus datos actuales se conservan. Reintente en un momento.",
+    "sync.lastOk": "Última sincronización correcta",
+    "sys.syncErrors": "Últimos fallos de sincronización",
     "sys.blockTitle": "Clinic Nobel está actualmente en mantenimiento.",
     "sys.blockText": "Algunas funciones no están disponibles temporalmente. Vuelva a intentarlo un poco más tarde.",
     "ai.docs.title": "Documentos Clinic Nobel",
@@ -4376,18 +4392,29 @@ let AUTH_TOKEN = (()=>{ try{ return localStorage.getItem("cn_token")||""; }catch
 const setAuthToken = (t)=>{ AUTH_TOKEN = t||""; try{ if(t) localStorage.setItem("cn_token",t); else localStorage.removeItem("cn_token"); }catch(e){} };
 
 const api = {
+  // Retourne un TABLEAU en cas de succès, NULL en cas d'échec (réseau, timeout,
+  // réponse invalide). Les appelants ne doivent JAMAIS écraser l'état ou le cache
+  // local quand la valeur est null — c'est la protection anti "données vides".
   get: async (type) => {
+    const ctrl = (typeof AbortController!=="undefined") ? new AbortController() : null;
+    const timer = setTimeout(()=>{ try{ ctrl && ctrl.abort(); }catch(e){} }, 15000);
     try {
       const r = await fetch(`${SCRIPT_URL}?type=${type}&token=${encodeURIComponent(AUTH_TOKEN)}&t=${Date.now()}`, {
-        method:"GET", redirect:"follow"
+        method:"GET", redirect:"follow", signal: ctrl?ctrl.signal:undefined
       });
       const text = await r.text();
       const d = JSON.parse(text);
-      return Array.isArray(d) ? d : [];
-    } catch(e) { 
-      console.error("GET error:", e);
-      return []; 
-    }
+      if(!Array.isArray(d)) throw new Error("réponse non tabulaire");
+      return d;
+    } catch(e) {
+      console.error("GET error:", type, e);
+      try{ // journal d'échecs visible admin (20 derniers)
+        const log = JSON.parse(localStorage.getItem("cn_sync_errors")||"[]");
+        log.push({ t:new Date().toISOString().slice(0,19).replace("T"," "), type, err:String(e&&e.name==="AbortError"?"timeout 15s":(e&&e.message||e)).slice(0,80) });
+        localStorage.setItem("cn_sync_errors", JSON.stringify(log.slice(-20)));
+      }catch(x){}
+      return null;
+    } finally { clearTimeout(timer); }
   },
   // Connexion sécurisée côté serveur (mot de passe vérifié, jeton renvoyé) — lisible (GET)
   login: async (email, password) => {
@@ -12307,6 +12334,17 @@ function KnowledgeGraphAdmin({ user }){
           <button onClick={sysExportJson} style={btnS("#EEF4FB",C.navy)}>📥 {tt("sys.exportJson")}</button>
         </div>
         <div style={{fontSize:10.5,color:C.muted,marginTop:7}}>{tt("sys.hint")}</div>
+        {/* Journal de synchronisation (correctif démarrage) : dernière synchro OK + derniers échecs */}
+        {(()=>{ let lastOk="—", errs=[];
+          try{ const ts=parseInt(localStorage.getItem("cn_lastSync")||"0"); if(ts) lastOk=new Date(ts).toLocaleString(); }catch(e){}
+          try{ errs=JSON.parse(localStorage.getItem("cn_sync_errors")||"[]").slice(-5).reverse(); }catch(e){}
+          return <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
+            <div style={{fontSize:10.5,color:C.muted}}>🔄 {tt("sync.lastOk")} : <b style={{color:C.text}}>{lastOk}</b></div>
+            {errs.length>0 && <div style={{marginTop:4}}>
+              <div style={{fontSize:10.5,fontWeight:800,color:"#92400E"}}>⚠️ {tt("sys.syncErrors")} ({errs.length})</div>
+              {errs.map((e2,i2)=>(<div key={i2} style={{fontSize:10,color:C.muted}}>{e2.t} · {e2.type} · {e2.err}</div>))}
+            </div>}
+          </div>; })()}
       </div>
       <div style={{background:"#EEF4FB",border:`1px solid ${C.blue}33`,borderRadius:10,padding:"9px 12px",marginBottom:12,fontSize:11.5,color:C.navy,fontWeight:600}}>
         🕸 {tt("kg.docOnly")}
@@ -12630,10 +12668,15 @@ function App() {
 
   // Au montage : le cache est déjà affiché (états initialisés depuis cache.load).
   // On lance la synchro EN ARRIÈRE-PLAN sans bloquer l'interface.
-  useEffect(()=>{ if(user) loadAll(false); },[user]);
-  useEffect(()=>{ if(user) { try{ iaSyncFromServer(); }catch(e){} } },[user]); // bases IA/KG
+  // ── DÉMARRAGE ORDONNÉ (correctif sync) : 1) données CRM + users + permissions
+  // (loadAll), PUIS 2) bases IA/KG, PUIS 3) statut maintenance. Fini la rafale
+  // de requêtes parallèles qui écroulait Apps Script à froid.
   const [maint,setMaint] = useState({ on:false, mode:"readonly" });
-  useEffect(()=>{ if(user){ (async()=>{ try{ setMaint(await sysMaintenanceStatus()); }catch(e){} })(); } },[user]); // mode maintenance
+  useEffect(()=>{ if(user){ (async()=>{
+    try{ await loadAll(false); }catch(e){}
+    try{ await iaSyncFromServer(); }catch(e){}
+    try{ setMaint(await sysMaintenanceStatus()); }catch(e){}
+  })(); } },[user]);
 
   // Charge les finances à la demande (module Finances/Analyses) — une seule fois.
   const ensureFinances = async () => {
@@ -12641,6 +12684,7 @@ function App() {
     finLoadedRef.current = true;
     try {
       const f = await api.get("finances");
+      if(!Array.isArray(f)){ finLoadedRef.current = false; return; } // échec → cache local conservé
       const finances_data = f.filter(x=>x.type);
       setFinances(finances_data);
       cache.save("finances", finances_data);
@@ -12658,24 +12702,27 @@ function App() {
       const calls = [api.get("patients"), api.get("rdvs"), api.get("taches"), api.get("users")];
       if(finLoadedRef.current) calls.push(api.get("finances"));
       const [p,r,tData,u,f] = await Promise.all(calls);
-      const patients_data = p.filter(x=>x.prenom);
-      const rdvs_data = r.filter(x=>x.id);
-      const taches_data = tData.filter(x=>x.titre);
-      setPatients(patients_data);
-      setRdvs(rdvs_data);
-      setTaches(taches_data);
-      cache.save("patients", patients_data);
-      cache.save("rdvs", rdvs_data);
-      cache.save("taches", taches_data);
-      if(f){ const finances_data = f.filter(x=>x.type); setFinances(finances_data); cache.save("finances", finances_data); }
+      // PROTECTION ANTI-ÉCRASEMENT : null = échec réseau/serveur → on ne touche
+      // ni à l'état ni au cache local pour ce type. Seul un vrai tableau écrit.
+      let failed = 0;
+      if(Array.isArray(p)){ const d=p.filter(x=>x.prenom); setPatients(d); cache.save("patients", d); } else failed++;
+      if(Array.isArray(r)){ const d=r.filter(x=>x.id);     setRdvs(d);     cache.save("rdvs", d); }     else failed++;
+      if(Array.isArray(tData)){ const d=tData.filter(x=>x.titre); setTaches(d); cache.save("taches", d); } else failed++;
+      if(f!==undefined){ if(Array.isArray(f)){ const d=f.filter(x=>x.type); setFinances(d); cache.save("finances", d); } else failed++; }
       if(Array.isArray(u) && u.length){ mergeServerUsers(u); }
       await refreshPermissionsFromServer();   // rôles + overrides : serveur = source de vérité
       setPermVer(v=>v+1);
-      try{ localStorage.setItem("cn_lastSync", String(Date.now())); }catch(_){}
+      if(failed===0){
+        try{ localStorage.setItem("cn_lastSync", String(Date.now())); }catch(_){}
+        setLoadError(null);
+      } else {
+        const hasCache = cache.load("rdvs") || cache.load("patients");
+        setLoadError(hasCache ? t("sync.partialCache") : t("rdv.loadError"));
+      }
     } catch(e) {
       console.log("Network error, keeping cache data", e);
       const hasCache = cache.load("rdvs") || cache.load("patients");
-      if(!hasCache){ setLoadError(t("rdv.loadError")); }
+      setLoadError(hasCache ? t("sync.partialCache") : t("rdv.loadError"));
     }
     if(showLoad) setLoading(false);
     setSyncing(false);
@@ -12716,7 +12763,9 @@ function App() {
     ["patients","rdvs","finances","taches"].forEach(k => {
       try { localStorage.removeItem("cn_cache_"+k); } catch(e){}
     });
-    setPatients([]); setRdvs([]); setFinances([]); setTaches([]);
+    // PROTECTION : on ne vide plus l'écran avant le fetch — l'état actuel reste
+    // affiché tant que le serveur n'a pas répondu avec de vraies données.
+    const t2sync = t; // "t" est masqué plus bas par la destructuration des tâches
     setSaveStatus("saving");
     setSyncing(true);
     setLoading(true);
@@ -12724,6 +12773,11 @@ function App() {
       const [p,r,f,t] = await Promise.all([
         api.get("patients"), api.get("rdvs"), api.get("finances"), api.get("taches")
       ]);
+      if(!Array.isArray(p)||!Array.isArray(r)||!Array.isArray(f)||!Array.isArray(t)){
+        setSaveStatus("unsaved"); setLoading(false); setSyncing(false);
+        alert("⚠️ " + t2sync("sync.retryMsg"));
+        return;
+      }
       const pd = p.filter(x=>x.prenom);
       const rd = r.filter(x=>x.type);
       const fd = f.filter(x=>x.type);
@@ -12995,11 +13049,13 @@ function App() {
 
       {/* CONTENU — se décale quand le dock Dr House est ouvert (desktop), jamais masqué */}
       <div className={aiOpen?"dh-shift":""} style={{maxWidth:600,margin:"0 auto",padding:"16px 14px 100px",width:"100%",boxSizing:"border-box",overflowX:"hidden"}}>
-        {loadError&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:12,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:18,flexShrink:0}}>⚠️</span>
-          <div style={{flex:1,fontSize:13,color:"#B91C1C",fontWeight:600}}>{loadError}</div>
+        {loadError&&(()=>{ const soft = loadError===t("sync.partialCache");
+          let lastOk=""; try{ const ts=parseInt(localStorage.getItem("cn_lastSync")||"0"); if(ts) lastOk=new Date(ts).toLocaleString(); }catch(e){}
+          return <div style={{background:soft?"#FFFBEB":"#FEF2F2",border:`1px solid ${soft?"#FDE68A":"#FECACA"}`,borderRadius:12,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:18,flexShrink:0}}>{soft?"📶":"⚠️"}</span>
+          <div style={{flex:1,fontSize:13,color:soft?"#92400E":"#B91C1C",fontWeight:600}}>{loadError}{lastOk&&<div style={{fontSize:11,fontWeight:500,opacity:0.8,marginTop:2}}>{t("sync.lastOk")} : {lastOk}</div>}</div>
           <button onClick={()=>loadAll(true)} style={{border:"none",background:"#DC2626",color:"#fff",borderRadius:9,padding:"6px 12px",cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>{t("common.retry")}</button>
-        </div>}
+        </div>; })()}
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
           {activeView==="fiche"&&<button onClick={goBack} style={{width:36,height:36,borderRadius:10,border:`1px solid ${C.border}`,background:C.white,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>←</button>}
           <div>
