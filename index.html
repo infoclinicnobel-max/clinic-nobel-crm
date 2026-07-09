@@ -289,8 +289,9 @@ const I18N = {
     "ai.dh.lines": "👋 Bonjour,|Je suis le Dr House,|votre assistant IA Clinic Nobel.",
     "ai.dh.bullets": "Chirurgie esthétique|Chirurgie dentaire|Greffe capillaire|Devis|Anatomie|Protocoles|FAQ|Organisation du séjour|Documents Clinic Nobel",
     "ai.dh.finalQ": "Comment puis-je vous aider aujourd'hui ?",
-    "ai.dh.finalQM": "Comment puis-je vous aider aujourd'hui, Messir ?",
-    "ai.dh.finalQF": "Comment puis-je vous aider aujourd'hui, Maîtresse ?",
+    "ai.dh.finalQP": "Comment puis-je vous aider aujourd'hui, {who} ?",
+    "ai.dh.honorM": "Messire",
+    "ai.dh.honorF": "Lady",
     "ai.dh.short": "👋 Bonjour, je suis le Dr House, votre assistant IA Clinic Nobel.",
     "ai.dh.listen": "Écouter le message",
     "ai.dh.reopen": "Réouvrir l'accueil Dr House",
@@ -1133,8 +1134,9 @@ const I18N = {
     "ai.dh.lines": "👋 Hello,|I am Dr House,|your Clinic Nobel AI assistant.",
     "ai.dh.bullets": "Aesthetic surgery|Dental surgery|Hair transplant|Quotes|Anatomy|Protocols|FAQ|Stay organization|Clinic Nobel documents",
     "ai.dh.finalQ": "How may I help you today?",
-    "ai.dh.finalQM": "How may I help you today, Milord?",
-    "ai.dh.finalQF": "How may I help you today, Milady?",
+    "ai.dh.finalQP": "How may I help you today, {who}?",
+    "ai.dh.honorM": "Milord",
+    "ai.dh.honorF": "Lady",
     "ai.dh.short": "👋 Hello, I am Dr House, your Clinic Nobel AI assistant.",
     "ai.dh.listen": "Listen to the message",
     "ai.dh.reopen": "Reopen the Dr House welcome",
@@ -1977,8 +1979,9 @@ const I18N = {
     "ai.dh.lines": "👋 Merhaba,|Ben Dr House,|Clinic Nobel yapay zeka asistanınız.",
     "ai.dh.bullets": "Estetik cerrahi|Diş cerrahisi|Saç ekimi|Teklifler|Anatomi|Protokoller|SSS|Konaklama organizasyonu|Clinic Nobel belgeleri",
     "ai.dh.finalQ": "Bugün size nasıl yardımcı olabilirim?",
-    "ai.dh.finalQM": "Bugün size nasıl yardımcı olabilirim, Beyefendi?",
-    "ai.dh.finalQF": "Bugün size nasıl yardımcı olabilirim, Hanımefendi?",
+    "ai.dh.finalQP": "Bugün size nasıl yardımcı olabilirim, {who}?",
+    "ai.dh.honorM": "Beyefendi",
+    "ai.dh.honorF": "Leydi",
     "ai.dh.short": "👋 Merhaba, ben Dr House, Clinic Nobel yapay zeka asistanınız.",
     "ai.dh.listen": "Mesajı dinle",
     "ai.dh.reopen": "Dr House karşılamasını yeniden aç",
@@ -2821,8 +2824,9 @@ const I18N = {
     "ai.dh.lines": "👋 Hola,|Soy el Dr House,|su asistente IA Clinic Nobel.",
     "ai.dh.bullets": "Cirugía estética|Cirugía dental|Injerto capilar|Presupuestos|Anatomía|Protocolos|FAQ|Organización de la estancia|Documentos Clinic Nobel",
     "ai.dh.finalQ": "¿Cómo puedo ayudarle hoy?",
-    "ai.dh.finalQM": "¿Cómo puedo ayudarle hoy, Señor?",
-    "ai.dh.finalQF": "¿Cómo puedo ayudarle hoy, Señora?",
+    "ai.dh.finalQP": "¿Cómo puedo ayudarle hoy, {who}?",
+    "ai.dh.honorM": "Messire",
+    "ai.dh.honorF": "Lady",
     "ai.dh.short": "👋 Hola, soy el Dr House, su asistente IA Clinic Nobel.",
     "ai.dh.listen": "Escuchar el mensaje",
     "ai.dh.reopen": "Reabrir la bienvenida Dr House",
@@ -11661,6 +11665,13 @@ function AccueilPremiumDrHouse({ user, onOpenAI, rdvs=[], taches=[] }){
   const playAudio = ()=>{ try{ const a=audioRef.current; if(a){ a.currentTime=0; const p=a.play(); if(p&&p.catch) p.catch(()=>{}); setNeedsClick(false);} }catch(e){} };
   const close = ()=>{ setOpen(false); try{ const a=audioRef.current; a&&a.pause&&a.pause(); }catch(e){} };
   const [dhQ, setDhQ] = React.useState("");
+  // Salutation premium : "Messire/Lady [+ prénom]" si le sexe est connu, sinon neutre.
+  const dhFinalQ = (()=>{
+    const honor = (user&&user.sexe==="Homme") ? tt("ai.dh.honorM") : (user&&user.sexe==="Femme") ? tt("ai.dh.honorF") : "";
+    if(!honor) return tt("ai.dh.finalQ");
+    const prenom = user && (user.prenom || (user.name?String(user.name).split(" ")[0]:""));
+    return tt("ai.dh.finalQP").replace("{who}", prenom ? (honor+" "+prenom) : honor);
+  })();
   // ── Phase 19 : Dr House EST la conversation — messages empilés sur place ──
   const [dhMsgs, setDhMsgs] = React.useState([]);      // {role:"user"|"assistant", text, docs, sug, id}
   const [dhBusy, setDhBusy] = React.useState(false);
@@ -11785,7 +11796,7 @@ function AccueilPremiumDrHouse({ user, onOpenAI, rdvs=[], taches=[] }){
         </div>
 
         {/* Texte court mobile uniquement (la grande scène reste desktop/tablette) */}
-        <div className="dh-short">{tt("ai.dh.short")} {(user&&user.sexe==="Homme")?tt("ai.dh.finalQM"):(user&&user.sexe==="Femme")?tt("ai.dh.finalQF"):tt("ai.dh.finalQ")}</div>
+        <div className="dh-short">{tt("ai.dh.short")} {dhFinalQ}</div>
         {/* Machine à écrire */}
         <div className="dh-type" style={{fontSize:17,lineHeight:1.55,color:"#F5F1E8",whiteSpace:"pre-wrap",minHeight:120,fontWeight:600}}>
           {typed.split("\n").map((l,i)=>(
@@ -11800,7 +11811,7 @@ function AccueilPremiumDrHouse({ user, onOpenAI, rdvs=[], taches=[] }){
         {/* Question finale */}
         {showFinal && (
           <div className="dh-final" style={{fontSize:15.5,fontWeight:800,color:GOLD,margin:"10px 0 4px",animation:"dhCardIn 0.6s ease both"}}>
-            {(user&&user.sexe==="Homme")?tt("ai.dh.finalQM"):(user&&user.sexe==="Femme")?tt("ai.dh.finalQF"):tt("ai.dh.finalQ")}
+            {dhFinalQ}
           </div>
         )}
 
