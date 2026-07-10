@@ -323,6 +323,55 @@ const I18N = {
     "sys.backupSent": "Sauvegarde demandée (copie horodatée dans Google Drive).",
     "sys.hint": "Admin/PDG conservent l'accès complet pendant la maintenance. La sauvegarde nocturne automatique s'exécute à 3h (déclencheur Apps Script).",
     "sys.banner": "Clinic Nobel est actuellement en maintenance. Certaines fonctionnalités sont momentanément indisponibles. (Lecture seule)",
+    "diag.tab": "Diagnostic périodes",
+    "diag.title": "Outil de diagnostic temporaire — Diagnostic des périodes",
+    "diag.readOnly": "Lecture seule · Aucune modification de donnée · Aucun envoi externe · Admin/PDG uniquement",
+    "diag.disable": "Désactiver l'outil",
+    "diag.confirmDisable": "Désactiver définitivement l'outil de diagnostic ? L'onglet disparaîtra (réversible en vidant les données du site).",
+    "diag.verdictGood": "Moteur de filtrage validé sur vos données réelles",
+    "diag.verdictBad": "Anomalie détectée — voir les sections en rouge",
+    "diag.txTotal": "Transactions totales",
+    "diag.txPatient": "Flux patient",
+    "diag.txSurgeon": "Mouvements chirurgiens",
+    "diag.period": "Période",
+    "diag.cutoff": "Cutoff (date ≥)",
+    "diag.nbTx": "Nb transactions",
+    "diag.first": "Première transaction",
+    "diag.last": "Dernière transaction",
+    "diag.today": "Aujourd'hui",
+    "diag.days": "jours",
+    "diag.months": "mois",
+    "diag.all": "Tous",
+    "diag.sameTitle": "Périodes affichant le même montant",
+    "diag.noSame": "Aucune période n'affiche un montant identique à la suivante — le filtre agit sur toutes les bornes.",
+    "diag.sameNormal": "Résultat identique normal : aucune transaction supplémentaire entre ces deux dates.",
+    "diag.sameAnomaly": "Anomalie potentielle : des transactions existent dans l'intervalle mais ne sont pas comptabilisées.",
+    "diag.dateQuality": "Qualité des dates",
+    "diag.noDate": "Transactions sans date",
+    "diag.badDate": "Dates invalides",
+    "diag.futureDate": "Transactions futures",
+    "diag.date": "date",
+    "diag.monthly": "Répartition mensuelle des encaissements",
+    "diag.upcomingTitle": "Paiements à venir — date métier non définie",
+    "diag.upcomingBody": "L'onglet « Paiements à venir » ne filtre actuellement sur aucune date prévue : il liste les patients dont le stade n'est pas terminé. Aucune modification n'a été appliquée, en attente de votre décision.",
+    "diag.option": "Option",
+    "diag.optionOp": "Utiliser la date d'opération du patient (dateOperation)",
+    "diag.optionRdv": "Utiliser la date du prochain rendez-vous (rdvs)",
+    "diag.awaitDecision": "Aucune règle métier ne sera modifiée avant votre validation explicite.",
+    "bio.reportTitle": "Analyse du bilan préopératoire",
+    "bio.testsAnalyzed": "examens analysés",
+    "bio.normal": "Valeurs dans les normes",
+    "bio.anomalies": "Valeurs hors normes",
+    "bio.quali": "Résultats qualitatifs",
+    "bio.low": "bas",
+    "bio.high": "élevé",
+    "bio.sexWarn": "Valeurs de référence : profil général (sexe non précisé).",
+    "bio.conclusionOk": "Compatible avec une évaluation préopératoire, sous réserve de validation du chirurgien et de l'anesthésiste.",
+    "bio.conclusionWarn": "Certaines valeurs méritent une vérification avant toute décision.",
+    "bio.conclusionAlert": "Ce bilan présente des anomalies qui nécessitent une évaluation médicale avant d'envisager une intervention.",
+    "bio.disclaimer": "La décision d'opérer appartient exclusivement au chirurgien et à l'anesthésiste. Ce rapport est un outil documentaire et pédagogique uniquement.",
+    "bio.libraryEmpty": "La bibliothèque biologique n'est pas encore synchronisée. Veuillez réessayer dans quelques instants.",
+    "bio.noTestFound": "Aucun examen biologique reconnu. Essayez de coller vos résultats ligne par ligne (ex. : Hémoglobine 12.5 g/dL).",
     "sync.partialCache": "Synchronisation impossible pour le moment — vos données locales sont affichées. Réessayez.",
     "sync.retryMsg": "Synchronisation impossible (serveur injoignable ou lent). Vos données actuelles sont conservées. Réessayez dans un instant.",
     "sync.lastOk": "Dernière synchronisation réussie",
@@ -1168,6 +1217,55 @@ const I18N = {
     "sys.backupSent": "Backup requested (timestamped copy in Google Drive).",
     "sys.hint": "Admin/CEO keep full access during maintenance. The automatic nightly backup runs at 3am (Apps Script trigger).",
     "sys.banner": "Clinic Nobel is currently under maintenance. Some features are temporarily unavailable. (Read only)",
+    "diag.tab": "Period diagnostics",
+    "diag.title": "Temporary diagnostic tool — Period diagnostics",
+    "diag.readOnly": "Read-only · No data modification · No external transmission · Admin only",
+    "diag.disable": "Disable tool",
+    "diag.confirmDisable": "Permanently disable the diagnostic tool? The tab will disappear.",
+    "diag.verdictGood": "Filter engine validated on your real data",
+    "diag.verdictBad": "Anomaly detected — see red sections",
+    "diag.txTotal": "Total transactions",
+    "diag.txPatient": "Patient flow",
+    "diag.txSurgeon": "Surgeon movements",
+    "diag.period": "Period",
+    "diag.cutoff": "Cutoff (date ≥)",
+    "diag.nbTx": "Transactions",
+    "diag.first": "First transaction",
+    "diag.last": "Last transaction",
+    "diag.today": "Today",
+    "diag.days": "days",
+    "diag.months": "months",
+    "diag.all": "All",
+    "diag.sameTitle": "Periods showing the same amount",
+    "diag.noSame": "No period shows an amount identical to the next one — the filter works across all boundaries.",
+    "diag.sameNormal": "Identical result is normal: no additional transaction between these two dates.",
+    "diag.sameAnomaly": "Potential anomaly: transactions exist in the interval but are not counted.",
+    "diag.dateQuality": "Date quality",
+    "diag.noDate": "Transactions without date",
+    "diag.badDate": "Invalid dates",
+    "diag.futureDate": "Future transactions",
+    "diag.date": "date",
+    "diag.monthly": "Monthly breakdown of collections",
+    "diag.upcomingTitle": "Upcoming payments — business date undefined",
+    "diag.upcomingBody": "The Upcoming payments tab currently filters on no expected date: it lists patients whose stage is not finished. No change has been applied, pending your decision.",
+    "diag.option": "Option",
+    "diag.optionOp": "Use the patient's operation date (dateOperation)",
+    "diag.optionRdv": "Use the next appointment date (rdvs)",
+    "diag.awaitDecision": "No business rule will be changed before your explicit approval.",
+    "bio.reportTitle": "Preoperative blood work analysis",
+    "bio.testsAnalyzed": "tests analyzed",
+    "bio.normal": "Values within reference ranges",
+    "bio.anomalies": "Out-of-range values",
+    "bio.quali": "Qualitative results",
+    "bio.low": "low",
+    "bio.high": "high",
+    "bio.sexWarn": "Reference values: general profile (sex not specified).",
+    "bio.conclusionOk": "Compatible with a preoperative assessment, subject to validation by the surgeon and anesthesiologist.",
+    "bio.conclusionWarn": "Some values warrant verification before any decision.",
+    "bio.conclusionAlert": "This blood work shows anomalies requiring medical evaluation before considering an intervention.",
+    "bio.disclaimer": "The decision to operate belongs exclusively to the surgeon and anesthesiologist. This report is a documentary and educational tool only.",
+    "bio.libraryEmpty": "The biology library is not yet synchronized. Please retry in a moment.",
+    "bio.noTestFound": "No biological test recognized. Try pasting your results line by line (e.g., Hemoglobin 12.5 g/dL).",
     "sync.partialCache": "Sync unavailable right now — your local data is shown. Retry.",
     "sync.retryMsg": "Sync failed (server unreachable or slow). Your current data is kept. Retry in a moment.",
     "sync.lastOk": "Last successful sync",
@@ -2013,6 +2111,55 @@ const I18N = {
     "sys.backupSent": "Yedekleme istendi (Google Drive'da tarihli kopya).",
     "sys.hint": "Bakım sırasında Admin/PDG tam erişimini korur. Otomatik gece yedeklemesi saat 3'te çalışır (Apps Script tetikleyicisi).",
     "sys.banner": "Clinic Nobel şu anda bakımda. Bazı özellikler geçici olarak kullanılamıyor. (Salt okunur)",
+    "diag.tab": "Dönem tanılaması",
+    "diag.title": "Geçici tanılama aracı — Dönem tanılaması",
+    "diag.readOnly": "Salt okunur · Veri değişikliği yok · Dış gönderim yok · Yalnızca yönetici",
+    "diag.disable": "Aracı devre dışı bırak",
+    "diag.confirmDisable": "Tanılama aracı kalıcı olarak devre dışı bırakılsın mı?",
+    "diag.verdictGood": "Filtre motoru gerçek verilerinizle doğrulandı",
+    "diag.verdictBad": "Anormallik tespit edildi — kırmızı bölümlere bakın",
+    "diag.txTotal": "Toplam işlem",
+    "diag.txPatient": "Hasta akışı",
+    "diag.txSurgeon": "Cerrah hareketleri",
+    "diag.period": "Dönem",
+    "diag.cutoff": "Kesim (tarih ≥)",
+    "diag.nbTx": "İşlem sayısı",
+    "diag.first": "İlk işlem",
+    "diag.last": "Son işlem",
+    "diag.today": "Bugün",
+    "diag.days": "gün",
+    "diag.months": "ay",
+    "diag.all": "Tümü",
+    "diag.sameTitle": "Aynı tutarı gösteren dönemler",
+    "diag.noSame": "Hiçbir dönem bir sonrakiyle aynı tutarı göstermiyor.",
+    "diag.sameNormal": "Aynı sonuç normaldir: bu iki tarih arasında ek işlem yok.",
+    "diag.sameAnomaly": "Olası anormallik: aralıkta işlemler var ancak sayılmıyor.",
+    "diag.dateQuality": "Tarih kalitesi",
+    "diag.noDate": "Tarihsiz işlemler",
+    "diag.badDate": "Geçersiz tarihler",
+    "diag.futureDate": "Gelecek tarihli işlemler",
+    "diag.date": "tarih",
+    "diag.monthly": "Aylık tahsilat dağılımı",
+    "diag.upcomingTitle": "Yaklaşan ödemeler — iş tarihi tanımsız",
+    "diag.upcomingBody": "Yaklaşan ödemeler sekmesi şu anda hiçbir beklenen tarihe göre filtrelemiyor. Kararınız beklenirken hiçbir değişiklik yapılmadı.",
+    "diag.option": "Seçenek",
+    "diag.optionOp": "Hastanın ameliyat tarihini kullan",
+    "diag.optionRdv": "Bir sonraki randevu tarihini kullan",
+    "diag.awaitDecision": "Açık onayınız olmadan hiçbir iş kuralı değiştirilmeyecek.",
+    "bio.reportTitle": "Preoperatif kan tahlili analizi",
+    "bio.testsAnalyzed": "tahlil analiz edildi",
+    "bio.normal": "Referans aralığında değerler",
+    "bio.anomalies": "Referans dışı değerler",
+    "bio.quali": "Kalitatif sonuçlar",
+    "bio.low": "düşük",
+    "bio.high": "yüksek",
+    "bio.sexWarn": "Referans değerleri: genel profil (cinsiyet belirtilmemiş).",
+    "bio.conclusionOk": "Cerrah ve anestezist doğrulaması kaydıyla preoperatif değerlendirmeyle uyumlu.",
+    "bio.conclusionWarn": "Bazı değerler herhangi bir karar verilmeden önce kontrol edilmeli.",
+    "bio.conclusionAlert": "Bu tahlilde bir müdahale düşünülmeden önce tıbbi değerlendirme gerektiren anormallikler var.",
+    "bio.disclaimer": "Ameliyat kararı yalnızca cerrah ve anesteziste aittir. Bu rapor yalnızca belgesel ve eğitsel bir araçtır.",
+    "bio.libraryEmpty": "Biyoloji kütüphanesi henüz senkronize edilmedi. Lütfen bir süre sonra tekrar deneyin.",
+    "bio.noTestFound": "Hiçbir biyolojik test tanınmadı. Sonuçlarınızı satır satır yapıştırmayı deneyin.",
     "sync.partialCache": "Şu anda senkronizasyon yapılamıyor — yerel verileriniz gösteriliyor. Tekrar deneyin.",
     "sync.retryMsg": "Senkronizasyon başarısız (sunucu ulaşılamaz veya yavaş). Mevcut verileriniz korundu. Birazdan tekrar deneyin.",
     "sync.lastOk": "Son başarılı senkronizasyon",
@@ -2858,6 +3005,55 @@ const I18N = {
     "sys.backupSent": "Copia solicitada (copia con fecha en Google Drive).",
     "sys.hint": "Admin/PDG mantienen acceso completo durante el mantenimiento. La copia nocturna automática se ejecuta a las 3h (activador Apps Script).",
     "sys.banner": "Clinic Nobel está actualmente en mantenimiento. Algunas funciones no están disponibles temporalmente. (Solo lectura)",
+    "diag.tab": "Diagnóstico de periodos",
+    "diag.title": "Herramienta de diagnóstico temporal — Diagnóstico de periodos",
+    "diag.readOnly": "Solo lectura · Sin modificación de datos · Sin envío externo · Solo administrador",
+    "diag.disable": "Desactivar herramienta",
+    "diag.confirmDisable": "¿Desactivar definitivamente la herramienta de diagnóstico?",
+    "diag.verdictGood": "Motor de filtrado validado con sus datos reales",
+    "diag.verdictBad": "Anomalía detectada — vea las secciones en rojo",
+    "diag.txTotal": "Transacciones totales",
+    "diag.txPatient": "Flujo de pacientes",
+    "diag.txSurgeon": "Movimientos de cirujanos",
+    "diag.period": "Periodo",
+    "diag.cutoff": "Corte (fecha ≥)",
+    "diag.nbTx": "N.º transacciones",
+    "diag.first": "Primera transacción",
+    "diag.last": "Última transacción",
+    "diag.today": "Hoy",
+    "diag.days": "días",
+    "diag.months": "meses",
+    "diag.all": "Todos",
+    "diag.sameTitle": "Periodos con el mismo importe",
+    "diag.noSame": "Ningún periodo muestra un importe idéntico al siguiente.",
+    "diag.sameNormal": "Resultado idéntico normal: ninguna transacción adicional entre estas dos fechas.",
+    "diag.sameAnomaly": "Anomalía potencial: existen transacciones en el intervalo pero no se contabilizan.",
+    "diag.dateQuality": "Calidad de las fechas",
+    "diag.noDate": "Transacciones sin fecha",
+    "diag.badDate": "Fechas inválidas",
+    "diag.futureDate": "Transacciones futuras",
+    "diag.date": "fecha",
+    "diag.monthly": "Distribución mensual de cobros",
+    "diag.upcomingTitle": "Pagos próximos — fecha de negocio no definida",
+    "diag.upcomingBody": "La pestaña Pagos próximos no filtra actualmente por ninguna fecha prevista. No se ha aplicado ningún cambio, a la espera de su decisión.",
+    "diag.option": "Opción",
+    "diag.optionOp": "Usar la fecha de operación del paciente",
+    "diag.optionRdv": "Usar la fecha de la próxima cita",
+    "diag.awaitDecision": "Ninguna regla de negocio se modificará sin su aprobación explícita.",
+    "bio.reportTitle": "Análisis del perfil preoperatorio",
+    "bio.testsAnalyzed": "análisis analizados",
+    "bio.normal": "Valores dentro de la norma",
+    "bio.anomalies": "Valores fuera de norma",
+    "bio.quali": "Resultados cualitativos",
+    "bio.low": "bajo",
+    "bio.high": "elevado",
+    "bio.sexWarn": "Valores de referencia: perfil general (sexo no especificado).",
+    "bio.conclusionOk": "Compatible con una evaluación preoperatoria, sujeto a validación del cirujano y el anestesista.",
+    "bio.conclusionWarn": "Algunos valores merecen verificación antes de cualquier decisión.",
+    "bio.conclusionAlert": "Este análisis presenta anomalías que requieren evaluación médica antes de considerar una intervención.",
+    "bio.disclaimer": "La decisión de operar corresponde exclusivamente al cirujano y al anestesista. Este informe es una herramienta documental y pedagógica únicamente.",
+    "bio.libraryEmpty": "La biblioteca de biología no está sincronizada aún. Vuelva a intentarlo en un momento.",
+    "bio.noTestFound": "No se reconoció ningún análisis biológico. Intente pegar sus resultados línea por línea.",
     "sync.partialCache": "Sincronización no disponible ahora — se muestran sus datos locales. Reintente.",
     "sync.retryMsg": "Sincronización fallida (servidor inaccesible o lento). Sus datos actuales se conservan. Reintente en un momento.",
     "sync.lastOk": "Última sincronización correcta",
@@ -6690,6 +6886,277 @@ function paymentBadge(p, finances){
 // ════════════════════════════════════════════════════════════════════════════
 // FINANCES — TABLEAU DE BORD PREMIUM
 // ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// OUTIL TEMPORAIRE — DIAGNOSTIC PÉRIODES (admin/PDG uniquement)
+// LECTURE SEULE : aucune écriture, aucun envoi externe, aucun appel réseau.
+// Reproduit à l'identique le moteur de filtrage du module Finances
+// (cutoff → inPeriod → finBase → fin → done) sur les données RÉELLES chargées.
+// Désactivable par l'admin (bouton) : drapeau local "cn_diag_off".
+// ════════════════════════════════════════════════════════════════════════════
+const DIAG_OFF_KEY = "cn_diag_off";
+function diagIsEnabled(){ try{ return localStorage.getItem(DIAG_OFF_KEY)!=="1"; }catch(e){ return true; } }
+
+function FinDiagnostic({ finances, patients, rdvs, user, tt }){
+  const [openPeriod, setOpenPeriod] = React.useState(null); // liste des transactions
+  const today = todayStr();
+  const eur = (n)=> (Math.round(Number(n)||0)).toLocaleString("fr-FR")+" €"; // formateur local (composant autonome)
+  // Mini-carte locale (le KPI du module Finances n'est pas accessible ici)
+  const DKPI = ({icon,label,value,color})=>(
+    <div style={{flex:"1 1 160px",minWidth:150,background:C.white,border:`1px solid ${C.border}`,borderRadius:12,padding:"10px 12px"}}>
+      <div style={{fontSize:10.5,color:C.muted,fontWeight:700}}>{icon} {label}</div>
+      <div style={{fontSize:18,fontWeight:800,color:color||C.navy,marginTop:2}}>{value}</div>
+    </div>
+  );
+
+  // ── Pipeline identique au module Finances ────────────────────────────────
+  const cutoffFor = (pid)=>{
+    const d = new Date();
+    if(pid==="today") return today;
+    if(pid==="7j"){ d.setDate(d.getDate()-7); }
+    else if(pid==="30j"){ d.setDate(d.getDate()-30); }
+    else if(pid==="3m"){ d.setMonth(d.getMonth()-3); }
+    else if(pid==="6m"){ d.setMonth(d.getMonth()-6); }
+    else if(pid==="12m"){ d.setMonth(d.getMonth()-12); }
+    else return null;
+    return d.toISOString().slice(0,10);
+  };
+  const inP = (date, cut, pid)=> !cut ? true : (pid==="today" ? date===today : (date||"")>=cut);
+
+  const finBase = (finances||[]).filter(f=>
+    FIN_SURGEON_TYPES.indexOf(f.type)<0 && FIN_COMMISSION_TYPES.indexOf(f.type)<0);
+  const surgeonRecs = (finances||[]).filter(f=> FIN_SURGEON_TYPES.indexOf(f.type)>=0);
+
+  const PERIODS = [["today",tt("diag.today")],["7j","7 "+tt("diag.days")],["30j","30 "+tt("diag.days")],
+    ["3m","3 "+tt("diag.months")],["6m","6 "+tt("diag.months")],["12m","12 "+tt("diag.months")],["tout",tt("diag.all")]];
+
+  const rowFor = (pid)=>{
+    const cut = cutoffFor(pid);
+    const fin = finBase.filter(f=> inP(f.date||"", cut, pid));
+    const done = fin.filter(isPatientCashFlow);
+    const dates = fin.map(f=>f.date||"").filter(Boolean).sort();
+    return {
+      pid, cut,
+      nbTx: fin.length,
+      encaisse: done.reduce((a,f)=>a+finSignedAmount(f),0),
+      attente: fin.filter(f=>f.statut==="En attente"&&FIN_NON_CASH_TYPES.indexOf(f.type)<0).reduce((a,f)=>a+finSignedAmount(f),0),
+      rembourse: Math.abs(done.filter(f=>f.type==="Remboursement").reduce((a,f)=>a+finSignedAmount(f),0)),
+      nbPat: new Set(fin.map(f=>String(f.patientId)).filter(Boolean)).size,
+      first: dates[0]||"—",
+      last: dates[dates.length-1]||"—",
+      nbSurgeon: surgeonRecs.filter(f=> inP(f.date||"", cut, pid)).length,
+      items: fin.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""))
+    };
+  };
+  const rows = PERIODS.map(([pid,lbl])=>({ label:lbl, ...rowFor(pid) }));
+
+  // ── Explication automatique des montants identiques ──────────────────────
+  const explications = [];
+  for(let i=0;i<rows.length-1;i++){
+    const a = rows[i], b = rows[i+1];
+    if(Math.abs(a.encaisse-b.encaisse) < 0.01){
+      // transactions encaissées strictement entre les deux bornes
+      const entre = finBase.filter(isPatientCashFlow).filter(f=>{
+        const d = f.date||"";
+        if(!b.cut) return !a.cut || d < a.cut;
+        return d >= b.cut && (!a.cut || d < a.cut);
+      });
+      explications.push({
+        pair: `${a.label} = ${b.label}`,
+        montant: a.encaisse,
+        ok: entre.length===0,
+        msg: entre.length===0 ? tt("diag.sameNormal") : tt("diag.sameAnomaly"),
+        detail: entre.length===0 ? "" : `${entre.length} · ${entre.slice(0,5).map(f=>f.date).join(", ")}`
+      });
+    }
+  }
+
+  // ── Contrôles de qualité des dates ───────────────────────────────────────
+  const sansDate = (finances||[]).filter(f=> !f.date || String(f.date).trim()==="");
+  const dateInvalide = (finances||[]).filter(f=> f.date && !/^\d{4}-\d{2}-\d{2}$/.test(String(f.date)));
+  const futures = (finances||[]).filter(f=> (f.date||"") > today);
+
+  // ── Répartition mensuelle réelle ─────────────────────────────────────────
+  const parMois = {};
+  finBase.filter(isPatientCashFlow).forEach(f=>{
+    const k = String(f.date||"?").slice(0,7);
+    parMois[k] = (parMois[k]||0) + finSignedAmount(f);
+  });
+  const moisRows = Object.keys(parMois).sort().reverse().slice(0,18);
+
+  const anomalie = explications.some(e=>!e.ok) || sansDate.length>0 || dateInvalide.length>0;
+
+  // ── Export CSV du rapport (lecture seule, génération locale) ─────────────
+  const exportDiagCSV = ()=>{
+    const L = [];
+    L.push(["RAPPORT DIAGNOSTIC PÉRIODES — Clinic Nobel", today]);
+    L.push([]);
+    L.push(["Période","Cutoff (date >=)","Nb transactions","Total encaissé","En attente","Remboursements","Patients concernés","Première transaction","Dernière transaction","Mvts chirurgiens"]);
+    rows.forEach(r=> L.push([r.label, r.cut||"— (tout)", r.nbTx, r.encaisse, r.attente, r.rembourse, r.nbPat, r.first, r.last, r.nbSurgeon]));
+    L.push([]);
+    L.push(["EXPLICATIONS — MONTANTS IDENTIQUES"]);
+    if(explications.length===0) L.push([tt("diag.noSame")]);
+    explications.forEach(e=> L.push([e.pair, e.montant, e.ok?"NORMAL":"ANOMALIE", e.msg, e.detail]));
+    L.push([]);
+    L.push(["QUALITÉ DES DATES"]);
+    L.push([tt("diag.noDate"), sansDate.length]);
+    L.push([tt("diag.badDate"), dateInvalide.length]);
+    L.push([tt("diag.futureDate"), futures.length]);
+    L.push([]);
+    L.push(["RÉPARTITION MENSUELLE"]);
+    L.push(["Mois","Total encaissé"]);
+    moisRows.forEach(k=> L.push([k, Math.round(parMois[k]*100)/100]));
+    const csv = L.map(r=>r.map(c=>`"${String(c==null?"":c).replace(/"/g,'""')}"`).join(",")).join("\n");
+    try{
+      const blob = new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8;"});
+      const url = URL.createObjectURL(blob); const a=document.createElement("a");
+      a.href=url; a.download=`diagnostic-periodes-${today}.csv`; a.click(); URL.revokeObjectURL(url);
+    }catch(e){ alert(tt("fin.exportError")); }
+  };
+
+  const disableDiag = ()=>{
+    if(!window.confirm(tt("diag.confirmDisable"))) return;
+    try{ localStorage.setItem(DIAG_OFF_KEY,"1"); }catch(e){}
+    window.location.reload();
+  };
+
+  const th = {textAlign:"left",padding:"8px 10px",fontSize:10.5,fontWeight:800,color:C.muted,textTransform:"uppercase",letterSpacing:"0.04em",whiteSpace:"nowrap"};
+  const td = {padding:"8px 10px",fontSize:12,color:C.text,whiteSpace:"nowrap",borderTop:`1px solid ${C.border}`};
+
+  return (
+    <div>
+      {/* Bandeau outil temporaire */}
+      <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:12,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+        <span style={{fontSize:18}}>🔬</span>
+        <div style={{flex:1,minWidth:220}}>
+          <div style={{fontSize:12.5,fontWeight:800,color:"#1E40AF"}}>{tt("diag.title")}</div>
+          <div style={{fontSize:11,color:"#1E40AF",opacity:0.85,marginTop:2}}>{tt("diag.readOnly")}</div>
+        </div>
+        <button onClick={exportDiagCSV} style={{padding:"8px 12px",border:`1px solid ${C.border}`,borderRadius:10,background:C.white,cursor:"pointer",fontWeight:700,fontSize:12,color:C.text}}>⬇️ CSV</button>
+        <button onClick={disableDiag} style={{padding:"8px 12px",border:"none",borderRadius:10,background:C.red,color:C.white,cursor:"pointer",fontWeight:700,fontSize:12}}>🗑 {tt("diag.disable")}</button>
+      </div>
+
+      {/* Verdict global */}
+      <div style={{background:anomalie?"#FEF2F2":"#F0FDF4",border:`1px solid ${anomalie?"#FECACA":"#BBF7D0"}`,borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+        <div style={{fontSize:13,fontWeight:800,color:anomalie?"#B91C1C":"#15803D"}}>
+          {anomalie ? "❌ "+tt("diag.verdictBad") : "✅ "+tt("diag.verdictGood")}
+        </div>
+        <div style={{fontSize:11.5,color:C.muted,marginTop:4}}>
+          {tt("diag.txTotal")} : <b>{(finances||[]).length}</b> · {tt("diag.txPatient")} : <b>{finBase.length}</b> · {tt("diag.txSurgeon")} : <b>{surgeonRecs.length}</b>
+        </div>
+      </div>
+
+      {/* Tableau des périodes */}
+      <Card style={{padding:0,marginBottom:14,overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
+          <thead><tr style={{background:C.bg}}>
+            <th style={th}>{tt("diag.period")}</th><th style={th}>{tt("diag.cutoff")}</th>
+            <th style={th}>{tt("diag.nbTx")}</th><th style={{...th,textAlign:"right"}}>{tt("fin.received")}</th>
+            <th style={{...th,textAlign:"right"}}>{tt("fin.pending")}</th><th style={{...th,textAlign:"right"}}>{tt("fin.refunded")}</th>
+            <th style={th}>{tt("finance.patientCount")}</th><th style={th}>{tt("diag.first")}</th><th style={th}>{tt("diag.last")}</th><th style={th}></th>
+          </tr></thead>
+          <tbody>
+            {rows.map(r=>(
+              <React.Fragment key={r.pid}>
+                <tr>
+                  <td style={{...td,fontWeight:800}}>{r.label}</td>
+                  <td style={{...td,color:C.muted,fontSize:11}}>{r.cut||"— "+tt("diag.all").toLowerCase()}</td>
+                  <td style={td}>{r.nbTx}</td>
+                  <td style={{...td,textAlign:"right",fontWeight:800,color:C.green}}>{eur(r.encaisse)}</td>
+                  <td style={{...td,textAlign:"right",color:C.amber}}>{eur(Math.max(0,r.attente))}</td>
+                  <td style={{...td,textAlign:"right",color:C.red}}>{eur(r.rembourse)}</td>
+                  <td style={td}>{r.nbPat}</td>
+                  <td style={{...td,fontSize:11,color:C.muted}}>{r.first}</td>
+                  <td style={{...td,fontSize:11,color:C.muted}}>{r.last}</td>
+                  <td style={td}><button onClick={()=>setOpenPeriod(openPeriod===r.pid?null:r.pid)} style={{border:"none",background:"transparent",cursor:"pointer",fontSize:12,color:C.navy,fontWeight:700}}>{openPeriod===r.pid?"▲":"▼"} {r.nbTx}</button></td>
+                </tr>
+                {openPeriod===r.pid && (
+                  <tr><td colSpan={10} style={{padding:"8px 12px",background:C.bg,borderTop:`1px solid ${C.border}`}}>
+                    {r.items.length===0
+                      ? <div style={{fontSize:12,color:C.muted,padding:8}}>{tt("common.noResult")}</div>
+                      : <div style={{maxHeight:240,overflowY:"auto"}}>
+                          {r.items.map(f=>{ const p=(patients||[]).find(x=>String(x.id)===String(f.patientId));
+                            return (<div key={f.id} style={{display:"flex",gap:10,alignItems:"center",padding:"5px 0",fontSize:11.5,borderBottom:`1px dashed ${C.border}`}}>
+                              <span style={{color:C.muted,minWidth:86}}>{f.date||"—"}</span>
+                              <span style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p?`${p.prenom} ${p.nom}`:"—"}</span>
+                              <Badge text={f.type||"—"} color={C.navy} small/>
+                              <span style={{fontWeight:800,color:isPatientCashFlow(f)?C.green:C.muted,minWidth:80,textAlign:"right"}}>{eur(f.montant)}</span>
+                              <span style={{color:C.muted,minWidth:70,fontSize:10.5}}>{f.statut||"—"}</span>
+                            </div>);
+                          })}
+                        </div>}
+                  </td></tr>
+                )}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+
+      {/* Explications montants identiques */}
+      <Card style={{marginBottom:14}}>
+        <div style={{fontSize:13,fontWeight:800,color:C.text,marginBottom:8}}>🔍 {tt("diag.sameTitle")}</div>
+        {explications.length===0
+          ? <div style={{fontSize:12,color:C.muted}}>{tt("diag.noSame")}</div>
+          : explications.map((e,i)=>(
+            <div key={i} style={{padding:"8px 10px",borderRadius:9,background:e.ok?"#F0FDF4":"#FEF2F2",border:`1px solid ${e.ok?"#BBF7D0":"#FECACA"}`,marginBottom:6}}>
+              <div style={{fontSize:12,fontWeight:800,color:e.ok?"#15803D":"#B91C1C"}}>{e.ok?"✅":"⚠️"} {e.pair} ({eur(e.montant)})</div>
+              <div style={{fontSize:11.5,color:C.text,marginTop:2}}>{e.msg}</div>
+              {e.detail&&<div style={{fontSize:11,color:"#B91C1C",marginTop:2}}>{e.detail}</div>}
+            </div>
+          ))}
+      </Card>
+
+      {/* Qualité des dates */}
+      <Card style={{marginBottom:14}}>
+        <div style={{fontSize:13,fontWeight:800,color:C.text,marginBottom:8}}>📅 {tt("diag.dateQuality")}</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <DKPI icon={sansDate.length?"❌":"✅"} label={tt("diag.noDate")} value={sansDate.length} color={sansDate.length?C.red:C.green}/>
+          <DKPI icon={dateInvalide.length?"❌":"✅"} label={tt("diag.badDate")} value={dateInvalide.length} color={dateInvalide.length?C.red:C.green}/>
+          <DKPI icon={futures.length?"⚠️":"✅"} label={tt("diag.futureDate")} value={futures.length} color={futures.length?C.amber:C.green}/>
+        </div>
+        {(sansDate.length>0||dateInvalide.length>0||futures.length>0) && (
+          <div style={{marginTop:10,maxHeight:180,overflowY:"auto"}}>
+            {[...sansDate,...dateInvalide,...futures].slice(0,30).map((f,i)=>(
+              <div key={i} style={{fontSize:11,color:C.muted,padding:"3px 0"}}>
+                {f.id} · {tt("diag.date")}: <b style={{color:C.red}}>{f.date||"(vide)"}</b> · {f.type} · {eur(f.montant)}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Répartition mensuelle */}
+      <Card style={{marginBottom:14}}>
+        <div style={{fontSize:13,fontWeight:800,color:C.text,marginBottom:8}}>📊 {tt("diag.monthly")}</div>
+        {moisRows.length===0
+          ? <div style={{fontSize:12,color:C.muted}}>{tt("common.noResult")}</div>
+          : moisRows.map(k=>{
+              const max = Math.max(...moisRows.map(x=>Math.abs(parMois[x])))||1;
+              const w = Math.round(Math.abs(parMois[k])/max*100);
+              return (<div key={k} style={{display:"flex",alignItems:"center",gap:10,padding:"4px 0"}}>
+                <span style={{fontSize:11.5,color:C.muted,minWidth:64,fontWeight:700}}>{k}</span>
+                <div style={{flex:1,height:8,background:C.bg,borderRadius:99,overflow:"hidden"}}>
+                  <div style={{width:`${w}%`,height:"100%",background:C.green,borderRadius:99}}/>
+                </div>
+                <span style={{fontSize:11.5,fontWeight:800,color:C.text,minWidth:90,textAlign:"right"}}>{eur(parMois[k])}</span>
+              </div>);
+            })}
+      </Card>
+
+      {/* Paiements à venir : date métier non définie (AUCUNE modification appliquée) */}
+      <Card style={{background:"#FFFBEB",border:"1px solid #FDE68A"}}>
+        <div style={{fontSize:13,fontWeight:800,color:"#92400E",marginBottom:6}}>⚠️ {tt("diag.upcomingTitle")}</div>
+        <div style={{fontSize:12,color:"#92400E",lineHeight:1.6}}>{tt("diag.upcomingBody")}</div>
+        <div style={{marginTop:8,fontSize:12,color:C.text}}>
+          <div style={{padding:"6px 0"}}><b>{tt("diag.option")} 1</b> — {tt("diag.optionOp")}</div>
+          <div style={{padding:"6px 0"}}><b>{tt("diag.option")} 2</b> — {tt("diag.optionRdv")}</div>
+        </div>
+        <div style={{fontSize:11.5,color:C.muted,marginTop:6,fontStyle:"italic"}}>{tt("diag.awaitDecision")}</div>
+      </Card>
+    </div>
+  );
+}
+
 function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, onSave, onSavePatient}) {
   const tt = t; // alias sûr : évite toute collision avec variables locales "t"
   const [tab, setTab] = useState("dashboard");
@@ -6893,23 +7360,40 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
   const done = fin.filter(isPatientCashFlow);              // encaissements réels, période
   const doneAll = finBase.filter(isPatientCashFlow);       // encaissements réels, tous temps (KPIs calendaires)
 
-  // ── KPIs ────────────────────────────────────────────────────────────────────
-  // Montants SIGNÉS : les remboursements se déduisent, les devis ne comptent pas.
+  // ── MOTEUR DE FILTRAGE UNIFIÉ ─────────────────────────────────────────────
+  // SOURCE DE VÉRITÉ UNIQUE : toutes les métriques utilisent les mêmes données.
+  // Règle : fin = transactions filtrées par période (via inPeriod sur f.date).
+  //         done = encaissements réels dans la période.
+  //         doneAll = tous les encaissements (fenêtres fixes CA Jour/Semaine/Mois/An).
+  //         patInPeriod = patients ayant AU MOINS UN mouvement dans la période.
+  const patInPeriod = cutoff
+    ? new Set(fin.map(f=>String(f.patientId)).filter(Boolean))
+    : null; // null = tous (période "Tout")
+  // Helpers filtrés par période — utilisés partout, jamais recalculés
+  const finPeriodPatients = patInPeriod
+    ? pat.filter(p=>patInPeriod.has(String(p.id)))
+    : pat;
+
+  // ── KPIs ─────────────────────────────────────────────────────────────────────
   const thisWeek=(()=>{const d=new Date();d.setDate(d.getDate()-(d.getDay()||7)+1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;})();
+  // Fenêtres ABSOLUES (Jour/Semaine/Mois/An) : toujours sur doneAll, indépendantes du filtre de période.
+  // Leur libellé indique la fenêtre explicitement → pas de confusion avec le filtre.
   const ca = (from)=> doneAll.filter(f=>(from?(f.date||"")>=from:true)).reduce((a,f)=>a+finSignedAmount(f),0);
   const caToday = doneAll.filter(f=>f.date===today).reduce((a,f)=>a+finSignedAmount(f),0);
   const caWeek = ca(thisWeek), caMonth = ca(today.slice(0,7)+"-01"), caYear = ca(today.slice(0,4)+"-01-01");
+  // Métriques FILTRÉES PAR PÉRIODE (utilisent toutes fin/done/finPeriodPatients)
   const totalEncaisse = done.reduce((a,f)=>a+finSignedAmount(f),0);
   const enAttente = fin.filter(f=>f.statut==="En attente"&&FIN_NON_CASH_TYPES.indexOf(f.type)<0).reduce((a,f)=>a+finSignedAmount(f),0);
   const rembourse = Math.abs(done.filter(f=>f.type==="Remboursement").reduce((a,f)=>a+finSignedAmount(f),0));
   const acomptesRecus = done.filter(f=>f.type==="Acompte").reduce((a,f)=>a+finSignedAmount(f),0);
   const nAcompte = done.filter(f=>f.type==="Acompte").length;
   const acompteMoyen = nAcompte ? Math.round(acomptesRecus/nAcompte) : 0;
-  const budgets = pat.filter(p=>Number(p.budget)>0);
+  // panierMoyen : patients ayant un mouvement dans la période (filtré)
+  const budgets = finPeriodPatients.filter(p=>Number(p.budget)>0);
   const panierMoyen = budgets.length ? Math.round(budgets.reduce((a,p)=>a+Number(p.budget),0)/budgets.length) : 0;
-  // Solde restant réel = Σ soldes patients (tous temps, cohérent quel que soit
-  // le filtre de période — avant : budgets tous-temps − paiements de la période → faux)
-  const resteEncaisser = pat.reduce((a,p)=>a+getPatientBalance(p, finances),0);
+  // resteEncaisser : solde calculé sur les paiements de la période uniquement
+  // (utilise fin filtré comme base de paiements — source unique)
+  const resteEncaisser = finPeriodPatients.reduce((a,p)=>a+getPatientBalance(p, fin),0);
   const objPct = objectif ? Math.min(100, Math.round(caMonth/objectif*100)) : 0;
 
   // ── Donut : ventes par utilisateur (montants signés) ────────────────────────
@@ -6933,24 +7417,24 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
   // contenait "Prospect"/"Acompte reçu" (inexistants) et omettait "Nouveau",
   // "Contacté", "Consultation planifiée", "Préopératoire" → patients invisibles.
   const parStade = STAGES.map((st,i)=>({label:stageLabel(st), key:st, color:CHART_PALETTE[i%CHART_PALETTE.length],
-    value: pat.filter(p=>(p.stade||"Nouveau")===st).length})).filter(s=>s.value>0);
+    value: finPeriodPatients.filter(p=>(p.stade||"Nouveau")===st).length})).filter(s=>s.value>0);
 
   // ── Donut : opérations ───────────────────────────────────────────────────────
   const OPS = ["Rhinoplastie","BBL","Liposuccion","Abdominoplastie","Lifting visage","Greffe capillaire","Dentaire","Autres"];
   const parOp = OPS.map((op,i)=>{
-    const ps = pat.filter(p=>opBucket(p)===op);
+    const ps = finPeriodPatients.filter(p=>opBucket(p)===op);
     return {label:op, key:op, color:CHART_PALETTE[i%CHART_PALETTE.length], value:ps.length,
       ca: ps.reduce((a,p)=>a+Number(p.budget||0),0)};
   }).filter(s=>s.value>0);
 
   // ── Donut : pays ─────────────────────────────────────────────────────────────
   const paysMap = {};
-  pat.forEach(p=>{ const k=p.pays||"—"; paysMap[k]=(paysMap[k]||0)+1; });
+  finPeriodPatients.forEach(p=>{ const k=p.pays||"—"; paysMap[k]=(paysMap[k]||0)+1; });
   const parPays = Object.keys(paysMap).map((k,i)=>({label:k,key:k,value:paysMap[k],color:CHART_PALETTE[i%CHART_PALETTE.length]})).sort((a,b)=>b.value-a.value);
 
   // ── Donut : sources ──────────────────────────────────────────────────────────
   const srcMap = {};
-  pat.forEach(p=>{ const k=p.source||"—"; srcMap[k]=(srcMap[k]||0)+1; });
+  finPeriodPatients.forEach(p=>{ const k=p.source||"—"; srcMap[k]=(srcMap[k]||0)+1; });
   const parSource = Object.keys(srcMap).map((k,i)=>({label:k,key:k,value:srcMap[k],color:CHART_PALETTE[i%CHART_PALETTE.length]})).sort((a,b)=>b.value-a.value);
 
   // ── Évolution CA (12 mois) ───────────────────────────────────────────────────
@@ -6965,7 +7449,7 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
   const classement = USERS.map(u=>{
     const ventes = done.filter(f=>f.creePar===u.id);
     const caU = ventes.reduce((a,f)=>a+finSignedAmount(f),0);
-    const patsU = pat.filter(p=>p.assigneA===u.id||p.creePar===u.id);
+    const patsU = finPeriodPatients.filter(p=>p.assigneA===u.id||p.creePar===u.id);
     const confirmes = patsU.filter(p=>["Confirmé","Arrivé à Istanbul","Post-opératoire","Clôturé ✓"].includes(p.stade)).length;
     return {u, ca:caU, nb:ventes.length, panier: ventes.length?Math.round(caU/ventes.length):0,
       conv: patsU.length?Math.round(confirmes/patsU.length*100):0};
@@ -6987,10 +7471,10 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
       if(drill.key==="rembourses") return f.statut==="Complété"&&f.type==="Remboursement";
       return false;
     })};
-    if(drill.dim==="stade") return {kind:"pat", items: pat.filter(p=>(p.stade||"Prospect")===drill.key)};
-    if(drill.dim==="op") return {kind:"pat", items: pat.filter(p=>opBucket(p)===drill.key)};
-    if(drill.dim==="pays") return {kind:"pat", items: pat.filter(p=>(p.pays||"—")===drill.key)};
-    if(drill.dim==="source") return {kind:"pat", items: pat.filter(p=>(p.source||"—")===drill.key)};
+    if(drill.dim==="stade") return {kind:"pat", items: finPeriodPatients.filter(p=>(p.stade||"Prospect")===drill.key)};
+    if(drill.dim==="op") return {kind:"pat", items: finPeriodPatients.filter(p=>opBucket(p)===drill.key)};
+    if(drill.dim==="pays") return {kind:"pat", items: finPeriodPatients.filter(p=>(p.pays||"—")===drill.key)};
+    if(drill.dim==="source") return {kind:"pat", items: finPeriodPatients.filter(p=>(p.source||"—")===drill.key)};
     return null;
   })();
 
@@ -7070,6 +7554,7 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
       <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
         {[["dashboard","📊 "+tt("title.dashboard")],["upcoming","🔜 "+tt("finance.upcomingPatients")],["due","💸 "+tt("finance.upcomingPayments")],["closed","✅ "+tt("finance.closedPatients")],["transactions","💳 "+tt("fin.transactions")],
           ...(hasFinancesAdmin(user)?[["surgeons","💼 "+tt("finance.surgeonPayments")],["recap","📋 "+tt("finance.recapByPatient")],["adminfin","🔐 "+tt("finance.adminFinances")]]:[]),
+          ...(isFullRole(user&&user.role) && diagIsEnabled() ? [["diag","🔬 "+tt("diag.tab")]] : []),
           ...(hasCommissions(user)?[["commissions","🤝 "+tt("comm.title")]]:[])].map(([id,lb])=>(
           <button key={id} onClick={()=>setTab(id)} style={{padding:"8px 14px",borderRadius:10,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,whiteSpace:"nowrap",
             background:tab===id?C.navy:C.white,color:tab===id?C.white:C.muted,boxShadow:tab===id?"none":`inset 0 0 0 1px ${C.border}`}}>{lb}</button>
@@ -7208,9 +7693,9 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
 
       {/* ══ PATIENTS À VENIR ══ */}
       {tab==="upcoming" && (()=>{
-        const list = pat.filter(p=>isUpcomingPatient(p, rdvs));
+        const list = finPeriodPatients.filter(p=>isUpcomingPatient(p, rdvs));
         const totalPrevu = list.reduce((a,p)=>a+getPatientTotal(p),0);
-        const totalRestant = list.reduce((a,p)=>a+getPatientBalance(p, finances),0);
+        const totalRestant = list.reduce((a,p)=>a+getPatientBalance(p, fin),0);
         return (
           <div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
@@ -7227,10 +7712,10 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
 
       {/* ══ PAIEMENTS À VENIR / À ENCAISSER ══ */}
       {tab==="due" && (()=>{
-        const list = pat.filter(p=>isPaymentDuePatient(p, finances))
-          .sort((a,b)=>getPatientBalance(b,finances)-getPatientBalance(a,finances));
-        const totalDu = list.reduce((a,p)=>a+getPatientBalance(p, finances),0);
-        const totalRecu = list.reduce((a,p)=>a+getPatientPaid(p, finances),0);
+        const list = pat.filter(p=>isPaymentDuePatient(p, fin))
+          .sort((a,b)=>getPatientBalance(b,fin)-getPatientBalance(a,fin));
+        const totalDu = list.reduce((a,p)=>a+getPatientBalance(p, fin),0);
+        const totalRecu = list.reduce((a,p)=>a+getPatientPaid(p, fin),0);
         const soldeMoyen = list.length ? Math.round(totalDu/list.length) : 0;
         return (
           <div>
@@ -7578,6 +8063,10 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
           Montants TOUS TEMPS par patient (soldes exacts) ; la période sert de
           filtre d'ACTIVITÉ (patients ayant au moins un mouvement dans la période),
           jamais de coupe des montants — sinon les soldes seraient faux (leçon C3). */}
+      {/* ══ DIAGNOSTIC PÉRIODES (outil temporaire, admin/PDG, lecture seule) ══ */}
+      {tab==="diag" && isFullRole(user&&user.role) && diagIsEnabled() &&
+        <FinDiagnostic finances={finances} patients={patients} rdvs={rdvs} user={user} tt={tt}/>}
+
       {tab==="recap" && hasFinancesAdmin(user) && (()=>{
         const rows = pat.map(p=>{
           const sRecs = patientSurgeonRecords(p, finances);
@@ -10686,7 +11175,11 @@ const AI_MEDICAL_KEYWORDS = ["douleur","complication","cicatri","infection","ane
   "hématome","hematome","œdème","oedeme","fièvre","fievre","suture","greffe","implant","post-op","postop",
   "opératoire","operatoire","risque","séquelle","sequelle","médicament","medicament","antibiot","symptôme","symptome"];
 const AI_FORBIDDEN_CLAIMS = ["garanti","garantie","résultat garanti","sans risque","aucun risque","100%","100 %",
-  "je vous assure","succès garanti","sans douleur garanti","aucune complication","zéro risque"];
+  "je vous assure","succès garanti","sans douleur garanti","aucune complication","zéro risque",
+  // Bibliothèque 15 — Biologie préopératoire : formulations médicales interdites (jamais une décision d'opérer)
+  "vous êtes opérable","vous pouvez être opéré","opération autorisée","opération refusée",
+  "peut être opéré","pouvez vous faire opérer","feu vert pour l'opération","feu vert pour la chirurgie",
+  "vous pouvez opérer","opérables","pas opérable","non opérable","inapte à la chirurgie"];
 
 function aiMedicalLevel(text){
   const s = String(text||"").toLowerCase();
@@ -11189,7 +11682,7 @@ async function sysMaintenanceStatus(){
 // Si le serveur possède des données pour une feuille IA, elles remplacent le cache
 // local : les validations admin se propagent ainsi à tous les appareils.
 async function iaSyncFromServer(){
-  const types = ["ia_kb","ia_sources","ia_anatomie","ia_kg_nodes","ia_kg_edges","ia_docs"];
+  const types = ["ia_kb","ia_sources","ia_anatomie","ia_kg_nodes","ia_kg_edges","ia_docs","ia_biologie","ia_interventions"];
   for(const ty of types){
     try{
       const rows = await api.get(ty);
@@ -11475,7 +11968,20 @@ const AI_TOPICS = {
   mammaire:   { label:"Chirurgie mammaire", keys:["mammaire","seins","poitrine","augmentation mammaire","protheses"] },
   abdo:       { label:"Abdominoplastie", keys:["abdomino","abdominoplastie","ventre","tummy"] },
   dentaire:   { label:"Chirurgie dentaire", keys:["dentaire","dents","implant dentaire","facettes","couronne"] },
-  vaser:      { label:"VASER HD", keys:["vaser","vaser hd","hd lipo"] }
+  vaser:      { label:"VASER HD", keys:["vaser","vaser hd","hd lipo"] },
+  // Topics ajoutés — Bibliothèque 2 Interventions
+  blepharoplastie: { label:"Blépharoplastie", keys:["blepharoplastie","paupières","paupieres","chirurgie paupieres","poches yeux","yeux tombants"] },
+  lip_lift:        { label:"Lip Lift", keys:["lip lift","lip-lift","remontee levre","vermillon","philtrum"] },
+  bichectomie:     { label:"Bichectomie", keys:["bichectomie","boules de bichat","joues rondes","affiner visage"] },
+  otoplastie:      { label:"Otoplastie", keys:["otoplastie","oreilles decollees","oreilles prominentes","pavillon"] },
+  septo:           { label:"Septoplastie", keys:["septoplastie","cloison","deviation septale","septum","nez bouche"] },
+  mento:           { label:"Mentoplastie", keys:["mentoplastie","genioplastie","implant menton","menton fuyant","retrogenie"] },
+  mam_aug:         { label:"Augmentation mammaire", keys:["augmentation mammaire","implants","protheses mammaires","breast augmentation","seins volume"] },
+  bbl_safe:        { label:"SAFE BBL", keys:["safe bbl","bbl safe","lipofilling fessier","augmentation fesses"] },
+  greffe_fue:      { label:"Greffe FUE", keys:["fue","greffe fue","follicular unit extraction","alopecie androgenetique"] },
+  hollywood_smile: { label:"Hollywood Smile", keys:["hollywood smile","facettes dentaires","sourire hollywood","smile makeover"] },
+  rhino_ultra:     { label:"Rhinoplastie ultrasonique", keys:["rhinoplastie ultrasonique","piezo rhinoplastie","ultrasonique"] },
+  rhino_second:    { label:"Rhinoplastie secondaire", keys:["rhinoplastie secondaire","revision rhinoplastie","retouche nez"] }
 };
 function aiDetectTopic(question){
   const q = aiNormalize(question);
@@ -11593,6 +12099,163 @@ const AI_DH_AUDIO = "data:audio/mp4;base64,AAAAHGZ0eXBNNEEgAAACAE00QSBpc29taXNvM
 // Aucune écriture, aucune donnée envoyée — construit localement depuis les données
 // déjà visibles pour ce rôle (props filtrées par permissions). Partagé entre
 // l'accueil conversationnel (Phase 19) et le panneau assistant interne.
+// ════════════════════════════════════════════════════════════════════════
+// BIBLIOTHÈQUE 15 — BIOLOGIE MÉDICALE PRÉOPÉRATOIRE (Clinic Nobel V2.0)
+// Outil DOCUMENTAIRE uniquement. Aucun diagnostic. Aucune décision d'opérer.
+// La décision appartient exclusivement au chirurgien et à l'anesthésiste.
+// Trois formulations de conclusion, codées en dur, jamais générées par l'IA.
+// ════════════════════════════════════════════════════════════════════════
+
+// Charge la bibliothèque validée depuis le cache local
+function dhBioLoad(){
+  try{ return (cfgStore.load("ia_biologie")||[]).filter(b=>b.statut==="Validé"); }
+  catch(e){ return []; }
+}
+
+// Heuristique : le texte ressemble-t-il à un bilan sanguin ?
+function dhIsBilan(text){
+  const n = aiNormalize(text);
+  const kw = /\b(nfs|hemoglobine|hematocrite|plaquettes|leucocytes|ferritine|inr|tca|glycemie|hba1c|creatinine|uree|sodium|potassium|calcium|magnesium|asat|alat|ggt|pal|bilirubine|albumine|tsh|bhcg|beta.hcg|vih|hepatite|groupe.sanguin|rai|fibrinogene)\b/;
+  if(kw.test(n)) return true;
+  const raw = text.toLowerCase();
+  const unitRe = /g\/dl|g\/l|mmol|µmol|mg\/l|mg\/dl|ui\/l|iu\/l|miu\/ml|pmol|pg|fl/;
+  const nums = (raw.match(/\b\d+[,.]?\d*/g)||[]);
+  const units = nums.filter((_,i)=>{ const after=raw.slice(raw.indexOf(nums[i])+nums[i].length, raw.indexOf(nums[i])+nums[i].length+12); return unitRe.test(after); });
+  return units.length >= 2;
+}
+
+// Parse un texte libre en liste de résultats {test, valeur, unité}
+function dhParseBilan(text, bio){
+  const results = [];
+  const lines = text.split(/\r?\n/);
+  for(const line of lines){
+    const l = line.trim();
+    if(l.length < 3) continue;
+    // Extraire le premier nombre (décimal virgule ou point, précédé de < > ≤ ≥)
+    const numMatch = l.match(/([<>≤≥]?\s*\d+(?:[,.]\d+)?)/);
+    if(!numMatch) continue;
+    const value = parseFloat(numMatch[1].replace(/[<>≤≥\s]/g,"").replace(",","."));
+    if(isNaN(value) || value < 0) continue;
+    // Le nom du test est ce qui précède le nombre
+    const beforeRaw = l.slice(0, l.indexOf(numMatch[0])).trim();
+    if(beforeRaw.length < 2) continue;
+    const testName = aiNormalize(beforeRaw.replace(/[:\-=\(\)\/\.#*]/g," "));
+    // L'unité est ce qui suit le nombre
+    const afterRaw = l.slice(l.indexOf(numMatch[0]) + numMatch[0].length).trim();
+    const rawUnit = ((afterRaw.match(/^[a-zA-Z%µ\/^0-9·\s]{1,12}/)||[""])[0]).trim();
+    // Trouver le test dans la bibliothèque par tous ses noms et alias
+    const test = bio.find(b=>{
+      const names = [b.code, b.nom, ...(b.aliases||"").split("|")]
+        .map(x=>aiNormalize(String(x||""))).filter(x=>x.length>=2);
+      return names.some(n=>
+        testName===n ||
+        (testName.length>=3 && n.length>=3 && (testName.includes(n) || n.includes(testName)))
+      );
+    });
+    if(test && !results.find(r=>r.test.code===test.code)){
+      results.push({ test, value, rawUnit, raw:l });
+    }
+  }
+  return results;
+}
+
+// Évalue chaque résultat vs valeurs de référence (selon le sexe si connu)
+function dhEvalBilan(parsed, sexe){
+  const bas=[], haut=[], normal=[], quali=[];
+  for(const item of parsed){
+    const isF = sexe==="Femme";
+    const minN = isF && item.test.ref_min_f ? item.test.ref_min_f : item.test.ref_min_h;
+    const maxN = isF && item.test.ref_max_f ? item.test.ref_max_f : item.test.ref_max_h;
+    const mn = parseFloat(minN), mx = parseFloat(maxN);
+    // Qualitatifs (sérologies, groupe sanguin) : min=max=0 → traitement séparé
+    if(mn===0 && mx===0){
+      quali.push({...item, status:"quali"});
+    } else if(!isNaN(mn) && item.value < mn){
+      bas.push({...item, status:"bas"});
+    } else if(!isNaN(mx) && item.value > mx){
+      haut.push({...item, status:"haut"});
+    } else {
+      normal.push({...item, status:"normal"});
+    }
+  }
+  return { bas, haut, normal, quali, totalAnomalies: bas.length+haut.length };
+}
+
+// Niveau de conclusion : ok / warn / alert (hard-coded, jamais généré par l'IA)
+function dhBilanLevel(ev, parsed){
+  const {bas, haut, totalAnomalies} = ev;
+  const all = [...bas,...haut];
+  // Anomalies critiques requérant évaluation médicale impérative
+  const critique = all.some(e=>{
+    const v=e.value, c=e.test.code;
+    return (c==="HB"&&v<9) || (c==="PLQ"&&v<80) || (c==="INR"&&v>1.5) ||
+           (c==="TP"&&v<50) || (c==="K"&&(v<3.0||v>6.0)) ||
+           (c==="NA"&&(v<125||v>155)) || (c==="BHCG"&&v>5) ||
+           (c==="HBA1C"&&v>9) || (c==="GLY"&&v>2.0) ||
+           (e.test.categorie==="Coagulation"&&totalAnomalies>=2);
+  });
+  if(totalAnomalies===0 && ev.quali.length===0) return "ok";
+  if(critique || totalAnomalies>=4) return "alert";
+  return "warn";
+}
+
+// Formate le rapport — trois conclusions codées en dur, note de non-décision
+function dhFormatBilanReport(parsed, ev, user){
+  const {bas, haut, normal, quali} = ev;
+  const sexe = user&&user.sexe ? user.sexe : null;
+  const level = dhBilanLevel(ev, parsed);
+  const CONCL = { ok:t("bio.conclusionOk"), warn:t("bio.conclusionWarn"), alert:t("bio.conclusionAlert") };
+  const ICONS = {ok:"✅", warn:"⚠️", alert:"❌"};
+  const fmtRef = (item)=>{
+    const isF=sexe==="Femme";
+    const mn=parseFloat(isF&&item.test.ref_min_f?item.test.ref_min_f:item.test.ref_min_h);
+    const mx=parseFloat(isF&&item.test.ref_max_f?item.test.ref_max_f:item.test.ref_max_h);
+    const u=item.rawUnit||item.test.unite;
+    if(!isNaN(mn)&&!isNaN(mx)&&mn>0&&mx<900) return mn+"\u2013"+mx+" "+u;
+    if(!isNaN(mx)&&mx>0&&mx<900) return "< "+mx+" "+u;
+    if(!isNaN(mn)&&mn>0) return "> "+mn+" "+u;
+    return "";
+  };
+  const NL="\n";
+  let txt = "📋 "+t("bio.reportTitle")+" ("+parsed.length+" "+t("bio.testsAnalyzed")+")"+NL;
+  if(!sexe) txt += "ℹ️ "+t("bio.sexWarn")+NL;
+  txt += NL;
+  if(normal.length){
+    txt += "✅ "+t("bio.normal")+" :"+NL;
+    normal.forEach(e=>{ const r=fmtRef(e); txt += "• "+e.test.nom+" : "+e.value+" "+(e.rawUnit||e.test.unite)+(r?" (réf. "+r+")":"")+NL; });
+    txt += NL;
+  }
+  if(quali.length){
+    txt += "🔬 "+t("bio.quali")+" :"+NL;
+    quali.forEach(e=>{ txt += "• "+e.test.nom+" : "+e.value+" "+(e.rawUnit||e.test.unite)+NL; });
+    txt += NL;
+  }
+  if(bas.length||haut.length){
+    txt += "⚠️ "+t("bio.anomalies")+" :"+NL;
+    [...bas,...haut].forEach(e=>{
+      const dir=e.status==="bas"?"↓ "+t("bio.low"):"↑ "+t("bio.high");
+      const ref=fmtRef(e);
+      txt += NL+"• "+e.test.nom+" : "+e.value+" "+(e.rawUnit||e.test.unite)+" ("+dir+(ref?", réf. "+ref:"")+")"+NL;
+      const signif=e.status==="bas"?e.test.signif_bas:e.test.signif_haut;
+      if(signif) txt += "  → "+signif+NL;
+      if(e.test.importance_preop) txt += "  🔬 "+e.test.importance_preop+NL;
+    });
+    txt += NL;
+  }
+  txt += "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"+NL;
+  txt += ICONS[level]+" "+CONCL[level]+NL+NL;
+  txt += "⚕️ "+t("bio.disclaimer");
+  return txt;
+}
+function dhAnalyseBilan(text, user){
+  const bio = dhBioLoad();
+  if(!bio.length) return t("bio.libraryEmpty");
+  const parsed = dhParseBilan(text, bio);
+  if(!parsed.length) return t("bio.noTestFound");
+  const ev = dhEvalBilan(parsed, user&&user.sexe);
+  return dhFormatBilanReport(parsed, ev, user);
+}
+
 function dhCrmContextAnswer(q, user, rdvs, taches){
   const n = aiNormalize(q);
   const today = todayStr();
@@ -11695,6 +12358,12 @@ function AccueilPremiumDrHouse({ user, onOpenAI, rdvs=[], taches=[] }){
       if(crm){
         setDhMsgs(m=>[...m, { role:"assistant", text:crm, id:"a"+Date.now() }]);
         try{ logIA(user?user.id:"", "proposed", "crm_context", "ia", "", "", "", ""); }catch(e){}
+      } else if(dhIsBilan(q)){
+        // Bilan sanguin détecté → analyse documentaire (Bibliothèque 15)
+        // Aucune décision médicale émise. Rapport documentaire uniquement.
+        const rpt = dhAnalyseBilan(q, user);
+        setDhMsgs(m=>[...m, { role:"assistant", text:rpt, id:"a"+Date.now() }]);
+        try{ logIA(user?user.id:"", "proposed", "bilan_analyse", "ia", "", "", "", ""); }catch(e){}
       } else {
         const r = await aiChatRespond(q, user, null, [], { topic: dhTopicRef.current });
         if(r && r.topic) dhTopicRef.current = r.topic;
