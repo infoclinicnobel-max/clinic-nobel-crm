@@ -855,6 +855,13 @@ const I18N = {
     "fin.depositsReceived": "Acomptes reçus",
     "fin.fullPayments": "Paiements complets",
     "fin.refunded": "Remboursé",
+    "finance.sgSynthTitle": "Synthèse financière de la période",
+    "finance.sgSynthCash": "Encaissements patients reçus",
+    "finance.sgSynthDue": "Honoraires chirurgiens dus",
+    "finance.sgSynthGiven": "Honoraires déjà versés",
+    "finance.sgSynthRemain": "Reste à verser aux chirurgiens",
+    "finance.sgSynthBalance": "Solde après honoraires chirurgiens",
+    "finance.sgSynthHint": "Frais d'hôpital, hôtel, transferts, commissions et taxes NON déduits. Basé uniquement sur les transactions de la période et les filtres actifs.",
     "finance.surgeonPayments": "Paiements chirurgiens",
     "finance.adminFinances": "Finances Administrateur",
     "finance.toPay": "À payer",
@@ -1924,6 +1931,13 @@ const I18N = {
     "fin.depositsReceived": "Deposits received",
     "fin.fullPayments": "Full payments",
     "fin.refunded": "Refunded",
+    "finance.sgSynthTitle": "Financial summary for the period",
+    "finance.sgSynthCash": "Patient payments received",
+    "finance.sgSynthDue": "Surgeon fees due",
+    "finance.sgSynthGiven": "Fees already paid",
+    "finance.sgSynthRemain": "Remaining to pay surgeons",
+    "finance.sgSynthBalance": "Balance after surgeon fees",
+    "finance.sgSynthHint": "Hospital, hotel, transfers, commissions and taxes NOT deducted. Based only on the period's transactions and active filters.",
     "finance.surgeonPayments": "Surgeon payments",
     "finance.adminFinances": "Admin finances",
     "finance.toPay": "To pay",
@@ -2993,6 +3007,13 @@ const I18N = {
     "fin.depositsReceived": "Alınan kaporalar",
     "fin.fullPayments": "Tam ödemeler",
     "fin.refunded": "İade edildi",
+    "finance.sgSynthTitle": "Dönem için finansal özet",
+    "finance.sgSynthCash": "Alınan hasta ödemeleri",
+    "finance.sgSynthDue": "Cerrah ücretleri (borç)",
+    "finance.sgSynthGiven": "Ödenen ücretler",
+    "finance.sgSynthRemain": "Cerrahlara kalan ödeme",
+    "finance.sgSynthBalance": "Cerrah ücretlerinden sonraki bakiye",
+    "finance.sgSynthHint": "Hastane, otel, transfer, komisyon ve vergiler DÜŞÜLMEMİŞTİR. Yalnızca dönemin işlemlerine ve aktif filtrelere dayanır.",
     "finance.surgeonPayments": "Cerrah ödemeleri",
     "finance.adminFinances": "Yönetici finansları",
     "finance.toPay": "Ödenecek",
@@ -4062,6 +4083,13 @@ const I18N = {
     "fin.depositsReceived": "Depósitos recibidos",
     "fin.fullPayments": "Pagos completos",
     "fin.refunded": "Reembolsado",
+    "finance.sgSynthTitle": "Resumen financiero del período",
+    "finance.sgSynthCash": "Pagos de pacientes recibidos",
+    "finance.sgSynthDue": "Honorarios de cirujanos adeudados",
+    "finance.sgSynthGiven": "Honorarios ya pagados",
+    "finance.sgSynthRemain": "Pendiente de pagar a cirujanos",
+    "finance.sgSynthBalance": "Saldo tras honorarios de cirujanos",
+    "finance.sgSynthHint": "Gastos de hospital, hotel, transferencias, comisiones e impuestos NO deducidos. Basado solo en las transacciones del período y los filtros activos.",
     "finance.surgeonPayments": "Pagos a cirujanos",
     "finance.adminFinances": "Finanzas de administrador",
     "finance.toPay": "Por pagar",
@@ -9640,6 +9668,48 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
               </div>);
             })}
             {sp.length===0&&<div style={{fontSize:13,color:C.muted,textAlign:"center",padding:40}}>{tt("common.noResult")}</div>}
+
+            {/* ══ SYNTHÈSE FINANCIÈRE DE LA PÉRIODE (gel levé pour cet ajout) ══
+                Basée EXCLUSIVEMENT sur les transactions de la période (inPeriod)
+                et les filtres actifs. Aucun total historique de fiche chirurgien.
+                Solde après honoraires = encaissements patients − honoraires dus.
+                Ne déduit NI hôpital NI hôtel NI transferts NI commissions NI taxes. */}
+            {(()=>{
+              // Encaissements patients réellement reçus dans la période + filtres actifs.
+              const encaisse = pat.reduce((acc,p)=>{
+                const fp = (finances||[]).filter(f=> String(f.patientId||"")===String(p.id) && isPatientCashFlow(f) && inPeriod(f.date||""));
+                return acc + fp.reduce((a,f)=>a+Math.abs(Number(f.montant||0)),0);
+              },0);
+              // Honoraires dus / versés / reste : depuis sp (déjà période + FIN_SURGEON_TYPES).
+              const honDus    = totalDu;      // surgeonDue(sp)
+              const honVerses = totalDonne;   // surgeonGiven(sp)
+              const honReste  = totalReste;   // max(dus - versés, 0)
+              const soldeApresHonoraires = encaisse - honDus;
+              const periodeLabel = cutoff===null ? tt("common.all")
+                : (periods.find(([id])=>id===period)||["",period])[1];
+              const Line = ({label,value,color,strong})=>(
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,padding:"6px 0",borderTop:`1px solid ${C.bg}`}}>
+                  <span style={{fontSize:strong?13:12,fontWeight:strong?800:600,color:strong?C.text:C.muted}}>{label}</span>
+                  <span style={{fontSize:strong?15:13,fontWeight:800,color:color||C.text,whiteSpace:"nowrap"}}>{eur(value)}</span>
+                </div>
+              );
+              return (
+                <div style={{marginTop:18,background:C.white,borderRadius:14,border:`1px solid ${C.border}`,padding:"14px 16px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
+                    <span style={{fontSize:14,fontWeight:800,color:C.text}}>📊 {tt("finance.sgSynthTitle")}</span>
+                    <span style={{fontSize:11,color:C.muted,fontWeight:700,marginLeft:"auto"}}>🗓 {periodeLabel}</span>
+                  </div>
+                  <Line label={tt("finance.sgSynthCash")}   value={encaisse}  color={C.green}/>
+                  <Line label={tt("finance.sgSynthDue")}    value={honDus}    color={C.navy}/>
+                  <Line label={tt("finance.sgSynthGiven")}  value={honVerses} color={C.muted}/>
+                  <Line label={tt("finance.sgSynthRemain")} value={honReste}  color={honReste>0?C.amber:C.green}/>
+                  <div style={{marginTop:6,paddingTop:8,borderTop:`2px solid ${C.border}`}}>
+                    <Line label={tt("finance.sgSynthBalance")} value={soldeApresHonoraires} color={soldeApresHonoraires>=0?C.green:C.red} strong/>
+                  </div>
+                  <div style={{fontSize:10,color:C.muted,marginTop:8,lineHeight:1.5}}>ⓘ {tt("finance.sgSynthHint")}</div>
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
