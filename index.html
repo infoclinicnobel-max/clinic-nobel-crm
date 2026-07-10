@@ -7848,7 +7848,8 @@ function FinPatientRow({p, finances, rdvs, kind}){
   const total = getPatientTotal(p);
   const paid = getPatientPaid(p, finances);
   const bal = getPatientBalance(p, finances);
-  const opDate = patientNextOpDate(p, rdvs);
+  // Cohérence avec opDateOf du bloc "due" : dateOperation prioritaire, RDV en secours.
+  const opDate = normalizeDate(p.dateOperation) || patientNextOpDate(p, rdvs);
   const today = new Date().toISOString().slice(0,10);
   const responsable = USERS.find(u=> u.id===p.assigneA || u.id===p.creePar);
   const overdue = kind==="due" && opDate && opDate < today && bal > 0;
@@ -9225,26 +9226,31 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
 
       {/* ══ PAIEMENTS À VENIR / À ENCAISSER ══ */}
       {tab==="due" && (()=>{
-        // RÈGLE MÉTIER (validée) :
-        //  • Inclusion = solde à encaisser > 0 ET dateOperation dans la période.
+        // RÈGLE MÉTIER (validée — Option A) :
+        //  • Date métier = dateOperation si valide, SINON date du prochain RDV.
+        //  • Inclusion = solde à encaisser > 0 ET date métier dans la période.
         //  • Solde = TOUJOURS sur `finances` complet (vérité absolue), jamais tronqué.
         //  • Période = intervalle [from,to] inclusif via isDateInRange (déterministe).
-        //  • Patients sans dateOperation valide → section distincte, hors KPI période
+        //  • Sans AUCUNE date (ni dateOperation ni RDV) → section distincte, hors KPI période
         //    (sauf en "Tous" où ils rejoignent la liste, clairement indiqué).
         const [dFrom, dTo] = upRange(duePeriod, today, dueCFrom, dueCTo);
         const isAll = (duePeriod === "tout");
 
+        // Date métier UNIQUE : dateOperation prioritaire, prochain RDV en secours.
+        // Aucune date inventée : renvoie "" si les deux sources sont absentes.
+        const opDateOf = (p)=> normalizeDate(p.dateOperation) || patientNextOpDate(p, rdvs) || "";
+
         // Base : solde dû (calcul absolu sur finances), filtrée dims + permissions.
         const dueBase = pat.filter(p=>isPaymentDuePatient(p, finances));
-        // Partition selon la validité de la date d'opération.
+        // Partition selon l'existence d'une date métier (dateOperation OU RDV).
         const withDate = [], noDate = [];
-        dueBase.forEach(p=>{ (normalizeDate(p.dateOperation) ? withDate : noDate).push(p); });
+        dueBase.forEach(p=>{ (opDateOf(p) ? withDate : noDate).push(p); });
 
         // Liste de la période : date d'opération dans l'intervalle (bornes inclusives).
         // En "Tous", pas de bornes → withDate en entier ; les sans-date rejoignent la liste.
         const inRange = isAll
           ? withDate
-          : withDate.filter(p=> isDateInRange(p.dateOperation, dFrom, dTo));
+          : withDate.filter(p=> isDateInRange(opDateOf(p), dFrom, dTo));
         const list = (isAll ? [...withDate, ...noDate] : inRange)
           .slice().sort((a,b)=>getPatientBalance(b,finances)-getPatientBalance(a,finances));
 
