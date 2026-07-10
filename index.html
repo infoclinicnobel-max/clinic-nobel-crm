@@ -8425,6 +8425,54 @@ function upSort(rows, key, dir){
 }
 
 // ── Onglet "Paiements à venir" : calendrier interactif + synthèse + liste ──
+// ════════════════════════════════════════════════════════════════════════════
+// MODE DEBUG TEMPORAIRE — analyse des dates d'opération (aucune correction)
+// Reproduit EXACTEMENT le raisonnement de normalizeDate + upBuildRows pour
+// EXPLIQUER chaque exclusion. Ne modifie NI normalizeDate NI le filtrage réel.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Détecte le format d'une valeur de date brute, tel que le voit normalizeDate.
+function dbgDetectFormat(raw){
+  const s = String(raw == null ? "" : raw).trim();
+  if(!s) return "vide";
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))       return "ISO (AAAA-MM-JJ)";      // seul format sûr
+  if(/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) return "JJ/MM/AAAA (slash)";
+  if(/^\d{1,2}-\d{1,2}-\d{4}/.test(s))    return "JJ-MM-AAAA (tiret)";
+  if(/^\d{4}\/\d{2}\/\d{2}/.test(s))     return "AAAA/MM/JJ";
+  if(/\d{1,2}:\d{2}/.test(s) && /\d{4}/.test(s)) return "Date JS / horodatage";
+  return "autre / inconnu";
+}
+
+// Pour un patient donné, explique s'il est retenu ou exclu de [from, to],
+// EXACTEMENT selon la logique de upBuildRows (mais en lecture seule, verbeuse).
+function dbgAnalysePatient(p, from, to){
+  const raw    = (p && p.dateOperation != null) ? p.dateOperation : "";
+  const format = dbgDetectFormat(raw);
+  const norm   = normalizeDate(raw);                  // ce que le moteur RÉEL calcule
+  const stadeExclu = FIN_DONE_STAGES.indexOf(p && p.stade) >= 0;
+
+  let statut = "retenu", raison = "";
+  if(stadeExclu){
+    statut = "exclu"; raison = "Stade clôturé/post-opératoire (exclu par conception)";
+  } else if(!norm){
+    statut = "exclu";
+    raison = raw ? ("Date illisible → normalizeDate renvoie vide (format « " + format + " »)")
+                 : "Date d'opération absente";
+  } else if(from && norm < from){
+    statut = "exclu"; raison = "Date interprétée (" + norm + ") AVANT le début (" + from + ")";
+  } else if(to && norm > to){
+    statut = "exclu"; raison = "Date interprétée (" + norm + ") APRÈS la fin (" + to + ")";
+  } else {
+    raison = "Dans la période";
+  }
+  // Signal fort : la brute et l'interprétée désignent des jours différents.
+  const decale = (format.startsWith("JJ/") || format.startsWith("JJ-")) &&
+                 norm && norm.slice(8,10) !== (String(raw).match(/^(\d{1,2})/)||[])[1]?.padStart(2,"0");
+
+  return { id:(p&&p.id)||"", nom:`${(p&&p.prenom)||""} ${(p&&p.nom)||""}`.trim()||"—",
+           raw:String(raw||"(vide)"), norm:norm||"(vide)", format, statut, raison, decale:!!decale };
+}
+
 function UpcomingPayments({ patients, finances, user, tt }){
   const today = todayStr();
   const [preset, setPreset]   = React.useState("30j");
@@ -8433,6 +8481,7 @@ function UpcomingPayments({ patients, finances, user, tt }){
   const [q, setQ]             = React.useState("");
   const [sortKey, setSortKey] = React.useState("date");
   const [sortDir, setSortDir] = React.useState("asc");
+  const [dbgOpen, setDbgOpen] = React.useState(false);  // MODE DEBUG temporaire
 
   const eur = (n)=> (Math.round(Number(n)||0)).toLocaleString("fr-FR")+" €";
   const [from, to] = upRange(preset, today, cFrom, cTo);
@@ -8539,6 +8588,68 @@ function UpcomingPayments({ patients, finances, user, tt }){
 
   return (
     <div>
+      {/* ── MODE DEBUG TEMPORAIRE (admin) : diagnostic des dates ── */}
+      {isFullRole(user && user.role) && (()=>{
+        const analyses = (patients||[]).map(p=> dbgAnalysePatient(p, from, to));
+        const exclus   = analyses.filter(a=> a.statut==="exclu");
+        const decales  = exclus.filter(a=> a.decale);
+        return (
+          <Card style={{marginBottom:12, border:"1px dashed #DC2626"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontSize:12.5,fontWeight:800,color:"#DC2626"}}>🐞 DEBUG — Diagnostic des dates</span>
+              <span style={{fontSize:11,color:C.muted}}>Période : {from||"—"} → {to||"—"}</span>
+              <button onClick={()=>setDbgOpen(x=>!x)}
+                style={{marginLeft:"auto",padding:"5px 11px",borderRadius:8,border:"1px solid #DC2626",
+                        background:"transparent",color:"#DC2626",cursor:"pointer",fontWeight:700,fontSize:11}}>
+                {dbgOpen ? "Masquer" : "Afficher les "+exclus.length+" exclus"}
+              </button>
+            </div>
+            <div style={{fontSize:11,color:C.muted,marginTop:6,lineHeight:1.6}}>
+              {analyses.length} patient(s) · <b>{analyses.length-exclus.length} retenu(s)</b> · <b style={{color:"#DC2626"}}>{exclus.length} exclu(s)</b>
+              {decales.length>0 && <> · <b style={{color:"#D97706"}}>⚠️ {decales.length} date(s) décalée(s) par le parsing</b></>}
+            </div>
+            {decales.length>0 && (
+              <div style={{fontSize:11,color:"#B45309",marginTop:4,lineHeight:1.5}}>
+                Une date décalée signifie que la valeur brute et la valeur interprétée ne tombent pas le même jour → c'est le parsing, pas les données.
+              </div>
+            )}
+
+            {dbgOpen && (
+              <div style={{marginTop:10,overflowX:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                  <thead>
+                    <tr style={{textAlign:"left",color:C.muted,borderBottom:`1px solid ${C.border}`}}>
+                      <th style={{padding:"5px 8px"}}>Patient</th>
+                      <th style={{padding:"5px 8px"}}>dateOperation (brute)</th>
+                      <th style={{padding:"5px 8px"}}>Après normalizeDate()</th>
+                      <th style={{padding:"5px 8px"}}>Format détecté</th>
+                      <th style={{padding:"5px 8px"}}>Raison de l'exclusion</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {exclus.map(a=>(
+                      <tr key={a.id} style={{borderBottom:`1px solid ${C.bg}`, background:a.decale?"rgba(217,119,6,0.06)":"transparent"}}>
+                        <td style={{padding:"5px 8px",fontWeight:700,color:C.text}}>{a.nom}</td>
+                        <td style={{padding:"5px 8px",fontFamily:"monospace",color:C.text}}>{a.raw}</td>
+                        <td style={{padding:"5px 8px",fontFamily:"monospace",color:a.decale?"#D97706":C.text}}>{a.norm}</td>
+                        <td style={{padding:"5px 8px"}}>{a.format}{a.decale?" ⚠️":""}</td>
+                        <td style={{padding:"5px 8px",color:C.muted}}>{a.raison}</td>
+                      </tr>
+                    ))}
+                    {exclus.length===0 && (
+                      <tr><td colSpan={5} style={{padding:"10px 8px",color:C.muted,textAlign:"center"}}>Aucun patient exclu sur cette période.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+                <div style={{fontSize:10.5,color:C.muted,marginTop:8,lineHeight:1.5}}>
+                  ℹ️ Panneau de diagnostic temporaire, admin uniquement, lecture seule. Il n'altère aucune donnée et ne change pas le filtrage réel.
+                </div>
+              </div>
+            )}
+          </Card>
+        );
+      })()}
+
       {/* ── Calendrier interactif ── */}
       <Card style={{marginBottom:12}}>
         <div style={{fontSize:13,fontWeight:800,color:C.text,marginBottom:8}}>📅 {tt("up.calendar")}</div>
@@ -9176,10 +9287,14 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
 
       {/* ══ PAIEMENTS À VENIR / À ENCAISSER ══ */}
       {tab==="due" && (()=>{
-        const list = pat.filter(p=>isPaymentDuePatient(p, fin))
-          .sort((a,b)=>getPatientBalance(b,fin)-getPatientBalance(a,fin));
-        const totalDu = list.reduce((a,p)=>a+getPatientBalance(p, fin),0);
-        const totalRecu = list.reduce((a,p)=>a+getPatientPaid(p, fin),0);
+        // CORRECTIF RÉGRESSION : le reste à encaisser est une vérité ABSOLUE
+        // (total − tout ce qui a été payé), jamais tronquée par la période.
+        // On calcule donc sur `finances` (complet), pas sur `fin` (période).
+        // NB : le POSTE 4 resteEncaisser garde volontairement `fin` (activité période).
+        const list = pat.filter(p=>isPaymentDuePatient(p, finances))
+          .sort((a,b)=>getPatientBalance(b,finances)-getPatientBalance(a,finances));
+        const totalDu = list.reduce((a,p)=>a+getPatientBalance(p, finances),0);
+        const totalRecu = list.reduce((a,p)=>a+getPatientPaid(p, finances),0);
         const soldeMoyen = list.length ? Math.round(totalDu/list.length) : 0;
         return (
           <div>
