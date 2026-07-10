@@ -1217,6 +1217,9 @@ const I18N = {
     "finance.partialPayment": "Partiellement payé",
     "finance.patientCount": "Patients concernés",
     "finance.totalToCollect": "Total à encaisser",
+    "finance.dueByOpDate": "Inclusion par date d'opération dans la période",
+    "finance.dueNoOpDate": "Date d'opération non renseignée",
+    "finance.dueNoOpDateHint": "Patients avec un solde à encaisser mais sans date d'opération valide. Non comptés dans les KPI de la période.",
     "finance.upcoming": "À venir",
     "finance.avgBalance": "Solde moyen",
   },
@@ -2283,6 +2286,9 @@ const I18N = {
     "finance.partialPayment": "Partially paid",
     "finance.patientCount": "Patients",
     "finance.totalToCollect": "Total to collect",
+    "finance.dueByOpDate": "Inclusion by operation date within the period",
+    "finance.dueNoOpDate": "Operation date not set",
+    "finance.dueNoOpDateHint": "Patients with a balance due but no valid operation date. Not counted in the period KPIs.",
     "finance.upcoming": "Upcoming",
     "finance.avgBalance": "Average balance",
   },
@@ -3349,6 +3355,9 @@ const I18N = {
     "finance.partialPayment": "Kısmen ödendi",
     "finance.patientCount": "Hasta sayısı",
     "finance.totalToCollect": "Tahsil edilecek toplam",
+    "finance.dueByOpDate": "Dönem içindeki ameliyat tarihine göre dahil etme",
+    "finance.dueNoOpDate": "Ameliyat tarihi girilmemiş",
+    "finance.dueNoOpDateHint": "Bakiyesi olan ancak geçerli ameliyat tarihi olmayan hastalar. Dönem KPI'lerine dahil değildir.",
     "finance.upcoming": "Yaklaşan",
     "finance.avgBalance": "Ortalama bakiye",
   },
@@ -4415,6 +4424,9 @@ const I18N = {
     "finance.partialPayment": "Pago parcial",
     "finance.patientCount": "Pacientes",
     "finance.totalToCollect": "Total por cobrar",
+    "finance.dueByOpDate": "Inclusión por fecha de operación dentro del período",
+    "finance.dueNoOpDate": "Fecha de operación no indicada",
+    "finance.dueNoOpDateHint": "Pacientes con saldo pendiente pero sin fecha de operación válida. No contados en los KPI del período.",
     "finance.upcoming": "Próximo",
     "finance.avgBalance": "Saldo medio",
   },
@@ -5362,12 +5374,43 @@ const uid = () => Date.now().toString() + Math.random().toString(36).slice(2,6);
 // Gère : "2026-10-29", "2026-10-29T...", objets Date Google Sheets ("Sat Dec 30 1899..."), ISO, etc.
 const normalizeDate = (v) => {
   if(!v) return "";
-  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(v instanceof Date){                                  // objet Date valide
+    if(isNaN(v.getTime()) || v.getFullYear() < 2000) return "";
+    return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,"0")}-${String(v.getDate()).padStart(2,"0")}`;
+  }
+  const s = String(v).trim();
+  // 1) ISO AAAA-MM-JJ (éventuellement suivi d'une heure) — format canonique
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if(m) return `${m[1]}-${m[2]}-${m[3]}`;
-  const d = new Date(v);
-  if(isNaN(d.getTime())) return "";
-  if(d.getFullYear() < 2000) return "";
+  // 2) Français JJ/MM/AAAA ou JJ-MM-AAAA — PARSING DÉTERMINISTE, jamais new Date()
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if(m){
+    const jj = parseInt(m[1],10), mm = parseInt(m[2],10), aaaa = parseInt(m[3],10);
+    if(mm>=1 && mm<=12 && jj>=1 && jj<=31)
+      return `${aaaa}-${String(mm).padStart(2,"0")}-${String(jj).padStart(2,"0")}`;
+    return "";                                            // date française invalide
+  }
+  // 3) AAAA/MM/JJ (slash) — déterministe
+  m = s.match(/^(\d{4})[\/](\d{1,2})[\/](\d{1,2})/);
+  if(m) return `${m[1]}-${String(parseInt(m[2],10)).padStart(2,"0")}-${String(parseInt(m[3],10)).padStart(2,"0")}`;
+  // 4) Dernier recours SEULEMENT pour les formes textuelles non ambiguës
+  //    (ex. "Sat Dec 30 2026"). Jamais atteint pour du JJ/MM/AAAA, déjà traité ci-dessus.
+  const d = new Date(s);
+  if(isNaN(d.getTime()) || d.getFullYear() < 2000) return "";
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+};
+
+// ── isDateInRange : inclusion par intervalle, bornes INCLUSIVES ───────────────
+// Compare des dates civiles (jour) en AAAA-MM-JJ, donc insensible au fuseau :
+// une date d'opération est un jour calendaire, pas un instant. Début inclus (00:00),
+// fin incluse (jusqu'à 23:59:59 du jour `to`). from/to vides = borne ouverte.
+const isDateInRange = (rawDate, from, to) => {
+  const d = normalizeDate(rawDate);
+  if(!d) return false;                                    // pas de date valide → jamais dans l'intervalle
+  const f = normalizeDate(from), t = normalizeDate(to);
+  if(f && d < f) return false;                            // avant le début
+  if(t && d > t) return false;                            // après la fin (jour `to` inclus)
+  return true;
 };
 // Extrait une heure "HH:MM" depuis une valeur (gère "Sat Dec 30 1899 12:56:56" et "10:00")
 const normalizeHeure = (v) => {
@@ -8425,6 +8468,82 @@ function upSort(rows, key, dir){
 }
 
 // ── Onglet "Paiements à venir" : calendrier interactif + synthèse + liste ──
+// ════════════════════════════════════════════════════════════════════════════
+// MODE DEBUG TEMPORAIRE — analyse des dates d'opération (aucune correction)
+// Reproduit EXACTEMENT le raisonnement de normalizeDate + upBuildRows pour
+// EXPLIQUER chaque exclusion. Ne modifie NI normalizeDate NI le filtrage réel.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Détecte le format d'une valeur de date brute, tel que le voit normalizeDate.
+// ── AUDIT DES CHAMPS DE DATE (module-level, lecture seule) ───────────────────
+const DBG_OP_CANDIDATES = ["dateOperation","operationDate","surgeryDate","dateIntervention","interventionDate"];
+const DBG_EXPLICIT = [...DBG_OP_CANDIDATES,"dateRDV","dateArrivee","dateVol","volArrivee"];
+function dbgDateKeys(p){
+  if(!p) return [];
+  return Object.keys(p).filter(k=> /date/i.test(k));
+}
+function dbgPatientDates(p){
+  const val = (k)=> (p && p[k] != null && String(p[k]).trim() !== "") ? String(p[k]) : "";
+  const explicit = {};
+  DBG_EXPLICIT.forEach(k=> explicit[k] = val(k));
+  const filledOp = DBG_OP_CANDIDATES.filter(k=> val(k) !== "");
+  const allDateKeys = dbgDateKeys(p);
+  const unexpected = allDateKeys.filter(k=> DBG_EXPLICIT.indexOf(k) < 0);
+  return { id:(p&&p.id)||"", nom:`${(p&&p.prenom)||""} ${(p&&p.nom)||""}`.trim()||"—",
+           explicit, filledOp, allDateKeys, unexpected };
+}
+function dbgOpFieldUsage(patients){
+  const usage = {};
+  DBG_OP_CANDIDATES.forEach(k=> usage[k] = 0);
+  const unexpectedKeys = {};
+  (patients||[]).forEach(p=>{
+    DBG_OP_CANDIDATES.forEach(k=>{ if(p && p[k] != null && String(p[k]).trim() !== "") usage[k]++; });
+    dbgDateKeys(p).forEach(k=>{ if(DBG_EXPLICIT.indexOf(k)<0) unexpectedKeys[k]=(unexpectedKeys[k]||0)+1; });
+  });
+  return { usage, unexpectedKeys, total:(patients||[]).length };
+}
+
+function dbgDetectFormat(raw){
+  const s = String(raw == null ? "" : raw).trim();
+  if(!s) return "vide";
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))       return "ISO (AAAA-MM-JJ)";      // seul format sûr
+  if(/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) return "JJ/MM/AAAA (slash)";
+  if(/^\d{1,2}-\d{1,2}-\d{4}/.test(s))    return "JJ-MM-AAAA (tiret)";
+  if(/^\d{4}\/\d{2}\/\d{2}/.test(s))     return "AAAA/MM/JJ";
+  if(/\d{1,2}:\d{2}/.test(s) && /\d{4}/.test(s)) return "Date JS / horodatage";
+  return "autre / inconnu";
+}
+
+// Pour un patient donné, explique s'il est retenu ou exclu de [from, to],
+// EXACTEMENT selon la logique de upBuildRows (mais en lecture seule, verbeuse).
+function dbgAnalysePatient(p, from, to){
+  const raw    = (p && p.dateOperation != null) ? p.dateOperation : "";
+  const format = dbgDetectFormat(raw);
+  const norm   = normalizeDate(raw);                  // ce que le moteur RÉEL calcule
+  const stadeExclu = FIN_DONE_STAGES.indexOf(p && p.stade) >= 0;
+
+  let statut = "retenu", raison = "";
+  if(stadeExclu){
+    statut = "exclu"; raison = "Stade clôturé/post-opératoire (exclu par conception)";
+  } else if(!norm){
+    statut = "exclu";
+    raison = raw ? ("Date illisible → normalizeDate renvoie vide (format « " + format + " »)")
+                 : "Date d'opération absente";
+  } else if(from && norm < from){
+    statut = "exclu"; raison = "Date interprétée (" + norm + ") AVANT le début (" + from + ")";
+  } else if(to && norm > to){
+    statut = "exclu"; raison = "Date interprétée (" + norm + ") APRÈS la fin (" + to + ")";
+  } else {
+    raison = "Dans la période";
+  }
+  // Signal fort : la brute et l'interprétée désignent des jours différents.
+  const decale = (format.startsWith("JJ/") || format.startsWith("JJ-")) &&
+                 norm && norm.slice(8,10) !== (String(raw).match(/^(\d{1,2})/)||[])[1]?.padStart(2,"0");
+
+  return { id:(p&&p.id)||"", nom:`${(p&&p.prenom)||""} ${(p&&p.nom)||""}`.trim()||"—",
+           raw:String(raw||"(vide)"), norm:norm||"(vide)", format, statut, raison, decale:!!decale };
+}
+
 function UpcomingPayments({ patients, finances, user, tt }){
   const today = todayStr();
   const [preset, setPreset]   = React.useState("30j");
@@ -8433,6 +8552,7 @@ function UpcomingPayments({ patients, finances, user, tt }){
   const [q, setQ]             = React.useState("");
   const [sortKey, setSortKey] = React.useState("date");
   const [sortDir, setSortDir] = React.useState("asc");
+  const [dbgOpen, setDbgOpen] = React.useState(false);  // MODE DEBUG temporaire
 
   const eur = (n)=> (Math.round(Number(n)||0)).toLocaleString("fr-FR")+" €";
   const [from, to] = upRange(preset, today, cFrom, cTo);
@@ -8539,6 +8659,158 @@ function UpcomingPayments({ patients, finances, user, tt }){
 
   return (
     <div>
+      {/* ── MODE DEBUG TEMPORAIRE (admin) : diagnostic des dates ── */}
+      {isFullRole(user && user.role) && (()=>{
+        const analyses = (patients||[]).map(p=> dbgAnalysePatient(p, from, to));
+        const exclus   = analyses.filter(a=> a.statut==="exclu");
+        const decales  = exclus.filter(a=> a.decale);
+        return (
+          <Card style={{marginBottom:12, border:"1px dashed #DC2626"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontSize:12.5,fontWeight:800,color:"#DC2626"}}>🐞 DEBUG — Diagnostic des dates</span>
+              <span style={{fontSize:11,color:C.muted}}>Période : {from||"—"} → {to||"—"}</span>
+              <button onClick={()=>setDbgOpen(x=>!x)}
+                style={{marginLeft:"auto",padding:"5px 11px",borderRadius:8,border:"1px solid #DC2626",
+                        background:"transparent",color:"#DC2626",cursor:"pointer",fontWeight:700,fontSize:11}}>
+                {dbgOpen ? "Masquer" : "Afficher les "+exclus.length+" exclus"}
+              </button>
+            </div>
+            <div style={{fontSize:11,color:C.muted,marginTop:6,lineHeight:1.6}}>
+              {analyses.length} patient(s) · <b>{analyses.length-exclus.length} retenu(s)</b> · <b style={{color:"#DC2626"}}>{exclus.length} exclu(s)</b>
+              {decales.length>0 && <> · <b style={{color:"#D97706"}}>⚠️ {decales.length} date(s) décalée(s) par le parsing</b></>}
+            </div>
+            {decales.length>0 && (
+              <div style={{fontSize:11,color:"#B45309",marginTop:4,lineHeight:1.5}}>
+                Une date décalée signifie que la valeur brute et la valeur interprétée ne tombent pas le même jour → c'est le parsing, pas les données.
+              </div>
+            )}
+
+            {dbgOpen && (
+              <div style={{marginTop:10,overflowX:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                  <thead>
+                    <tr style={{textAlign:"left",color:C.muted,borderBottom:`1px solid ${C.border}`}}>
+                      <th style={{padding:"5px 8px"}}>Patient</th>
+                      <th style={{padding:"5px 8px"}}>dateOperation (brute)</th>
+                      <th style={{padding:"5px 8px"}}>Après normalizeDate()</th>
+                      <th style={{padding:"5px 8px"}}>Format détecté</th>
+                      <th style={{padding:"5px 8px"}}>Raison de l'exclusion</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {exclus.map(a=>(
+                      <tr key={a.id} style={{borderBottom:`1px solid ${C.bg}`, background:a.decale?"rgba(217,119,6,0.06)":"transparent"}}>
+                        <td style={{padding:"5px 8px",fontWeight:700,color:C.text}}>{a.nom}</td>
+                        <td style={{padding:"5px 8px",fontFamily:"monospace",color:C.text}}>{a.raw}</td>
+                        <td style={{padding:"5px 8px",fontFamily:"monospace",color:a.decale?"#D97706":C.text}}>{a.norm}</td>
+                        <td style={{padding:"5px 8px"}}>{a.format}{a.decale?" ⚠️":""}</td>
+                        <td style={{padding:"5px 8px",color:C.muted}}>{a.raison}</td>
+                      </tr>
+                    ))}
+                    {exclus.length===0 && (
+                      <tr><td colSpan={5} style={{padding:"10px 8px",color:C.muted,textAlign:"center"}}>Aucun patient exclu sur cette période.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+                <div style={{fontSize:10.5,color:C.muted,marginTop:8,lineHeight:1.5}}>
+                  ℹ️ Panneau de diagnostic temporaire, admin uniquement, lecture seule. Il n'altère aucune donnée et ne change pas le filtrage réel.
+                </div>
+              </div>
+            )}
+          </Card>
+        );
+      })()}
+
+      {/* ── AUDIT DES CHAMPS DE DATE (admin, lecture seule) ── */}
+      {isFullRole(user && user.role) && (()=>{
+        const synth = dbgOpFieldUsage(patients);
+        const dataFields = Object.keys(synth.usage).filter(k=> synth.usage[k] > 0);
+        const rows = (patients||[]).map(dbgPatientDates);
+        const surprises = Object.keys(synth.unexpectedKeys);
+        const remplis = dataFields.length===0 ? "aucun champ operation" : dataFields.join(", ");
+        let verdict = "";
+        if(dataFields.length===1 && dataFields[0]==="dateOperation") verdict = " Correspondance parfaite : le champ n est pas en cause.";
+        else if(dataFields.some(f=>f!=="dateOperation")) verdict = " INCOHERENCE : les donnees remplissent un autre nom que le code.";
+        else if(dataFields.length===0) verdict = " Aucun patient n a de date operation renseignee.";
+        const verdictTxt = "Verdict : le code lit dateOperation. Les donnees remplissent " + remplis + "." + verdict;
+        return (
+          <Card style={{marginBottom:12, border:"1px dashed #7C3AED"}}>
+            <div style={{fontSize:12.5,fontWeight:800,color:"#7C3AED",marginBottom:8}}>{"🔬 AUDIT — Champs de date reellement remplis"}</div>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,marginBottom:10}}>
+              <thead>
+                <tr style={{textAlign:"left",color:C.muted,borderBottom:`1px solid ${C.border}`}}>
+                  <th style={{padding:"5px 8px"}}>{"Champ candidat"}</th>
+                  <th style={{padding:"5px 8px"}}>{"Rempli dans les donnees"}</th>
+                  <th style={{padding:"5px 8px"}}>{"Lu par le code"}</th>
+                  <th style={{padding:"5px 8px"}}>{"Correspondance"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {DBG_OP_CANDIDATES.map(k=>{
+                  const n = synth.usage[k];
+                  const inData = n > 0;
+                  const inCode = (k === "dateOperation");
+                  const okc = (inData && inCode) ? "✅ OK"
+                            : (inData && !inCode) ? "❌ NON (donnees != code)"
+                            : (!inData && inCode) ? "⚠️ code OK, donnees vides"
+                            : "—";
+                  return (
+                    <tr key={k} style={{borderBottom:`1px solid ${C.bg}`, background:(inData&&!inCode)?"rgba(220,38,38,0.06)":"transparent"}}>
+                      <td style={{padding:"5px 8px",fontFamily:"monospace",fontWeight:700}}>{k}</td>
+                      <td style={{padding:"5px 8px"}}>{inData ? (n+" / "+synth.total) : "0"}</td>
+                      <td style={{padding:"5px 8px"}}>{inCode ? "oui" : "non"}</td>
+                      <td style={{padding:"5px 8px",fontWeight:700}}>{okc}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {surprises.length > 0 && (
+              <div style={{fontSize:11,color:"#B45309",marginBottom:8,lineHeight:1.5}}>
+                {"⚠️ Cle(s) date presente(s) dans les donnees mais inconnue(s) du code : " + surprises.map(k=>k+" ("+synth.unexpectedKeys[k]+")").join(", ")}
+              </div>
+            )}
+            <div style={{fontSize:11,color:C.text,fontWeight:600,marginBottom:8,lineHeight:1.55}}>{verdictTxt}</div>
+            <details>
+              <summary style={{cursor:"pointer",fontSize:11,fontWeight:700,color:"#7C3AED"}}>{"Voir le detail par patient (" + rows.length + ")"}</summary>
+              <div style={{overflowX:"auto",marginTop:8}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:10.5}}>
+                  <thead>
+                    <tr style={{textAlign:"left",color:C.muted,borderBottom:`1px solid ${C.border}`}}>
+                      <th style={{padding:"4px 6px"}}>{"id"}</th>
+                      <th style={{padding:"4px 6px"}}>{"nom"}</th>
+                      <th style={{padding:"4px 6px"}}>{"dateOperation"}</th>
+                      <th style={{padding:"4px 6px"}}>{"operationDate"}</th>
+                      <th style={{padding:"4px 6px"}}>{"surgeryDate"}</th>
+                      <th style={{padding:"4px 6px"}}>{"dateIntervention"}</th>
+                      <th style={{padding:"4px 6px"}}>{"interventionDate"}</th>
+                      <th style={{padding:"4px 6px"}}>{"dateArrivee"}</th>
+                      <th style={{padding:"4px 6px"}}>{"autres cles date"}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map(r=>(
+                      <tr key={r.id} style={{borderBottom:`1px solid ${C.bg}`}}>
+                        <td style={{padding:"4px 6px",fontFamily:"monospace"}}>{r.id}</td>
+                        <td style={{padding:"4px 6px",fontWeight:700}}>{r.nom}</td>
+                        <td style={{padding:"4px 6px",fontFamily:"monospace"}}>{r.explicit.dateOperation||"—"}</td>
+                        <td style={{padding:"4px 6px",fontFamily:"monospace"}}>{r.explicit.operationDate||"—"}</td>
+                        <td style={{padding:"4px 6px",fontFamily:"monospace"}}>{r.explicit.surgeryDate||"—"}</td>
+                        <td style={{padding:"4px 6px",fontFamily:"monospace"}}>{r.explicit.dateIntervention||"—"}</td>
+                        <td style={{padding:"4px 6px",fontFamily:"monospace"}}>{r.explicit.interventionDate||"—"}</td>
+                        <td style={{padding:"4px 6px",fontFamily:"monospace"}}>{r.explicit.dateArrivee||"—"}</td>
+                        <td style={{padding:"4px 6px",color:C.muted}}>{r.unexpected.join(", ")||"—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+            <div style={{fontSize:10,color:C.muted,marginTop:8}}>{"Audit lecture seule, admin uniquement. N altere aucune donnee."}</div>
+          </Card>
+        );
+      })()}
+
       {/* ── Calendrier interactif ── */}
       <Card style={{marginBottom:12}}>
         <div style={{fontSize:13,fontWeight:800,color:C.text,marginBottom:8}}>📅 {tt("up.calendar")}</div>
@@ -8760,6 +9032,10 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
   const [fStade, setFStade] = useState("tous");     // POSTE 4 : filtre stade patient (résumé)
   const [fChirSt, setFChirSt] = useState("tous");   // POSTE 4 : filtre statut chirurgien (résumé)
   const [fClosed, setFClosed] = useState("tous");    // POSTE 6 : sous-filtre patients clôturés
+  // Période DÉDIÉE à l'onglet "Paiements à venir" (indépendante du sélecteur commun).
+  const [duePeriod, setDuePeriod] = useState("30j");
+  const [dueCFrom, setDueCFrom]   = useState(today);
+  const [dueCTo, setDueCTo]       = useState(today);
   const [editClosedId, setEditClosedId] = useState(null); // POSTE 7 : dossier clôturé en cours de correction
   const nowYear = new Date().getFullYear();
   const [fCYear, setFCYear] = useState(String(nowYear));   // A1 : filtres onglet Commissions
@@ -9176,13 +9452,60 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
 
       {/* ══ PAIEMENTS À VENIR / À ENCAISSER ══ */}
       {tab==="due" && (()=>{
-        const list = pat.filter(p=>isPaymentDuePatient(p, fin))
-          .sort((a,b)=>getPatientBalance(b,fin)-getPatientBalance(a,fin));
-        const totalDu = list.reduce((a,p)=>a+getPatientBalance(p, fin),0);
-        const totalRecu = list.reduce((a,p)=>a+getPatientPaid(p, fin),0);
+        // RÈGLE MÉTIER (validée) :
+        //  • Inclusion = solde à encaisser > 0 ET dateOperation dans la période.
+        //  • Solde = TOUJOURS sur `finances` complet (vérité absolue), jamais tronqué.
+        //  • Période = intervalle [from,to] inclusif via isDateInRange (déterministe).
+        //  • Patients sans dateOperation valide → section distincte, hors KPI période
+        //    (sauf en "Tous" où ils rejoignent la liste, clairement indiqué).
+        const [dFrom, dTo] = upRange(duePeriod, today, dueCFrom, dueCTo);
+        const isAll = (duePeriod === "tout");
+
+        // Base : solde dû (calcul absolu sur finances), filtrée dims + permissions.
+        const dueBase = pat.filter(p=>isPaymentDuePatient(p, finances));
+        // Partition selon la validité de la date d'opération.
+        const withDate = [], noDate = [];
+        dueBase.forEach(p=>{ (normalizeDate(p.dateOperation) ? withDate : noDate).push(p); });
+
+        // Liste de la période : date d'opération dans l'intervalle (bornes inclusives).
+        // En "Tous", pas de bornes → withDate en entier ; les sans-date rejoignent la liste.
+        const inRange = isAll
+          ? withDate
+          : withDate.filter(p=> isDateInRange(p.dateOperation, dFrom, dTo));
+        const list = (isAll ? [...withDate, ...noDate] : inRange)
+          .slice().sort((a,b)=>getPatientBalance(b,finances)-getPatientBalance(a,finances));
+
+        // KPIs : dérivés EXCLUSIVEMENT de `list` (ce qui est affiché). Solde absolu.
+        const totalDu    = list.reduce((a,p)=>a+getPatientBalance(p, finances),0);
+        const totalRecu  = list.reduce((a,p)=>a+getPatientPaid(p, finances),0);
         const soldeMoyen = list.length ? Math.round(totalDu/list.length) : 0;
+
+        const periodLabel = isAll ? tt("common.all") : `${fmtJour(dFrom)} → ${fmtJour(dTo)}`;
+        const DUE_PERIODS = [["today",tt("common.today")],["7j","7j"],["30j","30j"],
+          ["3m","3"+tt("date.monthsShort")],["6m","6"+tt("date.monthsShort")],
+          ["12m","12"+tt("date.monthsShort")],["tout",tt("common.all")],["custom",tt("up.custom")]];
+
         return (
           <div>
+            {/* Sélecteur de période DÉDIÉ à cet onglet */}
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+              {DUE_PERIODS.map(([id,lb])=>(
+                <button key={id} onClick={()=>setDuePeriod(id)} style={{padding:"6px 12px",borderRadius:99,border:"none",cursor:"pointer",fontWeight:700,fontSize:11,whiteSpace:"nowrap",
+                  background:duePeriod===id?C.navy:C.bg,color:duePeriod===id?C.white:C.text}}>{lb}</button>
+              ))}
+            </div>
+            {duePeriod==="custom" && (
+              <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:8}}>
+                <label style={{fontSize:11,fontWeight:700,color:C.muted}}>📅 {tt("up.from")}
+                  <input type="date" value={dueCFrom} onChange={e=>setDueCFrom(e.target.value)} style={{...sel,marginLeft:6}}/>
+                </label>
+                <label style={{fontSize:11,fontWeight:700,color:C.muted}}>📅 {tt("up.to")}
+                  <input type="date" value={dueCTo} onChange={e=>setDueCTo(e.target.value)} style={{...sel,marginLeft:6}}/>
+                </label>
+              </div>
+            )}
+            <div style={{fontSize:11,color:C.muted,marginBottom:12}}>🗓 {periodLabel} · {tt("finance.dueByOpDate")}</div>
+
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
               <KPI icon="💸" label={tt("finance.totalToCollect")} value={eur(totalDu)} color={C.amber}/>
               <KPI icon="👥" label={tt("finance.patientCount")} value={list.length} color={C.navy}/>
@@ -9192,6 +9515,17 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
             {list.length===0
               ? <div style={{fontSize:13,color:C.muted,textAlign:"center",padding:40}}>{tt("common.noResult")}</div>
               : list.map(p=>(<FinPatientRow key={p.id} p={p} finances={finances} rdvs={rdvs} kind="due"/>))}
+
+            {/* Section distincte : solde dû mais date d'opération non renseignée.
+                Hors KPI de la période (déjà inclus dans la liste en "Tous"). */}
+            {!isAll && noDate.length>0 && (
+              <div style={{marginTop:20}}>
+                <div style={{fontSize:12.5,fontWeight:800,color:C.amber,marginBottom:4}}>⚠️ {tt("finance.dueNoOpDate")}</div>
+                <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>{tt("finance.dueNoOpDateHint")} · {noDate.length} · {eur(noDate.reduce((a,p)=>a+getPatientBalance(p,finances),0))}</div>
+                {noDate.slice().sort((a,b)=>getPatientBalance(b,finances)-getPatientBalance(a,finances))
+                  .map(p=>(<FinPatientRow key={p.id} p={p} finances={finances} rdvs={rdvs} kind="due"/>))}
+              </div>
+            )}
           </div>
         );
       })()}
