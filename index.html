@@ -859,6 +859,8 @@ const I18N = {
     "finance.sgSynthPatients": "Patients concernés",
     "finance.sgSynthToCollect": "Total à encaisser",
     "finance.sgSynthRemainCash": "Reste à encaisser",
+    "finance.sgSynthFeesToPay": "Honoraires chirurgiens à payer",
+    "finance.sgSynthNetToCollect": "Reste net encore à encaisser",
     "finance.sgSynthBalanceNow": "Solde actuel après honoraires",
     "finance.sgSynthBalanceFcst": "Solde prévisionnel après honoraires",
     "finance.sgSynthHint2": "Population = patients dont l'opération tombe dans la période (comme « Patients à venir »). Honoraires rattachés à ces patients. Frais d'hôpital, hôtel, transferts, commissions et taxes NON déduits.",
@@ -1941,6 +1943,8 @@ const I18N = {
     "finance.sgSynthPatients": "Patients concerned",
     "finance.sgSynthToCollect": "Total to collect",
     "finance.sgSynthRemainCash": "Remaining to collect",
+    "finance.sgSynthFeesToPay": "Surgeon fees to pay",
+    "finance.sgSynthNetToCollect": "Net remaining to collect",
     "finance.sgSynthBalanceNow": "Current balance after fees",
     "finance.sgSynthBalanceFcst": "Forecast balance after fees",
     "finance.sgSynthHint2": "Population = patients whose operation falls in the period (like Upcoming patients). Fees linked to these patients. Hospital, hotel, transfers, commissions and taxes NOT deducted.",
@@ -3023,6 +3027,8 @@ const I18N = {
     "finance.sgSynthPatients": "İlgili hastalar",
     "finance.sgSynthToCollect": "Tahsil edilecek toplam",
     "finance.sgSynthRemainCash": "Kalan tahsilat",
+    "finance.sgSynthFeesToPay": "Ödenecek cerrah ücretleri",
+    "finance.sgSynthNetToCollect": "Net kalan tahsilat",
     "finance.sgSynthBalanceNow": "Ücretlerden sonra güncel bakiye",
     "finance.sgSynthBalanceFcst": "Ücretlerden sonra öngörülen bakiye",
     "finance.sgSynthHint2": "Popülasyon = ameliyatı döneme denk gelen hastalar (Gelecek hastalar gibi). Ücretler bu hastalara bağlıdır. Hastane, otel, transfer, komisyon ve vergiler DÜŞÜLMEMİŞTİR.",
@@ -4105,6 +4111,8 @@ const I18N = {
     "finance.sgSynthPatients": "Pacientes concernidos",
     "finance.sgSynthToCollect": "Total por cobrar",
     "finance.sgSynthRemainCash": "Pendiente por cobrar",
+    "finance.sgSynthFeesToPay": "Honorarios de cirujanos por pagar",
+    "finance.sgSynthNetToCollect": "Neto pendiente por cobrar",
     "finance.sgSynthBalanceNow": "Saldo actual tras honorarios",
     "finance.sgSynthBalanceFcst": "Saldo previsto tras honorarios",
     "finance.sgSynthHint2": "Población = pacientes cuya operación cae en el período (como Pacientes próximos). Honorarios vinculados a estos pacientes. Gastos de hospital, hotel, transferencias, comisiones e impuestos NO deducidos.",
@@ -9717,14 +9725,10 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
               const dejaEncaisse    = patsPeriode.reduce((a,p)=>a+getPatientPaid(p, finances),0);
               const resteEncaisser  = patsPeriode.reduce((a,p)=>a+getPatientBalance(p, finances),0);
 
-              // Honoraires dus de CES MÊMES patients (rattachement par patientId, PAS par f.date).
-              const honorairesDus = (finances||[])
-                .filter(f=> isSurgeonFee(f) && idsPeriode.has(String(f.patientId||"")))
-                .reduce((a,f)=>a+Math.abs(Number(f.montant||0)),0);
-
-              // Deux soldes distincts (spec Veys).
-              const soldeActuel      = dejaEncaisse   - honorairesDus;
-              const soldePrevisionnel= totalAEncaisser - honorairesDus;
+              // Reste net à encaisser = reste à encaisser des patients de la période
+              // MOINS le reste à payer aux chirurgiens (MÊME variable que le KPI supérieur,
+              // afin que les deux zones ne divergent JAMAIS). Pas de Math.max : peut être négatif.
+              const resteNetEncoreAEncaisser = resteEncaisser - totalReste;
 
               const periodeLabel = isAllP ? tt("common.all")
                 : (periods.find(([id])=>id===period)||["",period])[1];
@@ -9744,10 +9748,9 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
                   <Line label={tt("finance.sgSynthToCollect")} value={totalAEncaisser} color={C.navy}/>
                   <Line label={tt("finance.sgSynthCash")}      value={dejaEncaisse}   color={C.green}/>
                   <Line label={tt("finance.sgSynthRemainCash")}value={resteEncaisser} color={resteEncaisser>0?C.amber:C.green}/>
-                  <Line label={tt("finance.sgSynthDue")}       value={honorairesDus}  color={C.navy}/>
                   <div style={{marginTop:6,paddingTop:8,borderTop:`2px solid ${C.border}`}}>
-                    <Line label={tt("finance.sgSynthBalanceNow")}  value={soldeActuel}       color={soldeActuel>=0?C.green:C.red} strong/>
-                    <Line label={tt("finance.sgSynthBalanceFcst")} value={soldePrevisionnel} color={soldePrevisionnel>=0?C.green:C.red} strong/>
+                    <Line label={tt("finance.sgSynthFeesToPay")} value={-totalReste} color={C.red}/>
+                    <Line label={tt("finance.sgSynthNetToCollect")} value={resteNetEncoreAEncaisser} color={resteNetEncoreAEncaisser>=0?C.green:C.red} strong/>
                   </div>
                   <div style={{fontSize:10,color:C.muted,marginTop:8,lineHeight:1.5}}>ⓘ {tt("finance.sgSynthHint2")}</div>
                 </div>
