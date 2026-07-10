@@ -8387,17 +8387,21 @@ function upRange(preset, today, customFrom, customTo){
 function upBuildRows(patients, finances, from, to, opts){
   const o = opts||{};
   const today = o.today || todayStr();
+  const rdvs = o.rdvs || [];
+  // Date métier UNIQUE : dateOperation prioritaire, prochain RDV en secours.
+  // Aligné sur "Paiements à venir". Aucune date inventée : "" si les deux sont absentes.
+  const opDateOf = (p)=> normalizeDate(p&&p.dateOperation) || patientNextOpDate(p, rdvs) || "";
   const inRange = (iso)=>{
-    if(!iso) return false;                 // sans date d'opération → hors période
+    if(!iso) return false;                 // sans date métier → hors période
     if(from && iso < from) return false;
     if(to   && iso > to)   return false;
     return true;
   };
   const rows = (patients||[])
     .filter(p=> FIN_DONE_STAGES.indexOf(p&&p.stade)<0)     // dossiers encore actifs
-    .filter(p=> (!from && !to) ? true : inRange(normalizeDate(p&&p.dateOperation)))
+    .filter(p=> (!from && !to) ? true : inRange(opDateOf(p)))
     .map(p=>{
-      const dop   = normalizeDate(p.dateOperation) || "";
+      const dop   = opDateOf(p) || "";
       const total = getPatientTotal(p);
       const paid  = getPatientPaid(p, finances);
       const reste = getPatientBalance(p, finances);
@@ -8471,7 +8475,7 @@ function upSort(rows, key, dir){
 }
 
 // ── Onglet "Paiements à venir" : calendrier interactif + synthèse + liste ──
-function UpcomingPayments({ patients, finances, user, tt }){
+function UpcomingPayments({ patients, finances, rdvs, user, tt }){
   const today = todayStr();
   const [preset, setPreset]   = React.useState("30j");
   const [cFrom, setCFrom]     = React.useState(today);
@@ -8485,8 +8489,8 @@ function UpcomingPayments({ patients, finances, user, tt }){
 
   // ── UN SEUL FILTRAGE — tout en dérive (KPIs, liste, exports) ──
   const { rows: allRows, kpi } = React.useMemo(
-    ()=> upBuildRows(patients, finances, from, to, {today}),
-    [patients, finances, from, to, today]
+    ()=> upBuildRows(patients, finances, from, to, {today, rdvs}),
+    [patients, finances, from, to, today, rdvs]
   );
   // Recherche + tri : vues du MÊME tableau, jamais de recalcul métier
   const rows = React.useMemo(
@@ -9222,7 +9226,7 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
       {/* ══ PATIENTS À VENIR ══ */}
       {/* Paiements à venir : calendrier intelligent — filtre sur la DATE D'OPÉRATION
           (date métier validée par Veys), indépendant du sélecteur de période global. */}
-      {tab==="upcoming" && <UpcomingPayments patients={pat} finances={finances} user={user} tt={tt}/>}
+      {tab==="upcoming" && <UpcomingPayments patients={pat} finances={finances} rdvs={rdvs} user={user} tt={tt}/>}
 
       {/* ══ PAIEMENTS À VENIR / À ENCAISSER ══ */}
       {tab==="due" && (()=>{
