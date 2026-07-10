@@ -84,7 +84,7 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .dh-avatar-think{animation:dhAvatarFloat 2.6s ease-in-out infinite, dhThink 1.1s ease-in-out infinite}
 @media (min-width:900px){
   .dh-dock-backdrop{background:transparent !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;pointer-events:none;justify-content:flex-end !important;align-items:stretch !important}
-  @media (min-width: 900px){ .log-grid{ grid-template-columns: 1fr 1fr !important; } }
+  @media (min-width: 900px){ .log-grid{ grid-template-columns: 1fr 1fr !important; } .tl-grid{ grid-template-columns: 1fr 1fr !important; } }
     .dh-dock{pointer-events:auto;max-width:clamp(340px,24vw,440px) !important;width:clamp(340px,24vw,440px) !important;max-height:100vh !important;height:100vh;border-radius:0 !important;box-shadow:-12px 0 44px rgba(11,31,58,0.28) !important}
   .dh-shift{margin-right:clamp(340px,24vw,440px);transition:margin-right 0.3s ease}
 }
@@ -370,6 +370,47 @@ const I18N = {
     "up.st_red": "Aucun acompte",
     "up.st_blue": "Acompte reçu · intervention < 7 jours",
     "log.tab": "Logistique",
+    "tl.tab": "Parcours",
+    "tl.title": "Parcours du patient",
+    "tl.hint": "Chronologie construite uniquement à partir de dates réelles présentes dans le CRM. Aucune date n'est supposée.",
+    "tl.emptyDated": "Aucun événement daté pour ce dossier.",
+    "tl.denied": "Vous n'avez pas accès au parcours de ce patient.",
+    "tl.undated": "État actuel, non daté",
+    "tl.undatedHint": "Ces informations n'ont pas de date fiable dans les données. Elles sont affichées telles quelles, jamais placées sur la chronologie.",
+    "tl.created": "Création du dossier",
+    "tl.quote": "Devis émis",
+    "tl.quoteDoc": "Document devis",
+    "tl.firstPayment": "Premier encaissement",
+    "tl.payment": "Paiement",
+    "tl.validated": "Validation chirurgien",
+    "tl.flightIn": "Vol d'arrivée",
+    "tl.arrival": "Arrivée à Istanbul",
+    "tl.surgery": "Intervention",
+    "tl.flightOut": "Vol de départ",
+    "tl.departure": "Départ",
+    "tl.rdv": "Rendez-vous",
+    "tl.task": "Tâche",
+    "tl.stage": "Changement de stade",
+    "tl.change": "Modification",
+    "tl.src.patient": "Fiche patient",
+    "tl.src.logistics": "Logistique",
+    "tl.src.finance": "Finances",
+    "tl.src.rdv": "Agenda",
+    "tl.src.task": "Tâches",
+    "tl.src.hist": "Journal",
+    "tl.u.passport": "Passeport",
+    "tl.u.documents": "Documents",
+    "tl.u.hotel": "Hôtel",
+    "tl.u.translator": "Traducteur",
+    "tl.u.flight": "Vol",
+    "tl.u.validation": "Validation chirurgien",
+    "tl.u.stage": "Stade actuel",
+    "tl.u.stageNote": "Les changements de stade antérieurs au déploiement ne sont pas datés : la donnée n'existe pas.",
+    "tl.u.biology": "Analyses biologiques",
+    "tl.u.biologyNote": "Par règle médicale, aucun bilan patient n'est stocké dans le CRM.",
+    "tl.u.hospital": "Hospitalisation / sortie",
+    "tl.u.hospitalNote": "Aucun champ ne suit l'hospitalisation ni la sortie médicale.",
+    "tl.u.notTracked": "Non suivi",
     "dep.pending": "Acompte en attente",
     "dep.received": "Acompte reçu",
     "dh.t.hello": "Bonjour {name}.",
@@ -1395,6 +1436,47 @@ const I18N = {
     "up.st_red": "No deposit",
     "up.st_blue": "Deposit received · surgery < 7 days",
     "log.tab": "Logistics",
+    "tl.tab": "Journey",
+    "tl.title": "Patient journey",
+    "tl.hint": "Timeline built only from real dates present in the CRM. No date is ever assumed.",
+    "tl.emptyDated": "No dated event for this record.",
+    "tl.denied": "You do not have access to this patient's journey.",
+    "tl.undated": "Current status, undated",
+    "tl.undatedHint": "These items have no reliable date in the data. They are shown as-is, never placed on the timeline.",
+    "tl.created": "Record created",
+    "tl.quote": "Quote issued",
+    "tl.quoteDoc": "Quote document",
+    "tl.firstPayment": "First payment",
+    "tl.payment": "Payment",
+    "tl.validated": "Surgeon approval",
+    "tl.flightIn": "Inbound flight",
+    "tl.arrival": "Arrival in Istanbul",
+    "tl.surgery": "Surgery",
+    "tl.flightOut": "Return flight",
+    "tl.departure": "Departure",
+    "tl.rdv": "Appointment",
+    "tl.task": "Task",
+    "tl.stage": "Stage change",
+    "tl.change": "Change",
+    "tl.src.patient": "Patient record",
+    "tl.src.logistics": "Logistics",
+    "tl.src.finance": "Finance",
+    "tl.src.rdv": "Agenda",
+    "tl.src.task": "Tasks",
+    "tl.src.hist": "Log",
+    "tl.u.passport": "Passport",
+    "tl.u.documents": "Documents",
+    "tl.u.hotel": "Hotel",
+    "tl.u.translator": "Interpreter",
+    "tl.u.flight": "Flight",
+    "tl.u.validation": "Surgeon approval",
+    "tl.u.stage": "Current stage",
+    "tl.u.stageNote": "Stage changes before deployment are not dated: the data does not exist.",
+    "tl.u.biology": "Lab results",
+    "tl.u.biologyNote": "By medical rule, no patient lab report is stored in the CRM.",
+    "tl.u.hospital": "Hospitalisation / discharge",
+    "tl.u.hospitalNote": "No field tracks hospitalisation or medical discharge.",
+    "tl.u.notTracked": "Not tracked",
     "dep.pending": "Deposit pending",
     "dep.received": "Deposit received",
     "dh.t.hello": "Hello {name}.",
@@ -2420,6 +2502,47 @@ const I18N = {
     "up.st_red": "Kapora yok",
     "up.st_blue": "Kapora alındı · ameliyat < 7 gün",
     "log.tab": "Lojistik",
+    "tl.tab": "Süreç",
+    "tl.title": "Hasta süreci",
+    "tl.hint": "Timeline built only from real dates present in the CRM. No date is ever assumed.",
+    "tl.emptyDated": "No dated event for this record.",
+    "tl.denied": "You do not have access to this patient's journey.",
+    "tl.undated": "Güncel durum, tarihsiz",
+    "tl.undatedHint": "These items have no reliable date in the data. They are shown as-is, never placed on the timeline.",
+    "tl.created": "Record created",
+    "tl.quote": "Quote issued",
+    "tl.quoteDoc": "Quote document",
+    "tl.firstPayment": "First payment",
+    "tl.payment": "Payment",
+    "tl.validated": "Surgeon approval",
+    "tl.flightIn": "Inbound flight",
+    "tl.arrival": "İstanbul'a varış",
+    "tl.surgery": "Ameliyat",
+    "tl.flightOut": "Return flight",
+    "tl.departure": "Departure",
+    "tl.rdv": "Randevu",
+    "tl.task": "Task",
+    "tl.stage": "Stage change",
+    "tl.change": "Change",
+    "tl.src.patient": "Patient record",
+    "tl.src.logistics": "Logistics",
+    "tl.src.finance": "Finance",
+    "tl.src.rdv": "Agenda",
+    "tl.src.task": "Tasks",
+    "tl.src.hist": "Log",
+    "tl.u.passport": "Passport",
+    "tl.u.documents": "Documents",
+    "tl.u.hotel": "Hotel",
+    "tl.u.translator": "Interpreter",
+    "tl.u.flight": "Flight",
+    "tl.u.validation": "Surgeon approval",
+    "tl.u.stage": "Current stage",
+    "tl.u.stageNote": "Stage changes before deployment are not dated: the data does not exist.",
+    "tl.u.biology": "Lab results",
+    "tl.u.biologyNote": "By medical rule, no patient lab report is stored in the CRM.",
+    "tl.u.hospital": "Hospitalisation / discharge",
+    "tl.u.hospitalNote": "No field tracks hospitalisation or medical discharge.",
+    "tl.u.notTracked": "Takip edilmiyor",
     "dep.pending": "Kapora bekleniyor",
     "dep.received": "Kapora alındı",
     "dh.t.hello": "Merhaba {name}.",
@@ -3445,6 +3568,47 @@ const I18N = {
     "up.st_red": "Sin anticipo",
     "up.st_blue": "Anticipo recibido · intervención < 7 días",
     "log.tab": "Logística",
+    "tl.tab": "Recorrido",
+    "tl.title": "Recorrido del paciente",
+    "tl.hint": "Timeline built only from real dates present in the CRM. No date is ever assumed.",
+    "tl.emptyDated": "No dated event for this record.",
+    "tl.denied": "You do not have access to this patient's journey.",
+    "tl.undated": "Estado actual, sin fecha",
+    "tl.undatedHint": "These items have no reliable date in the data. They are shown as-is, never placed on the timeline.",
+    "tl.created": "Record created",
+    "tl.quote": "Quote issued",
+    "tl.quoteDoc": "Quote document",
+    "tl.firstPayment": "First payment",
+    "tl.payment": "Payment",
+    "tl.validated": "Surgeon approval",
+    "tl.flightIn": "Inbound flight",
+    "tl.arrival": "Llegada a Estambul",
+    "tl.surgery": "Intervención",
+    "tl.flightOut": "Return flight",
+    "tl.departure": "Departure",
+    "tl.rdv": "Cita",
+    "tl.task": "Task",
+    "tl.stage": "Stage change",
+    "tl.change": "Change",
+    "tl.src.patient": "Patient record",
+    "tl.src.logistics": "Logistics",
+    "tl.src.finance": "Finance",
+    "tl.src.rdv": "Agenda",
+    "tl.src.task": "Tasks",
+    "tl.src.hist": "Log",
+    "tl.u.passport": "Passport",
+    "tl.u.documents": "Documents",
+    "tl.u.hotel": "Hotel",
+    "tl.u.translator": "Interpreter",
+    "tl.u.flight": "Flight",
+    "tl.u.validation": "Surgeon approval",
+    "tl.u.stage": "Current stage",
+    "tl.u.stageNote": "Stage changes before deployment are not dated: the data does not exist.",
+    "tl.u.biology": "Lab results",
+    "tl.u.biologyNote": "By medical rule, no patient lab report is stored in the CRM.",
+    "tl.u.hospital": "Hospitalisation / discharge",
+    "tl.u.hospitalNote": "No field tracks hospitalisation or medical discharge.",
+    "tl.u.notTracked": "No registrado",
     "dep.pending": "Anticipo pendiente",
     "dep.received": "Anticipo recibido",
     "dh.t.hello": "Hola {name}.",
@@ -5107,6 +5271,49 @@ const buildHistorique = (oldT, newT, user) => {
 const RDV_TYPES = ["Consultation vidéo","Pré-opératoire","Opération","Suivi post-op","Contrôle","Urgence"];
 const RDV_STATUTS = [{v:"Confirmé",c:"#16A34A"},{v:"Planifié",c:"#D97706"},{v:"En attente",c:"#D97706"},{v:"Terminé",c:"#7B8BA5"},{v:"Annulé",c:"#DC2626"}];
 const RDV_PRIORITES = [{v:"Basse",c:"#7B8BA5"},{v:"Normale",c:"#1D73C9"},{v:"Haute",c:"#D97706"},{v:"Urgente",c:"#DC2626"}];
+// ════════════════════════════════════════════════════════════════════════════
+// PHASE 20C — JOURNALISATION PATIENT (Option B validée par Veys)
+// À partir du déploiement, chaque changement de stade ou de champ important crée
+// une entrée DATÉE dans patient.historique. Le passé n'est JAMAIS reconstitué.
+// ════════════════════════════════════════════════════════════════════════════
+const PATIENT_FIELD_LABELS = {
+  stade:"Stade", procedure:"Intervention", procedures:"Interventions",
+  budget:"Budget", devise:"Devise", medecin:"Chirurgien", hopital:"Hôpital",
+  assigneA:"Assigné à", source:"Source", priorite:"Priorité",
+  dateArrivee:"Date d'arrivée", dateOperation:"Date d'opération", dateDevis:"Date du devis",
+  dateDepart:"Date de départ", volArrivee:"Vol d'arrivée", volDepart:"Vol de départ",
+  hotelNom:"Hôtel", traducteurNom:"Traducteur",
+  passeportStatut:"Passeport", volStatut:"Vol", hotelStatut:"Hôtel (statut)",
+  traducteurStatut:"Traducteur (statut)", validationChirurgienStatut:"Validation chirurgien",
+  validationChirurgienDate:"Date de validation", documentsStatut:"Documents",
+  documentsManquants:"Documents manquants",
+  tel:"Téléphone", email:"E-mail", pays:"Pays", ville:"Ville",
+};
+
+// Journalise UNIQUEMENT les champs RÉELLEMENT PRÉSENTS dans la requête.
+// Indispensable : clearField envoie un payload minimal {id, champ, historique}.
+// Comparer les champs absents ferait croire à un effacement massif.
+function buildPatientHist(orig, updated, user){
+  if(!orig || !updated) return updated && updated.historique;
+  // Si l'appelant a déjà journalisé (ex. clearField), on ne retouche à rien.
+  if(Object.prototype.hasOwnProperty.call(updated, "historique")) return updated.historique;
+  const { date, heure } = nowParts();
+  const prev = parseHist(orig.historique);
+  const entries = [];
+  Object.keys(PATIENT_FIELD_LABELS).forEach(champ=>{
+    if(!Object.prototype.hasOwnProperty.call(updated, champ)) return; // champ absent → ignoré
+    const a = orig[champ] == null ? "" : orig[champ];
+    let b = updated[champ] == null ? "" : updated[champ];
+    if(b === LOG_CLEAR) b = "";                                        // effacement volontaire
+    if(String(a) !== String(b)){
+      entries.push({ u:(user&&user.id)||"?", date, heure, champ,
+                     ancien:String(a), nouveau:String(b) });
+    }
+  });
+  if(!entries.length) return orig.historique || JSON.stringify(prev);
+  return JSON.stringify([...prev, ...entries]);
+}
+
 const RDV_FIELD_LABELS = {
   patientId:"Patient", type:"Type de RDV", date:"Date", heure:"Heure", duree:"Durée",
   statut:"Statut", priorite:"Priorité", medecin:"Chirurgien", hopital:"Hôpital", salle:"Salle",
@@ -6363,6 +6570,203 @@ function CorrigerDatesModal({patient, rdvs, onClose, onSavePatient, onUpdateRdv}
 }
 
 
+// ════════════════════════════════════════════════════════════════════════════
+// PHASE 20C — TIMELINE PATIENT · MOTEUR (lecture seule stricte)
+// Un événement n'existe QUE s'il porte une date réelle dans les données.
+// Aucune date supposée, aucun événement inventé. Ce qui n'a pas de date fiable
+// part dans "État actuel, non daté" — jamais sur la frise.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Un patient est-il dans le périmètre de l'utilisateur ? (règle 20B, inchangée)
+function tlInScope(p, user){
+  if(!p || !user) return false;
+  return dhScopePatients([p], user).length > 0;
+}
+
+// Construit la liste des événements DATÉS + le bandeau non daté.
+function buildPatientTimeline(p, rdvs, finances, taches, user){
+  const empty = { events:[], undated:[], denied:false };
+  if(!p || !user) return empty;
+  if(isSurgeon(user)) return { ...empty, denied:true };   // chirurgien : jamais
+  if(!tlInScope(p, user)) return { ...empty, denied:true };
+
+  const money   = dhCanMoney(user);            // montants (€)
+  const depView = dhCanDepositStatus(user);    // état d'acompte, sans montant
+  const ev = [];
+  const add = (date, o) => {                    // n'ajoute QUE si la date est réelle
+    const d = normalizeDate(date);
+    if(!d) return;
+    ev.push({ date:d, ...o });
+  };
+
+  // ── 1. Champs patient datés ────────────────────────────────────────────────
+  add(p.cree,        { key:"created",  icon:"🆕", label:"tl.created",  src:"tl.src.patient", who:p.creePar||"" });
+  add(p.dateDevis,   { key:"quote",    icon:"📨", label:"tl.quote",    src:"tl.src.patient" });
+  add(p.validationChirurgienDate, { key:"validated", icon:"👨‍⚕️", label:"tl.validated", src:"tl.src.logistics",
+       detail: logStatut(p,"validationChirurgienStatut") });
+  add(p.volArrivee,  { key:"flightIn", icon:"🛬", label:"tl.flightIn", src:"tl.src.logistics" });
+  add(p.dateArrivee, { key:"arrival",  icon:"✈️", label:"tl.arrival",  src:"tl.src.patient" });
+  add(p.dateOperation,{key:"surgery",  icon:"🏥", label:"tl.surgery",  src:"tl.src.patient",
+       detail:[p.medecin, p.hopital].filter(Boolean).join(" · ") });
+  add(p.volDepart,   { key:"flightOut",icon:"🛫", label:"tl.flightOut",src:"tl.src.logistics" });
+  add(p.dateDepart,  { key:"departure",icon:"📆", label:"tl.departure",src:"tl.src.logistics" });
+
+  // ── 2. Mouvements financiers datés ─────────────────────────────────────────
+  // patientMoneyMovements exclut déjà honoraires chirurgien et commissions.
+  const movs = patientMoneyMovements(p, finances)
+    .filter(f=> normalizeDate(f.date))
+    .sort((a,b)=> normalizeDate(a.date).localeCompare(normalizeDate(b.date)));
+  const cash = movs.filter(isPatientCashFlow);
+  cash.forEach((f, i)=>{
+    add(f.date, {
+      key: i===0 ? "firstPayment" : "payment",
+      icon: i===0 ? "💰" : "💶",
+      label: i===0 ? "tl.firstPayment" : "tl.payment",
+      src:"tl.src.finance", who:f.creePar||"",
+      // Montant réservé aux rôles autorisés. La commerciale voit l'ÉTAT, pas la somme.
+      detail: money ? (Math.round(finSignedAmount(f))).toLocaleString("fr-FR")+" €"
+                    : (depView && i===0 ? t("dep.received") : ""),
+    });
+  });
+  // Devis émis (document, pas de l'argent) — visible sans montant
+  movs.filter(f=> FIN_NON_CASH_TYPES.indexOf(f.type)>=0).forEach(f=>{
+    add(f.date, { key:"quoteDoc", icon:"📄", label:"tl.quoteDoc", src:"tl.src.finance", who:f.creePar||"" });
+  });
+
+  // ── 3. Rendez-vous datés ───────────────────────────────────────────────────
+  (rdvs||[]).filter(r=> String(r.patientId)===String(p.id)).forEach(r=>{
+    add(r.date, { key:"rdv", icon:"📅", label:"tl.rdv", src:"tl.src.rdv",
+      who:r.assigneA||r.creePar||"", heure:normalizeHeure(r.heure)||"",
+      detail:[r.type, r.medecin, r.statut].filter(Boolean).join(" · ") });
+  });
+
+  // ── 4. Tâches liées, datées par leur échéance ──────────────────────────────
+  (taches||[]).filter(x=> String(x.patientId)===String(p.id)).forEach(x=>{
+    add(x.echeance, { key:"task", icon:"✅", label:"tl.task", src:"tl.src.task",
+      who:x.assigneA||x.creePar||"", detail:[x.titre, x.statut].filter(Boolean).join(" · ") });
+  });
+
+  // ── 5. Historique journalisé (20C) : chaque entrée porte sa propre date ─────
+  parseHist(p.historique).forEach((h, i)=>{
+    if(!h || !h.champ) return;
+    const lbl = PATIENT_FIELD_LABELS[h.champ] || h.champ;
+    const av = String(h.ancien||"").trim(), ap = String(h.nouveau||"").trim();
+    // Un champ financier n'est jamais détaillé à qui n'a pas le droit de le voir.
+    const sensible = (h.champ === "budget");
+    const detail = (sensible && !money) ? lbl
+      : lbl + " : " + (av||"—") + " → " + (ap||"—");
+    add(h.date, { key: h.champ==="stade" ? "stage" : "change",
+      icon: h.champ==="stade" ? "🔀" : "✏️",
+      label: h.champ==="stade" ? "tl.stage" : "tl.change",
+      src:"tl.src.hist", who:h.u||"", heure:h.heure||"", detail, seq:i });
+  });
+
+  // Tri chronologique : date, puis heure, puis ordre d'insertion
+  ev.sort((a,b)=> a.date.localeCompare(b.date)
+    || String(a.heure||"").localeCompare(String(b.heure||""))
+    || (a.seq||0)-(b.seq||0));
+
+  // ── 6. « État actuel, non daté » : ce que le CRM sait, sans date fiable ─────
+  const undated = [];
+  const st = (field, labelKey, icon)=>{
+    const v = logStatut(p, field);
+    undated.push({ key:field, icon, label:labelKey, value:v,
+                   severity: logSeverity({[field]:v}, field) });
+  };
+  st("passeportStatut","tl.u.passport","🛂");
+  st("documentsStatut","tl.u.documents","📄");
+  st("hotelStatut","tl.u.hotel","🏨");
+  st("traducteurStatut","tl.u.translator","🗣️");
+  st("volStatut","tl.u.flight","✈️");
+  st("validationChirurgienStatut","tl.u.validation","👨‍⚕️");
+  // Le stade actuel n'a pas de date tant qu'il n'a pas été journalisé (20C).
+  const stageDated = ev.some(e=>e.key==="stage");
+  undated.push({ key:"stade", icon:"🔀", label:"tl.u.stage", value:p.stade||"—",
+                 note: stageDated ? null : "tl.u.stageNote" });
+  // Analyses biologiques : jamais stockées côté patient (règle médicale). Assumé.
+  undated.push({ key:"biologie", icon:"🧪", label:"tl.u.biology", value:t("tl.u.notTracked"),
+                 note:"tl.u.biologyNote" });
+  // Hospitalisation / sortie médicale : aucun champ n'existe.
+  undated.push({ key:"hosp", icon:"🛏️", label:"tl.u.hospital", value:t("tl.u.notTracked"),
+                 note:"tl.u.hospitalNote" });
+
+  return { events:ev, undated, denied:false, money, depView };
+}
+
+// Regroupe les événements par date, pour l'affichage.
+function tlGroupByDate(events){
+  const map = new Map();
+  (events||[]).forEach(e=>{ if(!map.has(e.date)) map.set(e.date, []); map.get(e.date).push(e); });
+  return Array.from(map.entries()).map(([date, items])=>({ date, items }));
+}
+
+// ── 20C : affichage du parcours patient (lecture seule) ──────────────────────
+function TimelinePatient({ p, user, rdvs, finances, taches, tt }){
+  const data = React.useMemo(
+    ()=> buildPatientTimeline(p, rdvs, finances, taches, user),
+    [p, rdvs, finances, taches, user]
+  );
+  if(data.denied){
+    return <Card><div style={{padding:20,textAlign:"center",color:C.muted,fontSize:13}}>🔒 {tt("tl.denied")}</div></Card>;
+  }
+  const groups = tlGroupByDate(data.events);
+  const SEV = { red:C.red, orange:C.amber };
+  const uname = (id)=> id ? (USERS.find(u=>u.id===id)?.prenom || id) : null;
+
+  return (
+    <div>
+      <Card>
+        <div style={{fontSize:13,fontWeight:800,color:C.text,marginBottom:3}}>🕓 {tt("tl.title")}</div>
+        <div style={{fontSize:11,color:C.muted,marginBottom:12,lineHeight:1.5}}>{tt("tl.hint")}</div>
+
+        {groups.length===0 && (
+          <div style={{padding:24,textAlign:"center",color:C.muted,fontSize:13}}>{tt("tl.emptyDated")}</div>
+        )}
+
+        {groups.map(g=>(
+          <div key={g.date} style={{marginBottom:14}}>
+            <div style={{fontSize:11.5,fontWeight:800,color:C.navy,marginBottom:6}}>📆 {fmtJour(g.date)}</div>
+            {g.items.map((e,i)=>(
+              <div key={e.key+"_"+i} className="tl-row"
+                style={{display:"flex",gap:10,padding:"8px 10px",marginBottom:5,borderRadius:10,
+                        background:C.white,border:`1px solid ${C.border}`,borderLeft:`3px solid ${C.navy}`}}>
+                <div style={{fontSize:15,flexShrink:0}}>{e.icon}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12.5,fontWeight:700,color:C.text}}>
+                    {tt(e.label)}{e.heure ? " · " + e.heure : ""}
+                  </div>
+                  {e.detail && <div style={{fontSize:11.5,color:C.muted,marginTop:2,wordBreak:"break-word"}}>{e.detail}</div>}
+                  <div style={{fontSize:10.5,color:C.muted,marginTop:3}}>
+                    {tt(e.src)}{uname(e.who) ? " · 👤 " + uname(e.who) : ""}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </Card>
+
+      <Card style={{marginTop:12}}>
+        <div style={{fontSize:13,fontWeight:800,color:C.text,marginBottom:3}}>📌 {tt("tl.undated")}</div>
+        <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>{tt("tl.undatedHint")}</div>
+        <div className="tl-grid" style={{display:"grid",gridTemplateColumns:"1fr",gap:"0 18px"}}>
+          {data.undated.map(u=>(
+            <div key={u.key} style={{padding:"8px 0",borderBottom:`1px solid ${C.bg}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:7}}>
+                <span style={{fontSize:13}}>{u.icon}</span>
+                <span style={{flex:1,fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase"}}>{tt(u.label)}</span>
+                {u.severity && <span style={{width:8,height:8,borderRadius:99,background:SEV[u.severity]}}/>}
+              </div>
+              <div style={{fontSize:12.5,fontWeight:600,color:C.text,marginTop:2}}>{u.value}</div>
+              {u.note && <div style={{fontSize:10.5,color:C.muted,marginTop:2,lineHeight:1.5}}>{tt(u.note)}</div>}
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 // ── 20A-bis : panneau logistique éditable de la fiche patient ────────────────
 // Utilise onSavePatient (fonction de sauvegarde EXISTANTE). Aucune écriture directe.
 // Sécurité : on n'envoie QUE les 13 champs logistiques + l'id. Les champs laissés
@@ -6518,7 +6922,7 @@ function FichePatient({user, patient, patients, rdvs, finances, taches, onEdit, 
   const totalVirements = getPatientPaidByMode(p, finances, FIN_MODE_TRANSFER);
   const restant = getPatientBalance(p, finances);
   const fmtDate = d=>{const n=normalizeDate(d); return n?new Date(n+"T12:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"}):"Date à corriger";};
-  const TABS=[{id:"info",l:tt("common.details")},{id:"logistique",l:"🧳 "+tt("log.tab")},{id:"agenda",l:"📅 "+tt("nav.agenda")},{id:"rdvs",l:`${tt("nav.rdvs")} (${pRdvs.length})`},{id:"finances",l:tt("nav.finances")},{id:"taches",l:`${tt("nav.taches")} (${pTaches.length})`}];
+  const TABS=[{id:"info",l:tt("common.details")},{id:"parcours",l:"🕓 "+tt("tl.tab")},{id:"logistique",l:"🧳 "+tt("log.tab")},{id:"agenda",l:"📅 "+tt("nav.agenda")},{id:"rdvs",l:`${tt("nav.rdvs")} (${pRdvs.length})`},{id:"finances",l:tt("nav.finances")},{id:"taches",l:`${tt("nav.taches")} (${pTaches.length})`}];
   return (
     <div>
       <button onClick={onBack} style={{border:"none",background:"none",cursor:"pointer",color:user.color,fontWeight:700,fontSize:13,marginBottom:14,display:"flex",alignItems:"center",gap:6}}>← {tt("common.back")} — {tt("nav.patients")}</button>
@@ -6609,6 +7013,7 @@ function FichePatient({user, patient, patients, rdvs, finances, taches, onEdit, 
           );
         })()}
       </div>}
+      {tab==="parcours"&&<TimelinePatient p={p} user={user} rdvs={rdvs} finances={finances} taches={taches} tt={tt}/>}
       {tab==="logistique"&&<LogistiquePatient p={p} user={user} onSavePatient={onSavePatient} tt={tt}/>}
       {tab==="info"&&<Card>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0}}>
@@ -15070,7 +15475,12 @@ function App() {
 
   const savePatient = async (f) => {
     if(f.id){
-      const updated = {...f,dernierContact:todayStr()};
+      // 20C : journalisation datée des champs importants. buildPatientHist ne
+      // compare QUE les champs présents dans f, et respecte un historique déjà
+      // fourni par l'appelant (clearField). Aucun ancien dossier n'est réécrit.
+      const orig = patients.find(x=>x.id===f.id);
+      const hist = orig ? buildPatientHist(orig, f, user) : f.historique;
+      const updated = {...f, dernierContact:todayStr(), ...(hist!==undefined?{historique:hist}:{})};
       // Le marqueur de suppression part au serveur, mais ne doit JAMAIS entrer
       // dans l'état React ni dans le cache local : localement il vaut "".
       const local = {};
@@ -15101,7 +15511,9 @@ function App() {
   };
   const changeStage = async (id,stade) => {
     const p=patients.find(x=>x.id===id); if(!p) return;
-    const u={...p,stade,dernierContact:todayStr()};
+    // 20C : le changement de stade est désormais daté dans patient.historique.
+    const u={...p,stade,dernierContact:todayStr(),
+             historique: buildPatientHist(p, {stade}, user)};
     setPatients(ps=>{const np=ps.map(x=>x.id===id?u:x);cache.save("patients",np);return np;});
     await syncPost("patients","update",u);
   };
