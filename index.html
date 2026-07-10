@@ -9093,13 +9093,17 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
         ))}
       </div>
 
-      {/* Filtres */}
+      {/* Barre de période commune — masquée sur "upcoming" et "due" qui ont
+          leur propre sélecteur (Calendrier interne). Elle reste active et
+          visible sur tous les autres onglets (dashboard, transactions, etc.). */}
+      {tab!=="upcoming" && tab!=="due" && (
       <div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto",paddingBottom:2}}>
         {periods.map(([id,lb])=>(
           <button key={id} onClick={()=>setPeriod(id)} style={{padding:"6px 12px",borderRadius:99,border:"none",cursor:"pointer",fontWeight:700,fontSize:11,whiteSpace:"nowrap",
             background:period===id?C.gold:C.white,color:period===id?C.navy:C.muted,boxShadow:period===id?"none":`inset 0 0 0 1px ${C.border}`}}>{lb}</button>
         ))}
       </div>
+      )}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8,marginBottom:16}}>
         <select value={fUser} onChange={e=>setFUser(e.target.value)} style={sel}><option value="tous">👤 {tt("fin.allUsers")}</option>{USERS.map(u=><option key={u.id} value={u.id}>{u.prenom} {u.nom}</option>)}</select>
         <select value={fPays} onChange={e=>setFPays(e.target.value)} style={sel}><option value="tous">🌍 {tt("fin.allCountries")}</option>{paysOpts.map(p=><option key={p} value={p}>{p}</option>)}</select>
