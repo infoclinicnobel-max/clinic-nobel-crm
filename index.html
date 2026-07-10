@@ -855,7 +855,13 @@ const I18N = {
     "fin.depositsReceived": "Acomptes reçus",
     "fin.fullPayments": "Paiements complets",
     "fin.refunded": "Remboursé",
-    "finance.sgSynthTitle": "Synthèse financière de la période",
+    "finance.sgSynthTitle": "Synthèse des patients à opérer sur la période",
+    "finance.sgSynthPatients": "Patients concernés",
+    "finance.sgSynthToCollect": "Total à encaisser",
+    "finance.sgSynthRemainCash": "Reste à encaisser",
+    "finance.sgSynthBalanceNow": "Solde actuel après honoraires",
+    "finance.sgSynthBalanceFcst": "Solde prévisionnel après honoraires",
+    "finance.sgSynthHint2": "Population = patients dont l'opération tombe dans la période (comme « Patients à venir »). Honoraires rattachés à ces patients. Frais d'hôpital, hôtel, transferts, commissions et taxes NON déduits.",
     "finance.sgSynthCash": "Encaissements patients reçus",
     "finance.sgSynthDue": "Honoraires chirurgiens dus",
     "finance.sgSynthGiven": "Honoraires déjà versés",
@@ -1931,7 +1937,13 @@ const I18N = {
     "fin.depositsReceived": "Deposits received",
     "fin.fullPayments": "Full payments",
     "fin.refunded": "Refunded",
-    "finance.sgSynthTitle": "Financial summary for the period",
+    "finance.sgSynthTitle": "Summary of patients to operate in the period",
+    "finance.sgSynthPatients": "Patients concerned",
+    "finance.sgSynthToCollect": "Total to collect",
+    "finance.sgSynthRemainCash": "Remaining to collect",
+    "finance.sgSynthBalanceNow": "Current balance after fees",
+    "finance.sgSynthBalanceFcst": "Forecast balance after fees",
+    "finance.sgSynthHint2": "Population = patients whose operation falls in the period (like Upcoming patients). Fees linked to these patients. Hospital, hotel, transfers, commissions and taxes NOT deducted.",
     "finance.sgSynthCash": "Patient payments received",
     "finance.sgSynthDue": "Surgeon fees due",
     "finance.sgSynthGiven": "Fees already paid",
@@ -3007,7 +3019,13 @@ const I18N = {
     "fin.depositsReceived": "Alınan kaporalar",
     "fin.fullPayments": "Tam ödemeler",
     "fin.refunded": "İade edildi",
-    "finance.sgSynthTitle": "Dönem için finansal özet",
+    "finance.sgSynthTitle": "Dönemde ameliyat edilecek hastaların özeti",
+    "finance.sgSynthPatients": "İlgili hastalar",
+    "finance.sgSynthToCollect": "Tahsil edilecek toplam",
+    "finance.sgSynthRemainCash": "Kalan tahsilat",
+    "finance.sgSynthBalanceNow": "Ücretlerden sonra güncel bakiye",
+    "finance.sgSynthBalanceFcst": "Ücretlerden sonra öngörülen bakiye",
+    "finance.sgSynthHint2": "Popülasyon = ameliyatı döneme denk gelen hastalar (Gelecek hastalar gibi). Ücretler bu hastalara bağlıdır. Hastane, otel, transfer, komisyon ve vergiler DÜŞÜLMEMİŞTİR.",
     "finance.sgSynthCash": "Alınan hasta ödemeleri",
     "finance.sgSynthDue": "Cerrah ücretleri (borç)",
     "finance.sgSynthGiven": "Ödenen ücretler",
@@ -4083,7 +4101,13 @@ const I18N = {
     "fin.depositsReceived": "Depósitos recibidos",
     "fin.fullPayments": "Pagos completos",
     "fin.refunded": "Reembolsado",
-    "finance.sgSynthTitle": "Resumen financiero del período",
+    "finance.sgSynthTitle": "Resumen de pacientes a operar en el período",
+    "finance.sgSynthPatients": "Pacientes concernidos",
+    "finance.sgSynthToCollect": "Total por cobrar",
+    "finance.sgSynthRemainCash": "Pendiente por cobrar",
+    "finance.sgSynthBalanceNow": "Saldo actual tras honorarios",
+    "finance.sgSynthBalanceFcst": "Saldo previsto tras honorarios",
+    "finance.sgSynthHint2": "Población = pacientes cuya operación cae en el período (como Pacientes próximos). Honorarios vinculados a estos pacientes. Gastos de hospital, hotel, transferencias, comisiones e impuestos NO deducidos.",
     "finance.sgSynthCash": "Pagos de pacientes recibidos",
     "finance.sgSynthDue": "Honorarios de cirujanos adeudados",
     "finance.sgSynthGiven": "Honorarios ya pagados",
@@ -9510,9 +9534,12 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
         const spSorted = sp.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
         const totalDu = surgeonDue(sp);
         const totalDonne = surgeonGiven(sp);
-        const totalReste = Math.max(totalDu-totalDonne,0);
         const parChir = {};
         sp.forEach(f=>{ const k=surgeonOf(f); (parChir[k]=parChir[k]||[]).push(f); });
+        // BUG A corrigé : reste calculé chirurgien PAR chirurgien puis additionné.
+        // Le max() par fiche empêche qu'un trop-versé sur un chirurgien masque
+        // la dette d'un autre (ex. Anvar 0 + Azar 4720 = 4720, pas 7720-4620=3100).
+        const totalReste = Object.values(parChir).reduce((a,recs)=>a+surgeonRemaining(recs),0);
         // Filtrage comptable : chirurgien / statut calculé / recherche (chir, patient, intervention)
         const sgVisibleChirs = Object.keys(parChir).sort().filter(chir=>{
           if(sgFilter.chir!=="all" && chir!==sgFilter.chir) return false;
@@ -9669,28 +9696,42 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
             })}
             {sp.length===0&&<div style={{fontSize:13,color:C.muted,textAlign:"center",padding:40}}>{tt("common.noResult")}</div>}
 
-            {/* ══ SYNTHÈSE FINANCIÈRE DE LA PÉRIODE (gel levé pour cet ajout) ══
-                Basée EXCLUSIVEMENT sur les transactions de la période (inPeriod)
-                et les filtres actifs. Aucun total historique de fiche chirurgien.
-                Solde après honoraires = encaissements patients − honoraires dus.
+            {/* ══ SYNTHÈSE DES PATIENTS À OPÉRER SUR LA PÉRIODE (gel levé pour cet ajout) ══
+                MONO-PÉRIMÈTRE : même population, même période d'opération et mêmes
+                filtres que "Patients à venir". Aucun mélange avec la trésorerie globale.
+                Les versements chirurgiens (non rattachables par patient) restent
+                EXCLUSIVEMENT dans la partie haute "Paiements chirurgiens" de l'onglet.
                 Ne déduit NI hôpital NI hôtel NI transferts NI commissions NI taxes. */}
             {(()=>{
-              // Encaissements patients réellement reçus dans la période + filtres actifs.
-              const encaisse = pat.reduce((acc,p)=>{
-                const fp = (finances||[]).filter(f=> String(f.patientId||"")===String(p.id) && isPatientCashFlow(f) && inPeriod(f.date||""));
-                return acc + fp.reduce((a,f)=>a+Math.abs(Number(f.montant||0)),0);
-              },0);
-              // Honoraires dus / versés / reste : depuis sp (déjà période + FIN_SURGEON_TYPES).
-              const honDus    = totalDu;      // surgeonDue(sp)
-              const honVerses = totalDonne;   // surgeonGiven(sp)
-              const honReste  = totalReste;   // max(dus - versés, 0)
-              const soldeApresHonoraires = encaisse - honDus;
-              const periodeLabel = cutoff===null ? tt("common.all")
+              // Population : patients dont la date d'opération (dateOperation || RDV)
+              // tombe dans la période — exactement comme "Patients à venir".
+              const opDateOf = (p)=> normalizeDate(p&&p.dateOperation) || patientNextOpDate(p, rdvs) || "";
+              const [pFrom, pTo] = upRange(period, today, "", "");
+              const isAllP = (period==="tout");
+              const patsPeriode = pat.filter(p=> FIN_DONE_STAGES.indexOf(p&&p.stade)<0)
+                .filter(p=> isAllP ? !!opDateOf(p) : isDateInRange(opDateOf(p), pFrom, pTo));
+              const idsPeriode = new Set(patsPeriode.map(p=>String(p.id)));
+
+              // Encaissements de CES patients (tous temps, comme "Déjà encaissé" de "à venir").
+              const totalAEncaisser = patsPeriode.reduce((a,p)=>a+getPatientTotal(p),0);
+              const dejaEncaisse    = patsPeriode.reduce((a,p)=>a+getPatientPaid(p, finances),0);
+              const resteEncaisser  = patsPeriode.reduce((a,p)=>a+getPatientBalance(p, finances),0);
+
+              // Honoraires dus de CES MÊMES patients (rattachement par patientId, PAS par f.date).
+              const honorairesDus = (finances||[])
+                .filter(f=> isSurgeonFee(f) && idsPeriode.has(String(f.patientId||"")))
+                .reduce((a,f)=>a+Math.abs(Number(f.montant||0)),0);
+
+              // Deux soldes distincts (spec Veys).
+              const soldeActuel      = dejaEncaisse   - honorairesDus;
+              const soldePrevisionnel= totalAEncaisser - honorairesDus;
+
+              const periodeLabel = isAllP ? tt("common.all")
                 : (periods.find(([id])=>id===period)||["",period])[1];
-              const Line = ({label,value,color,strong})=>(
+              const Line = ({label,value,color,strong,money=true})=>(
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,padding:"6px 0",borderTop:`1px solid ${C.bg}`}}>
                   <span style={{fontSize:strong?13:12,fontWeight:strong?800:600,color:strong?C.text:C.muted}}>{label}</span>
-                  <span style={{fontSize:strong?15:13,fontWeight:800,color:color||C.text,whiteSpace:"nowrap"}}>{eur(value)}</span>
+                  <span style={{fontSize:strong?15:13,fontWeight:800,color:color||C.text,whiteSpace:"nowrap"}}>{money?eur(value):value}</span>
                 </div>
               );
               return (
@@ -9699,14 +9740,16 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
                     <span style={{fontSize:14,fontWeight:800,color:C.text}}>📊 {tt("finance.sgSynthTitle")}</span>
                     <span style={{fontSize:11,color:C.muted,fontWeight:700,marginLeft:"auto"}}>🗓 {periodeLabel}</span>
                   </div>
-                  <Line label={tt("finance.sgSynthCash")}   value={encaisse}  color={C.green}/>
-                  <Line label={tt("finance.sgSynthDue")}    value={honDus}    color={C.navy}/>
-                  <Line label={tt("finance.sgSynthGiven")}  value={honVerses} color={C.muted}/>
-                  <Line label={tt("finance.sgSynthRemain")} value={honReste}  color={honReste>0?C.amber:C.green}/>
+                  <Line label={tt("finance.sgSynthPatients")}  value={patsPeriode.length} color={C.navy} money={false}/>
+                  <Line label={tt("finance.sgSynthToCollect")} value={totalAEncaisser} color={C.navy}/>
+                  <Line label={tt("finance.sgSynthCash")}      value={dejaEncaisse}   color={C.green}/>
+                  <Line label={tt("finance.sgSynthRemainCash")}value={resteEncaisser} color={resteEncaisser>0?C.amber:C.green}/>
+                  <Line label={tt("finance.sgSynthDue")}       value={honorairesDus}  color={C.navy}/>
                   <div style={{marginTop:6,paddingTop:8,borderTop:`2px solid ${C.border}`}}>
-                    <Line label={tt("finance.sgSynthBalance")} value={soldeApresHonoraires} color={soldeApresHonoraires>=0?C.green:C.red} strong/>
+                    <Line label={tt("finance.sgSynthBalanceNow")}  value={soldeActuel}       color={soldeActuel>=0?C.green:C.red} strong/>
+                    <Line label={tt("finance.sgSynthBalanceFcst")} value={soldePrevisionnel} color={soldePrevisionnel>=0?C.green:C.red} strong/>
                   </div>
-                  <div style={{fontSize:10,color:C.muted,marginTop:8,lineHeight:1.5}}>ⓘ {tt("finance.sgSynthHint")}</div>
+                  <div style={{fontSize:10,color:C.muted,marginTop:8,lineHeight:1.5}}>ⓘ {tt("finance.sgSynthHint2")}</div>
                 </div>
               );
             })()}
