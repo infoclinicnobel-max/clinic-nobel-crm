@@ -11276,12 +11276,15 @@ function ModalRdv({user, patients, rdv, onSave, onClose, taches, setTaches, onDe
     if(!normalizeDate(f.date)){alert("Date invalide, veuillez choisir une date correcte.");return;}
     setSaving(true);
     // Historique des modifications (édition uniquement)
-    const payload = isEdit ? {...f, historique: buildHistGeneric(rdv, f, user, RDV_FIELD_LABELS)} : f;
+    // L'id du RDV est connu AVANT l'envoi : le rappel automatique naît LIÉ (rdvId
+    // rempli), la synchronisation updateRdv/deleteRdv peut donc s'appliquer.
+    const rid = isEdit ? f.id : uid();
+    const payload = isEdit ? {...f, historique: buildHistGeneric(rdv, f, user, RDV_FIELD_LABELS)} : {...f, id: rid};
     await onSave(payload);
     // Créer une tâche de rappel automatique (seulement à la création)
     if(!isEdit && f.creerRappel && setTaches){
       const p=patients.find(x=>x.id===f.patientId);
-      const rappel={id:uid(),titre:`Rappel RDV — ${p?.prenom||""} ${p?.nom||""}`,description:`RDV ${f.type} le ${f.date} à ${f.heure}`,patientId:f.patientId,rdvId:f.id||"",assigneA:f.assigneA,priorite:"Haute",echeance:f.date,heure:f.heure,statut:"En cours",creePar:user.id,cree:todayStr(),historique:JSON.stringify([])};
+      const rappel={id:uid(),titre:`Rappel RDV — ${p?.prenom||""} ${p?.nom||""}`,description:`RDV ${f.type} le ${f.date} à ${f.heure}`,patientId:f.patientId,rdvId:rid,assigneA:f.assigneA,priorite:"Haute",echeance:f.date,heure:f.heure,statut:"En cours",creePar:user.id,cree:todayStr(),historique:JSON.stringify([])};
       setTaches&&setTaches(ts=>{const nt=[...ts,rappel];cache.save("taches",nt);return nt;});
       try{await api.post("taches","add",rappel);}catch(e){}
     }
@@ -16021,7 +16024,7 @@ function App() {
     const cleanDate = normalizeDate(f.date);
     if(!cleanDate) { alert(t("rdv.invalidDate")); return; }
     const cleanHeure = normalizeHeure(f.heure) || f.heure;
-    const n={...f, date:cleanDate, heure:cleanHeure, id:uid(), creePar:user.id};
+    const n={...f, date:cleanDate, heure:cleanHeure, id: f.id || uid(), creePar:user.id};
     setRdvs(rs=>{const nr=[...rs,n];cache.save("rdvs",nr);return nr;});
     await syncPost("rdvs","add",n);
     setModal(null);
