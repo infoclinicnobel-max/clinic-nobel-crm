@@ -89,7 +89,23 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   .dh-shift{margin-right:clamp(340px,24vw,440px);transition:margin-right 0.3s ease}
 }
 </style>
-<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").then(function(r){ try{ r.update(); }catch(e){} }).catch(function(){});</script>
+<script>
+/* Service Worker : enregistrement + détection de version par le CYCLE SW (pas de
+   version.json). Quand un nouveau SW prend le contrôle (controllerchange), la page
+   recharge UNE fois. Garde anti-boucle : sessionStorage cn_sw_reloaded — une seule
+   fois par session ; le flag est reposé par toute nouvelle session, donc les mises
+   à jour suivantes rechargeront aussi. */
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("./sw.js").then(function(r){ try{ r.update(); }catch(e){} }).catch(function(){});
+  navigator.serviceWorker.addEventListener("controllerchange", function(){
+    var done = false;
+    try{ done = sessionStorage.getItem("cn_sw_reloaded")==="1"; }catch(e){}
+    if(done) return;                                  // anti-boucle : 1 reload max / session
+    try{ sessionStorage.setItem("cn_sw_reloaded","1"); }catch(e){}
+    try{ location.reload(); }catch(e){}
+  });
+}
+</script>
 </head>
 <body>
 <div id="root"><!-- Splash statique : affiché instantanément, remplacé automatiquement par React au montage -->
@@ -108,7 +124,22 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
       les échecs transitoires de CDN, exactement le symptôme constaté) ;
    3) si le second essai échoue aussi → message d'erreur clair + bouton Recharger. */
 (function(){
-  window.__CRM_VERSION = "v7.1 — fix hooks #300/#310 (2026-07-07)";
+  window.__CRM_VERSION = "v7.2 — SW v3 + récupération auto (2026-07-13)";
+  /* SAS localStorage : toute clé applicative (cn_*) illisible en JSON est supprimée
+     INDIVIDUELLEMENT avant le démarrage de React. Un stockage corrompu ne peut donc
+     jamais empêcher le boot, et on ne perd que la clé abîmée — jamais tout. */
+  try{
+    var KEYS = [];
+    for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k && k.indexOf("cn_")===0) KEYS.push(k); }
+    KEYS.forEach(function(k){
+      var v = localStorage.getItem(k);
+      if(v===null) return;
+      // Seules les clés censées contenir du JSON sont validées (cache, listes, journaux).
+      if(v.charAt(0)==="{" || v.charAt(0)==="["){
+        try{ JSON.parse(v); }catch(e){ try{ localStorage.removeItem(k); }catch(_){} }
+      }
+    });
+  }catch(e){}
   try{ console.log("%cClinic Nobel CRM — " + window.__CRM_VERSION, "font-weight:bold;color:#0B1F3A"); }catch(e){}
   var firstErr = null;
   window.addEventListener("error", function(e){ if(!firstErr && e) firstErr = e.message || String(e.error||"Erreur de chargement"); });
@@ -546,9 +577,18 @@ const I18N = {
     "bio.libraryEmpty": "La bibliothèque biologique n'est pas encore synchronisée. Veuillez réessayer dans quelques instants.",
     "bio.noTestFound": "Aucun examen biologique reconnu. Essayez de coller vos résultats ligne par ligne (ex. : Hémoglobine 12.5 g/dL).",
     "sync.partialCache": "Synchronisation impossible pour le moment — vos données locales sont affichées. Réessayez.",
+    "sync.refreshApp": "Actualiser l’application",
+    "sync.cleanCache": "Nettoyer le cache local",
+    "sync.cleanConfirm": "Nettoyer le cache local ? Vos données serveur sont conservées ; seules les copies locales temporaires seront supprimées, puis l’application rechargera.",
     "sync.retryMsg": "Synchronisation impossible (serveur injoignable ou lent). Vos données actuelles sont conservées. Réessayez dans un instant.",
     "sync.lastOk": "Dernière synchronisation réussie",
     "sys.syncErrors": "Derniers échecs de synchronisation",
+    "sys.diagVersion": "Version locale",
+    "sys.diagCtrl": "Contrôleur",
+    "sys.diagCache": "Cache actif",
+    "sys.diagNet": "Réseau",
+    "sys.diagOnline": "En ligne",
+    "sys.diagOffline": "Hors ligne",
     "sys.blockTitle": "Clinic Nobel est actuellement en maintenance.",
     "sys.blockText": "Certaines fonctionnalités sont momentanément indisponibles. Merci de réessayer un peu plus tard.",
     "ai.docs.title": "Documents Clinic Nobel",
@@ -922,6 +962,25 @@ const I18N = {
     "finance.otherMovements": "Autres mouvements",
     "finance.totalReceived": "Total reçu patient",
     "finance.cashReceived": "Espèces reçues clinique",
+    "finance.modeOtherUnknown": "Mode non renseigné / autres",
+    "opdate.title": "Modifier la date d'intervention",
+    "opdate.label": "Date d'intervention",
+    "opdate.current": "Date actuelle",
+    "opdate.new": "Nouvelle date",
+    "opdate.reason": "Motif",
+    "opdate.reasonSelect": "Sélectionner un motif…",
+    "opdate.reasonPatient": "Demande du patient",
+    "opdate.reasonSurgeon": "Décision du chirurgien",
+    "opdate.reasonMedical": "Raison médicale",
+    "opdate.reasonFlight": "Problème de vol",
+    "opdate.reasonAdmin": "Retard administratif",
+    "opdate.reasonOther": "Autre",
+    "opdate.precision": "Précisez le motif…",
+    "opdate.reasonRequired": "Le motif est obligatoire pour modifier la date d'intervention.",
+    "opdate.precisionRequired": "Merci de préciser le motif.",
+    "opdate.invalid": "Date invalide : enregistrement refusé.",
+    "opdate.same": "La date saisie est identique à la date actuelle.",
+    "opdate.confirmClear": "Supprimer la date d'intervention de ce patient ? L'ancienne date restera dans l'historique.",
     "finance.receivedBy": "Reçu par",
     "finance.surgeonFee": "Honoraires chirurgien",
     "finance.surgeonSection": "Honoraires & paiements chirurgien",
@@ -1630,9 +1689,18 @@ const I18N = {
     "bio.libraryEmpty": "The biology library is not yet synchronized. Please retry in a moment.",
     "bio.noTestFound": "No biological test recognized. Try pasting your results line by line (e.g., Hemoglobin 12.5 g/dL).",
     "sync.partialCache": "Sync unavailable right now — your local data is shown. Retry.",
+    "sync.refreshApp": "Refresh the app",
+    "sync.cleanCache": "Clean local cache",
+    "sync.cleanConfirm": "Clean local cache? Your server data is kept; only temporary local copies will be removed, then the app will reload.",
     "sync.retryMsg": "Sync failed (server unreachable or slow). Your current data is kept. Retry in a moment.",
     "sync.lastOk": "Last successful sync",
     "sys.syncErrors": "Recent sync failures",
+    "sys.diagVersion": "Local version",
+    "sys.diagCtrl": "Controller",
+    "sys.diagCache": "Active cache",
+    "sys.diagNet": "Network",
+    "sys.diagOnline": "Online",
+    "sys.diagOffline": "Offline",
     "sys.blockTitle": "Clinic Nobel is currently under maintenance.",
     "sys.blockText": "Some features are temporarily unavailable. Please try again a little later.",
     "ai.docs.title": "Clinic Nobel documents",
@@ -2006,6 +2074,25 @@ const I18N = {
     "finance.otherMovements": "Other movements",
     "finance.totalReceived": "Total received from patient",
     "finance.cashReceived": "Cash received at clinic",
+    "finance.modeOtherUnknown": "Mode not specified / other",
+    "opdate.title": "Edit surgery date",
+    "opdate.label": "Surgery date",
+    "opdate.current": "Current date",
+    "opdate.new": "New date",
+    "opdate.reason": "Reason",
+    "opdate.reasonSelect": "Select a reason…",
+    "opdate.reasonPatient": "Patient request",
+    "opdate.reasonSurgeon": "Surgeon decision",
+    "opdate.reasonMedical": "Medical reason",
+    "opdate.reasonFlight": "Flight issue",
+    "opdate.reasonAdmin": "Administrative delay",
+    "opdate.reasonOther": "Other",
+    "opdate.precision": "Specify the reason…",
+    "opdate.reasonRequired": "A reason is required to change the surgery date.",
+    "opdate.precisionRequired": "Please specify the reason.",
+    "opdate.invalid": "Invalid date: save refused.",
+    "opdate.same": "The new date is identical to the current one.",
+    "opdate.confirmClear": "Remove this patient's surgery date? The old date will remain in the history.",
     "finance.receivedBy": "Received by",
     "finance.surgeonFee": "Surgeon fee",
     "finance.surgeonSection": "Surgeon fees & payments",
@@ -2714,9 +2801,18 @@ const I18N = {
     "bio.libraryEmpty": "Biyoloji kütüphanesi henüz senkronize edilmedi. Lütfen bir süre sonra tekrar deneyin.",
     "bio.noTestFound": "Hiçbir biyolojik test tanınmadı. Sonuçlarınızı satır satır yapıştırmayı deneyin.",
     "sync.partialCache": "Şu anda senkronizasyon yapılamıyor — yerel verileriniz gösteriliyor. Tekrar deneyin.",
+    "sync.refreshApp": "Uygulamayı yenile",
+    "sync.cleanCache": "Yerel önbelleği temizle",
+    "sync.cleanConfirm": "Yerel önbellek temizlensin mi? Sunucu verileriniz korunur; yalnızca geçici yerel kopyalar silinir, ardından uygulama yeniden yüklenir.",
     "sync.retryMsg": "Senkronizasyon başarısız (sunucu ulaşılamaz veya yavaş). Mevcut verileriniz korundu. Birazdan tekrar deneyin.",
     "sync.lastOk": "Son başarılı senkronizasyon",
     "sys.syncErrors": "Son senkronizasyon hataları",
+    "sys.diagVersion": "Yerel sürüm",
+    "sys.diagCtrl": "Denetleyici",
+    "sys.diagCache": "Aktif önbellek",
+    "sys.diagNet": "Ağ",
+    "sys.diagOnline": "Çevrimiçi",
+    "sys.diagOffline": "Çevrimdışı",
     "sys.blockTitle": "Clinic Nobel şu anda bakımda.",
     "sys.blockText": "Bazı özellikler geçici olarak kullanılamıyor. Lütfen biraz sonra tekrar deneyin.",
     "ai.docs.title": "Clinic Nobel belgeleri",
@@ -3090,6 +3186,25 @@ const I18N = {
     "finance.otherMovements": "Diğer hareketler",
     "finance.totalReceived": "Hastadan alınan toplam",
     "finance.cashReceived": "Klinikte alınan nakit",
+    "finance.modeOtherUnknown": "Yöntem belirtilmemiş / diğer",
+    "opdate.title": "Ameliyat tarihini düzenle",
+    "opdate.label": "Ameliyat tarihi",
+    "opdate.current": "Mevcut tarih",
+    "opdate.new": "Yeni tarih",
+    "opdate.reason": "Gerekçe",
+    "opdate.reasonSelect": "Bir gerekçe seçin…",
+    "opdate.reasonPatient": "Hasta talebi",
+    "opdate.reasonSurgeon": "Cerrah kararı",
+    "opdate.reasonMedical": "Tıbbi neden",
+    "opdate.reasonFlight": "Uçuş sorunu",
+    "opdate.reasonAdmin": "İdari gecikme",
+    "opdate.reasonOther": "Diğer",
+    "opdate.precision": "Gerekçeyi belirtin…",
+    "opdate.reasonRequired": "Ameliyat tarihini değiştirmek için gerekçe zorunludur.",
+    "opdate.precisionRequired": "Lütfen gerekçeyi belirtin.",
+    "opdate.invalid": "Geçersiz tarih: kayıt reddedildi.",
+    "opdate.same": "Yeni tarih mevcut tarihle aynı.",
+    "opdate.confirmClear": "Bu hastanın ameliyat tarihi silinsin mi? Eski tarih geçmişte kalacaktır.",
     "finance.receivedBy": "Teslim alan",
     "finance.surgeonFee": "Cerrah ücreti",
     "finance.surgeonSection": "Cerrah ücretleri ve ödemeleri",
@@ -3798,9 +3913,18 @@ const I18N = {
     "bio.libraryEmpty": "La biblioteca de biología no está sincronizada aún. Vuelva a intentarlo en un momento.",
     "bio.noTestFound": "No se reconoció ningún análisis biológico. Intente pegar sus resultados línea por línea.",
     "sync.partialCache": "Sincronización no disponible ahora — se muestran sus datos locales. Reintente.",
+    "sync.refreshApp": "Actualizar la aplicación",
+    "sync.cleanCache": "Limpiar caché local",
+    "sync.cleanConfirm": "¿Limpiar caché local? Sus datos del servidor se conservan; solo se eliminarán las copias locales temporales y la aplicación se recargará.",
     "sync.retryMsg": "Sincronización fallida (servidor inaccesible o lento). Sus datos actuales se conservan. Reintente en un momento.",
     "sync.lastOk": "Última sincronización correcta",
     "sys.syncErrors": "Últimos fallos de sincronización",
+    "sys.diagVersion": "Versión local",
+    "sys.diagCtrl": "Controlador",
+    "sys.diagCache": "Caché activa",
+    "sys.diagNet": "Red",
+    "sys.diagOnline": "En línea",
+    "sys.diagOffline": "Sin conexión",
     "sys.blockTitle": "Clinic Nobel está actualmente en mantenimiento.",
     "sys.blockText": "Algunas funciones no están disponibles temporalmente. Vuelva a intentarlo un poco más tarde.",
     "ai.docs.title": "Documentos Clinic Nobel",
@@ -4174,6 +4298,25 @@ const I18N = {
     "finance.otherMovements": "Otros movimientos",
     "finance.totalReceived": "Total recibido del paciente",
     "finance.cashReceived": "Efectivo recibido en clínica",
+    "finance.modeOtherUnknown": "Modo no indicado / otros",
+    "opdate.title": "Modificar la fecha de intervención",
+    "opdate.label": "Fecha de intervención",
+    "opdate.current": "Fecha actual",
+    "opdate.new": "Nueva fecha",
+    "opdate.reason": "Motivo",
+    "opdate.reasonSelect": "Seleccionar un motivo…",
+    "opdate.reasonPatient": "Solicitud del paciente",
+    "opdate.reasonSurgeon": "Decisión del cirujano",
+    "opdate.reasonMedical": "Razón médica",
+    "opdate.reasonFlight": "Problema de vuelo",
+    "opdate.reasonAdmin": "Retraso administrativo",
+    "opdate.reasonOther": "Otro",
+    "opdate.precision": "Precise el motivo…",
+    "opdate.reasonRequired": "El motivo es obligatorio para modificar la fecha de intervención.",
+    "opdate.precisionRequired": "Por favor, precise el motivo.",
+    "opdate.invalid": "Fecha inválida: registro rechazado.",
+    "opdate.same": "La fecha introducida es idéntica a la actual.",
+    "opdate.confirmClear": "¿Eliminar la fecha de intervención de este paciente? La fecha anterior permanecerá en el historial.",
     "finance.receivedBy": "Recibido por",
     "finance.surgeonFee": "Honorarios del cirujano",
     "finance.surgeonSection": "Honorarios y pagos del cirujano",
@@ -5348,6 +5491,65 @@ const RDV_PRIORITES = [{v:"Basse",c:"#7B8BA5"},{v:"Normale",c:"#1D73C9"},{v:"Hau
 // À partir du déploiement, chaque changement de stade ou de champ important crée
 // une entrée DATÉE dans patient.historique. Le passé n'est JAMAIS reconstitué.
 // ════════════════════════════════════════════════════════════════════════════
+/* ══ Modification de la date d'intervention (utilisateurs habilités) ══
+   Petit bottom-sheet dédié : date actuelle → nouvelle date + MOTIF OBLIGATOIRE.
+   - Validation normalizeDate (date invalide refusée avec message clair).
+   - Suppression : confirmation explicite, envoi LOG_CLEAR (effacement réel serveur).
+   - Historique : entrée UNIQUE pré-construite {u,date,heure,champ,ancien,nouveau,motif}
+     passée via `historique` → buildPatientHist la respecte (aucun doublon).
+   - CorrigerDatesModal (outil technique admin) reste inchangé. */
+function EditOpDateSheet({patient, user, onClose, onSavePatient}) {
+  const tt = t;
+  const oldISO = normalizeDate(patient.dateOperation) || "";
+  const [nd, setNd] = React.useState(oldISO);
+  const [motif, setMotif] = React.useState("");
+  const [precision, setPrecision] = React.useState("");
+  const MOTIFS = ["reasonPatient","reasonSurgeon","reasonMedical","reasonFlight","reasonAdmin","reasonOther"];
+  const fmt = d => d ? new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"}) : "—";
+  const save = () => {
+    const newISO = nd ? (normalizeDate(nd)||null) : "";
+    if(newISO===null){ alert(tt("opdate.invalid")); return; }              // date invalide → refus clair
+    if(!motif){ alert(tt("opdate.reasonRequired")); return; }              // motif OBLIGATOIRE
+    if(motif==="reasonOther" && !precision.trim()){ alert(tt("opdate.precisionRequired")); return; }
+    if(String(newISO)===String(oldISO)){ alert(tt("opdate.same")); return; } // rien à changer
+    if(!newISO && oldISO && !window.confirm(tt("opdate.confirmClear"))) return; // suppression : confirmation explicite
+    const motifTxt = tt("opdate."+motif) + (precision.trim() ? " – " + precision.trim() : "");
+    const { date, heure } = nowParts();
+    const entry = { u:(user&&user.id)||"?", date, heure, champ:"dateOperation",
+                    ancien:String(oldISO), nouveau:String(newISO||""), motif:motifTxt };
+    const prev = parseHist(patient.historique);
+    onSavePatient({ ...patient,
+      dateOperation: newISO ? newISO : LOG_CLEAR,          // effacement RÉEL côté serveur si suppression
+      historique: JSON.stringify([...prev, entry]) });     // entrée unique, buildPatientHist n'y retouche pas
+    onClose();
+  };
+  const inp = {width:"100%",padding:"11px 12px",border:`1.5px solid ${C.border}`,borderRadius:10,fontSize:14,outline:"none",background:C.white,color:C.text,boxSizing:"border-box"};
+  const lab = {fontSize:11,fontWeight:800,color:C.muted,textTransform:"uppercase",margin:"12px 0 5px"};
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(11,31,58,0.7)",zIndex:1300,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(4px)"}}>
+      <div onClick={e=>e.stopPropagation()} className="slide-up" style={{background:C.bg,borderRadius:"20px 20px 0 0",padding:"8px 18px 26px",width:"100%",maxWidth:480,maxHeight:"92vh",overflowY:"auto",boxShadow:"0 -8px 40px rgba(0,0,0,0.25)"}}>
+        <div style={{width:36,height:4,borderRadius:99,background:C.border,margin:"12px auto 16px"}}/>
+        <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:2}}>✏️ {tt("opdate.title")}</div>
+        <div style={{fontSize:12,color:C.muted}}>{patient.prenom} {patient.nom}</div>
+        <div style={lab}>{tt("opdate.current")}</div>
+        <div style={{...inp,background:C.bg,fontWeight:700}}>{fmt(oldISO)}</div>
+        <div style={lab}>{tt("opdate.new")}</div>
+        <input type="date" value={nd} onChange={e=>setNd(e.target.value)} style={inp}/>
+        <div style={lab}>{tt("opdate.reason")} *</div>
+        <select value={motif} onChange={e=>setMotif(e.target.value)} style={inp}>
+          <option value="">{tt("opdate.reasonSelect")}</option>
+          {MOTIFS.map(m=><option key={m} value={m}>{tt("opdate."+m)}</option>)}
+        </select>
+        {motif==="reasonOther"&&<input value={precision} onChange={e=>setPrecision(e.target.value)} placeholder={tt("opdate.precision")} style={{...inp,marginTop:8}}/>}
+        <div style={{display:"flex",gap:10,marginTop:18}}>
+          <button onClick={onClose} style={{flex:1,padding:"12px",border:`1.5px solid ${C.border}`,borderRadius:11,background:C.white,color:C.muted,fontWeight:700,fontSize:13,cursor:"pointer"}}>{tt("common.cancel")}</button>
+          <button onClick={save} style={{flex:2,padding:"12px",border:"none",borderRadius:11,background:C.navy,color:C.white,fontWeight:800,fontSize:13,cursor:"pointer"}}>{tt("common.save")}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const PATIENT_FIELD_LABELS = {
   stade:"Stade", procedure:"Intervention", procedures:"Interventions",
   budget:"Budget", devise:"Devise", medecin:"Chirurgien", hopital:"Hôpital",
@@ -6756,8 +6958,9 @@ function buildPatientTimeline(p, rdvs, finances, taches, user){
     const av = String(h.ancien||"").trim(), ap = String(h.nouveau||"").trim();
     // Un champ financier n'est jamais détaillé à qui n'a pas le droit de le voir.
     const sensible = (h.champ === "budget");
-    const detail = (sensible && !money) ? lbl
-      : lbl + " : " + (av||"—") + " → " + (ap||"—");
+    const detail = ((sensible && !money) ? lbl
+      : lbl + " : " + (av||"—") + " → " + (ap||"—"))
+      + (h.motif ? " · " + t("opdate.reason") + " : " + h.motif : "");
     add(h.date, { key: h.champ==="stade" ? "stage" : "change",
       icon: h.champ==="stade" ? "🔀" : "✏️",
       label: h.champ==="stade" ? "tl.stage" : "tl.change",
@@ -7015,6 +7218,7 @@ function FichePatient({user, patient, patients, rdvs, finances, taches, onEdit, 
   const tt = t; // alias sûr : évite toute collision avec variables locales "t"
   const [tab,setTab] = useState("info");
   const [fixOpen,setFixOpen] = useState(false);
+  const [opEditOpen, setOpEditOpen] = useState(false);
   const isAdmin = isFullRole(user.role);
   const p = patients.find(x=>x.id===patient.id)||patient;
   const sc = SC[p.stade]||C.muted;
@@ -7062,6 +7266,19 @@ function FichePatient({user, patient, patients, rdvs, finances, taches, onEdit, 
         <select value={p.stade} onChange={e=>onStageChange(p.id,e.target.value)} style={{width:"100%",padding:"10px",border:`2px solid ${sc}55`,borderRadius:10,fontSize:13,background:sc+"11",color:sc,fontWeight:700,outline:"none"}}>
           {STAGES.map(s=><option key={s} value={s}>{stageLabel(s)}</option>)}
         </select>
+      </Card>
+      {/* Date d'intervention : visible en permanence, éditable par les rôles habilités
+          (canEditRecord : admin/PDG, coordinatrice patients-edit, commerciale sur SES
+          dossiers) — le chirurgien est exclu. Cartes patient : volontairement intactes. */}
+      <Card style={{marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
+          <div style={{minWidth:0}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",marginBottom:4}}>🔪 {tt("opdate.label")}</div>
+            <div style={{fontSize:14,fontWeight:800,color:normalizeDate(p.dateOperation)?C.text:C.muted}}>{normalizeDate(p.dateOperation)?fmtDate(p.dateOperation):"—"}</div>
+          </div>
+          {canEditRecord(user,"patients",p) && !isSurgeon(user) &&
+            <button onClick={()=>setOpEditOpen(true)} style={{border:`1.5px solid ${C.navy}33`,background:C.navy+"0d",color:C.navy,fontWeight:700,fontSize:12,padding:"9px 14px",borderRadius:10,cursor:"pointer",flexShrink:0}}>✏️ {tt("opdate.title")}</button>}
+        </div>
       </Card>
       {/* Tabs */}
       <div style={{display:"flex",gap:4,marginBottom:12,background:C.bg,borderRadius:12,padding:4}}>
@@ -7258,6 +7475,7 @@ function FichePatient({user, patient, patients, rdvs, finances, taches, onEdit, 
         ))}
       </div>}
       {fixOpen&&<CorrigerDatesModal patient={p} rdvs={rdvs} onClose={()=>setFixOpen(false)} onSavePatient={onSavePatient} onUpdateRdv={onUpdateRdv}/>}
+      {opEditOpen&&<EditOpDateSheet patient={p} user={user} onClose={()=>setOpEditOpen(false)} onSavePatient={onSavePatient}/>}
     </div>
   );
 }
@@ -7908,6 +8126,19 @@ function FinPatientRow({p, finances, rdvs, kind}){
   const total = getPatientTotal(p);
   const paid = getPatientPaid(p, finances);
   const bal = getPatientBalance(p, finances);
+  // Ventilation DYNAMIQUE par mode : on liste les valeurs de `methode` réellement
+  // présentes dans les mouvements cash-flow du patient (y compris "" = non renseigné
+  // et toute valeur historique), puis on somme chacune via getPatientPaidByMode
+  // (même base que getPatientPaid) → Σ modes === "Déjà encaissé", par construction.
+  const VENT_ORDER = { [FIN_MODE_CASH]:0, [FIN_MODE_TRANSFER]:1, "Carte":2, "Stripe":3, "Wise":4 };
+  const ventilation = (()=>{
+    const modes = Array.from(new Set((finances||[])
+      .filter(f=> String(f.patientId)===String(p?.id) && isPatientCashFlow(f))
+      .map(f=> f.methode||"")));
+    return modes.map(m=>({ m, v:getPatientPaidByMode(p, finances, m) }))
+      .filter(x=> x.v!==0)                                     // pas de ligne à 0 €
+      .sort((a,b)=> (a.m===""?99:(VENT_ORDER[a.m]??90)) - (b.m===""?99:(VENT_ORDER[b.m]??90)));
+  })();
   // Cohérence avec opDateOf du bloc "due" : dateOperation prioritaire, RDV en secours.
   const opDate = normalizeDate(p.dateOperation) || patientNextOpDate(p, rdvs);
   const today = new Date().toISOString().slice(0,10);
@@ -7932,7 +8163,11 @@ function FinPatientRow({p, finances, rdvs, kind}){
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(90px,1fr))",gap:8,marginTop:10}}>
         {opDate && <div style={{fontSize:11}}><div style={{color:C.muted}}>📅 {t("rdv.date")}</div><div style={{fontWeight:700,color:C.text}}>{opDate}</div></div>}
         {total>0 && <div style={{fontSize:11}}><div style={{color:C.muted}}>{t("finance.totalAmount")}</div><div style={{fontWeight:700,color:C.navy}}>{eur(total)}</div></div>}
-        {total>0 && <div style={{fontSize:11}}><div style={{color:C.muted}}>{t("finance.amountPaid")}</div><div style={{fontWeight:700,color:C.green}}>{eur(paid)}</div></div>}
+        {total>0 && <div style={{fontSize:11}}><div style={{color:C.muted}}>{t("finance.amountPaid")}</div><div style={{fontWeight:700,color:C.green}}>{eur(paid)}</div>
+          {ventilation.length>0 && <div style={{fontSize:10,color:C.muted,marginTop:2,lineHeight:1.5}}>
+            {ventilation.map(x=> (x.m===""?t("finance.modeUnknown"):x.m)+" "+eur(x.v)).join(" · ")}
+          </div>}
+        </div>}
         {kind!=="closed" && total>0 && <div style={{fontSize:11}}><div style={{color:C.muted}}>{t("finance.remainingBalance")}</div><div style={{fontWeight:800,color:bal>0?"#D97706":"#16A34A"}}>{eur(bal)}</div></div>}
         {responsable && <div style={{fontSize:11}}><div style={{color:C.muted}}>👤 {t("patient.commercial")}</div><div style={{fontWeight:700,color:C.text}}>{responsable.prenom}</div></div>}
       </div>
@@ -9841,6 +10076,7 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
                   <V l={tt("finance.totalAmount")} v={eur(r.total)} c={C.navy}/>
                   <V icon="🏦" l={tt("finance.transfersReceived")} v={eur(r.vir)} c={C.green}/>
                   <V icon="💵" l={tt("finance.cashReceived")} v={eur(r.esp)} c={C.green}/>
+                  {Math.round(r.recu - r.vir - r.esp)!==0 && <V icon="❓" l={tt("finance.modeOtherUnknown")} v={eur(r.recu - r.vir - r.esp)} c={C.muted}/>}
                   <V l={tt("finance.totalReceived")} v={eur(r.recu)} c={C.green}/>
                   <V l={tt("finance.remainingBalance")} v={eur(r.reste)} c={r.reste>0?C.amber:C.green}/>
                   <V icon="🧾" l={tt("finance.surgeonFee")} v={eur(r.du)} c={C.navy}/>
@@ -15121,6 +15357,27 @@ function AssistantIA({ user, patient, patients=[], finances, activeView, onClose
 function KnowledgeGraphAdmin({ user }){
   const tt = t;
   const isAdmin = aiCan(user, "ai_admin");
+  // Diagnostic système (admin) : version SW active, cache, contrôleur, réseau.
+  const [swDiag, setSwDiag] = React.useState({ sw:"—", cache:"—", ctrl:"—", online:(typeof navigator!=="undefined"&&navigator.onLine)?true:false });
+  React.useEffect(()=>{
+    let alive = true;
+    (async ()=>{
+      const d = { sw:"non supporté", cache:"—", ctrl:"aucun", online:navigator.onLine };
+      try{
+        if("serviceWorker" in navigator){
+          const reg = await navigator.serviceWorker.getRegistration();
+          d.sw = (reg && reg.active && reg.active.scriptURL) ? reg.active.scriptURL.split("/").pop() : "aucun";
+          d.ctrl = navigator.serviceWorker.controller ? "actif (page contrôlée)" : "absent (page non contrôlée)";
+        }
+        if(typeof caches!=="undefined"){ const ks = await caches.keys(); d.cache = ks.length ? ks.join(", ") : "vide"; }
+      }catch(e){}
+      if(alive) setSwDiag(d);
+    })();
+    const on = ()=> setSwDiag(s=>({...s, online:true }));
+    const off = ()=> setSwDiag(s=>({...s, online:false }));
+    window.addEventListener("online", on); window.addEventListener("offline", off);
+    return ()=>{ alive=false; window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
   const [kgTab, setKgTab] = React.useState("edges");
   const [refresh, setRefresh] = React.useState(0);
   const bump = ()=>setRefresh(r=>r+1);
@@ -15254,6 +15511,10 @@ function KnowledgeGraphAdmin({ user }){
           try{ const ts=parseInt(localStorage.getItem("cn_lastSync")||"0"); if(ts) lastOk=new Date(ts).toLocaleString(); }catch(e){}
           try{ errs=JSON.parse(localStorage.getItem("cn_sync_errors")||"[]").slice(-5).reverse(); }catch(e){}
           return <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
+            <div style={{fontSize:10.5,color:C.muted}}>🧩 {tt("sys.diagVersion")} : <b style={{color:C.text}}>{(typeof window!=="undefined"&&window.__CRM_VERSION)||"—"}</b></div>
+            <div style={{fontSize:10.5,color:C.muted}}>⚙️ Service Worker : <b style={{color:C.text}}>{swDiag.sw}</b> · {tt("sys.diagCtrl")} : <b style={{color:C.text}}>{swDiag.ctrl}</b></div>
+            <div style={{fontSize:10.5,color:C.muted}}>🗃 {tt("sys.diagCache")} : <b style={{color:C.text}}>{swDiag.cache}</b></div>
+            <div style={{fontSize:10.5,color:C.muted}}>📡 {tt("sys.diagNet")} : <b style={{color:swDiag.online?C.green:"#B91C1C"}}>{swDiag.online?tt("sys.diagOnline"):tt("sys.diagOffline")}</b></div>
             <div style={{fontSize:10.5,color:C.muted}}>🔄 {tt("sync.lastOk")} : <b style={{color:C.text}}>{lastOk}</b></div>
             {errs.length>0 && <div style={{marginTop:4}}>
               <div style={{fontSize:10.5,fontWeight:800,color:"#92400E"}}>⚠️ {tt("sys.syncErrors")} ({errs.length})</div>
@@ -15982,7 +16243,21 @@ function App() {
           return <div style={{background:soft?"#FFFBEB":"#FEF2F2",border:`1px solid ${soft?"#FDE68A":"#FECACA"}`,borderRadius:12,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:18,flexShrink:0}}>{soft?"📶":"⚠️"}</span>
           <div style={{flex:1,fontSize:13,color:soft?"#92400E":"#B91C1C",fontWeight:600}}>{loadError}{lastOk&&<div style={{fontSize:11,fontWeight:500,opacity:0.8,marginTop:2}}>{t("sync.lastOk")} : {lastOk}</div>}</div>
-          <button onClick={()=>loadAll(true)} style={{border:"none",background:"#DC2626",color:"#fff",borderRadius:9,padding:"6px 12px",cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>{t("common.retry")}</button>
+          <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0}}>
+            <button onClick={()=>loadAll(true)} style={{border:"none",background:"#DC2626",color:"#fff",borderRadius:9,padding:"6px 12px",cursor:"pointer",fontWeight:700,fontSize:12}}>{t("common.retry")}</button>
+            <button onClick={()=>{ try{ location.reload(); }catch(e){} }} style={{border:"1px solid #DC2626",background:"transparent",color:"#DC2626",borderRadius:9,padding:"6px 12px",cursor:"pointer",fontWeight:700,fontSize:12}}>{t("sync.refreshApp")}</button>
+            <button onClick={async ()=>{
+              if(!window.confirm(t("sync.cleanConfirm"))) return;
+              /* Nettoyage CIBLÉ : caches applicatifs (Cache Storage) + clés de cache
+                 locales cn_cache_*. On PRÉSERVE session, préférences, journaux. */
+              try{ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }catch(e){}
+              try{
+                const del=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf("cn_cache_")===0) del.push(k); }
+                del.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+              }catch(e){}
+              try{ location.reload(); }catch(e){}
+            }} style={{border:"1px solid #92400E",background:"transparent",color:"#92400E",borderRadius:9,padding:"6px 12px",cursor:"pointer",fontWeight:700,fontSize:12}}>{t("sync.cleanCache")}</button>
+          </div>
         </div>; })()}
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
           {activeView==="fiche"&&<button onClick={goBack} style={{width:36,height:36,borderRadius:10,border:`1px solid ${C.border}`,background:C.white,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>←</button>}
