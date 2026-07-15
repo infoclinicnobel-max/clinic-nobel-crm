@@ -56,7 +56,7 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 @keyframes dhHalo{0%,100%{opacity:0.55;transform:scale(1)}50%{opacity:0.9;transform:scale(1.06)}}
 @keyframes dhSmoke{0%{transform:translateY(0) scale(0.7);opacity:0}25%{opacity:0.5}100%{transform:translateY(-140px) scale(1.5);opacity:0}}
 @keyframes dhParticle{0%{transform:translateY(0);opacity:0}15%{opacity:0.9}100%{transform:translateY(-190px);opacity:0}}
-@keyframes dhLampGlow{0%,100%{box-shadow:0 0 18px 4px rgba(212,175,55,0.22)}50%{box-shadow:0 0 30px 10px rgba(212,175,55,0.38)}}
+@keyframes dhLampGlow{0%,100%{box-shadow:0 0 3px 1px rgba(212,175,55,0.08)}50%{box-shadow:0 0 5px 1px rgba(212,175,55,0.12)}}
 @keyframes dhLampPop{0%{transform:scale(1)}40%{transform:scale(1.15) rotate(-6deg)}100%{transform:scale(1)}}
 @keyframes dhCardIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 @keyframes dhCursor{0%,100%{opacity:1}50%{opacity:0}}
@@ -14797,10 +14797,10 @@ function AccueilPremiumDrHouse({ user, onOpenAI, rdvs=[], taches=[], patients=[]
     const lampClick = ()=>{ setOpen(true); };
     return (
       <button onClick={lampClick} aria-label="Dr House" title={tt("ai.dh.reopen")}
-        style={{position:"fixed",bottom:146,right:16,zIndex:1001,width:58,height:58,borderRadius:"50%",border:"2px solid rgba(212,175,55,0.55)",
-          padding:0,overflow:"hidden",cursor:"pointer",background:"rgba(10,10,18,0.30)",backdropFilter:"blur(6px) saturate(1.15)",WebkitBackdropFilter:"blur(6px) saturate(1.15)",animation:"dhLampGlow 2.6s ease-in-out infinite, dhLampPop 5s ease-in-out infinite"}}>
+        style={{position:"fixed",bottom:146,right:16,zIndex:1001,width:58,height:58,borderRadius:"50%",border:"1px solid rgba(212,175,55,0.30)",
+          padding:0,overflow:"hidden",cursor:"pointer",background:"rgba(10,10,18,0.06)",animation:"dhLampGlow 2.6s ease-in-out infinite, dhLampPop 5s ease-in-out infinite"}}>
         {imgOk
-          ? <img src="./ia-lamp.jpg" alt="" loading="lazy" decoding="async" onError={()=>setImgOk(false)} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center 60%",opacity:0.55}}/>
+          ? <img src="./ia-lamp.jpg" alt="" loading="lazy" decoding="async" onError={()=>setImgOk(false)} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center 60%",opacity:0.20}}/>
           : <span style={{fontSize:28,lineHeight:"54px"}}>🪔</span>}
       </button>
     );
@@ -16336,8 +16336,8 @@ function App() {
       </div>}
 
       {/* BOUTON FLOTTANT ASSISTANT IA (lecture seule) */}
-      {user && aiCan(userFull,"ai_use") && !aiOpen && <button onClick={()=>setAiOpen(true)} aria-label="Dr House IA" title="Dr House IA" className="dh-avatar" style={{position:"fixed",bottom:78,right:16,zIndex:1000,width:56,height:56,borderRadius:"50%",border:"2px solid rgba(212,175,55,0.55)",padding:0,overflow:"hidden",cursor:"pointer",background:"rgba(10,10,18,0.30)",backdropFilter:"blur(6px) saturate(1.15)",WebkitBackdropFilter:"blur(6px) saturate(1.15)",boxShadow:"0 0 16px 3px #D4AF3733, 0 6px 20px rgba(11,31,58,0.22)"}}>
-        <img src="./ia-face.jpg" alt="Dr House IA" onError={e=>{try{e.target.style.display="none";e.target.parentNode.textContent="👨‍⚕️";e.target.parentNode.style.fontSize="26px";e.target.parentNode.style.color="#fff";}catch(x){}}} style={{width:"100%",height:"100%",objectFit:"cover",display:"block",opacity:0.55}}/>
+      {user && aiCan(userFull,"ai_use") && !aiOpen && <button onClick={()=>setAiOpen(true)} aria-label="Dr House IA" title="Dr House IA" className="dh-avatar" style={{position:"fixed",bottom:78,right:16,zIndex:1000,width:56,height:56,borderRadius:"50%",border:"1px solid rgba(212,175,55,0.30)",padding:0,overflow:"hidden",cursor:"pointer",background:"rgba(10,10,18,0.06)",boxShadow:"0 0 4px 1px rgba(212,175,55,0.10)"}}>
+        <img src="./ia-face.jpg" alt="Dr House IA" onError={e=>{try{e.target.style.display="none";e.target.parentNode.textContent="👨‍⚕️";e.target.parentNode.style.fontSize="26px";e.target.parentNode.style.color="#fff";}catch(x){}}} style={{width:"100%",height:"100%",objectFit:"cover",display:"block",opacity:0.25}}/>
       </button>}
       {aiOpen && <AssistantIA user={userFull} patient={activeView==="fiche"?selected:null} patients={vPatients} finances={vFinances} rdvs={vRdvs} taches={vTaches} activeView={activeView} onClose={()=>setAiOpen(false)} initialQuestion={aiInitQ} onInitConsumed={()=>setAiInitQ(null)}/>}
       {/* ── MODE MAINTENANCE (V1.1) : admin/PDG conservent l'accès complet ── */}
