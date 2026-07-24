@@ -782,6 +782,8 @@ const I18N = {
     "hosp.hide": "Masquer",
     "doc.title": "Médecins",
     "med.addTitle": "Ajouter un chirurgien",
+    "med.saveFailed": "Enregistrement du chirurgien impossible — aucune donnée n'a été perdue.",
+    "med.saveUnverified": "Vérification serveur impossible (hors ligne ?). Le chirurgien est conservé localement et sera confirmé à la prochaine synchronisation.",
     "med.editTitle": "Modifier le chirurgien",
     "med.firstname": "Prénom",
     "med.lastname": "Nom",
@@ -1924,6 +1926,8 @@ const I18N = {
     "hosp.hide": "Hide",
     "doc.title": "Doctors",
     "med.addTitle": "Add a surgeon",
+    "med.saveFailed": "Surgeon could not be saved — no data has been lost.",
+    "med.saveUnverified": "Server verification unavailable (offline?). The surgeon is kept locally and will be confirmed at the next sync.",
     "med.editTitle": "Edit surgeon",
     "med.firstname": "First name",
     "med.lastname": "Last name",
@@ -3066,6 +3070,8 @@ const I18N = {
     "hosp.hide": "Gizle",
     "doc.title": "Doktorlar",
     "med.addTitle": "Cerrah ekle",
+    "med.saveFailed": "Cerrah kaydedilemedi — hiçbir veri kaybolmadı.",
+    "med.saveUnverified": "Sunucu doğrulaması yapılamadı (çevrimdışı mı?). Cerrah yerel olarak saklandı ve bir sonraki senkronizasyonda doğrulanacak.",
     "med.editTitle": "Cerrahı düzenle",
     "med.firstname": "Ad",
     "med.lastname": "Soyad",
@@ -4208,6 +4214,8 @@ const I18N = {
     "hosp.hide": "Ocultar",
     "doc.title": "Médicos",
     "med.addTitle": "Añadir un cirujano",
+    "med.saveFailed": "No se pudo guardar el cirujano — no se ha perdido ningún dato.",
+    "med.saveUnverified": "Verificación del servidor no disponible (¿sin conexión?). El cirujano se conserva localmente y se confirmará en la próxima sincronización.",
     "med.editTitle": "Editar cirujano",
     "med.firstname": "Nombre",
     "med.lastname": "Apellido",
@@ -11712,7 +11720,7 @@ function Medecins({user, patients, rdvs, finances, medecins, setMedecins}) {
   const [medSaving, setMedSaving] = useState(false);
   React.useEffect(()=>{                                        // fetch silencieux (multi-appareils)
     let alive=true;
-    (async()=>{ try{ const s=await api.get("medecins"); if(alive&&Array.isArray(s)){ setMedecins(s); cache.save("medecins", s); } }catch(e){} })();
+    (async()=>{ try{ const s=await api.get("medecins"); if(alive&&Array.isArray(s)){ setMedecins(prev=>{ const keep=(s.length>0||(prev||[]).length===0)?s:prev; cache.save("medecins", keep); return keep; }); } }catch(e){} })();
     return ()=>{ alive=false; };
   },[]);
   const dynToCard = (m)=>({ id:m.id, nom:m.nomAffiche||("Dr "+(m.prenom||"")+" "+(m.nom||"")).trim(),
@@ -11759,9 +11767,22 @@ function Medecins({user, patients, rdvs, finances, medecins, setMedecins}) {
       creePar: f.creePar || (user&&user.id) || "", cree: f.cree || todayStr(),
       historique: isNew ? JSON.stringify([{u:(user&&user.id)||"?",date,heure,champ:"création",ancien:"",nouveau:nomAffiche}])
                         : buildHistGeneric(before||{}, {...f, nomAffiche}, user, MED_FIELD_LABELS)};
-    const list = isNew ? [...(medecins||[]), rec] : (medecins||[]).map(m=>String(m.id)===String(rec.id)?rec:m);
-    setMedecins(list); cache.save("medecins", list);
+    const prevList = medecins||[];                                 // instantané pour rollback garanti
+    const list = isNew ? [...prevList, rec] : prevList.map(m=>String(m.id)===String(rec.id)?rec:m);
+    setMedecins(list); cache.save("medecins", list);               // optimiste (UX)
     try{ await api.post("medecins", isNew?"add":"update", rec); }catch(e){}
+    // CONFIRMATION SERVEUR PAR RELECTURE (api.post est no-cors : réponse illisible).
+    // La relecture est la seule vraie preuve d'écriture : l'id doit être présent.
+    let confirmed = null;
+    try{ const back = await api.get("medecins"); if(Array.isArray(back)) confirmed = back.some(x=>String(x.id)===String(rec.id)) ? back : false; }catch(e){}
+    if(confirmed===false){                                         // rejet serveur avéré → ROLLBACK
+      setMedecins(prevList); cache.save("medecins", prevList);
+      setMedSaving(false);
+      alert(tt("med.saveFailed"));
+      return;
+    }
+    if(Array.isArray(confirmed)){ setMedecins(confirmed); cache.save("medecins", confirmed); } // vérité serveur adoptée
+    else { alert(tt("med.saveUnverified")); }                      // réseau indisponible : conservé localement, jamais annoncé "réussi"
     setMedSaving(false); setMedView("liste"); setSelected(rec.id);
   };
   const toggleActif = async (raw)=>{
@@ -11770,9 +11791,17 @@ function Medecins({user, patients, rdvs, finances, medecins, setMedecins}) {
     const {date,heure} = nowParts();
     const rec = {...raw, actif: goingOff?"0":"1",
       historique: JSON.stringify([...(parseHist(raw.historique)), {u:(user&&user.id)||"?",date,heure,champ:"actif",ancien:goingOff?"1":"0",nouveau:goingOff?"0":"1"}])};
-    const list = (medecins||[]).map(m=>String(m.id)===String(rec.id)?rec:m);
+    const prevList = medecins||[];
+    const list = prevList.map(m=>String(m.id)===String(rec.id)?rec:m);
     setMedecins(list); cache.save("medecins", list);
     try{ await api.post("medecins","update",rec); }catch(e){}
+    try{ const back = await api.get("medecins");
+      if(Array.isArray(back) && back.length>0){
+        const srv = back.find(x=>String(x.id)===String(rec.id));
+        if(srv && String(srv.actif)!==String(rec.actif)){ setMedecins(prevList); cache.save("medecins", prevList); alert(tt("med.saveFailed")); return; }
+        setMedecins(back); cache.save("medecins", back);
+      }
+    }catch(e){}
   };
   if(medView==="form" && medForm){
     const ch=(k,v)=>setMedForm(s=>({...s,[k]:v}));
@@ -16161,9 +16190,9 @@ function App() {
     setSyncing(true);
     try {
       // Finances retirées du chargement initial (lazy) — sauf si déjà chargées/ouvertes.
-      const calls = [api.get("patients"), api.get("rdvs"), api.get("taches"), api.get("users")];
+      const calls = [api.get("patients"), api.get("rdvs"), api.get("taches"), api.get("users"), api.get("medecins")];
       if(finLoadedRef.current) calls.push(api.get("finances"));
-      const [p,r,tData,u,f] = await Promise.all(calls);
+      const [p,r,tData,u,m,f] = await Promise.all(calls);
       // PROTECTION ANTI-ÉCRASEMENT : null = échec réseau/serveur → on ne touche
       // ni à l'état ni au cache local pour ce type. Seul un vrai tableau écrit.
       let failed = 0;
@@ -16171,6 +16200,9 @@ function App() {
       if(Array.isArray(r)){ const d=r.filter(x=>x.id);     setRdvs(d);     cache.save("rdvs", d); }     else failed++;
       if(Array.isArray(tData)){ const d=tData.filter(x=>x.titre); setTaches(d); cache.save("taches", d); } else failed++;
       if(f!==undefined){ if(Array.isArray(f)){ const d=f.filter(x=>x.type); setFinances(d); cache.save("finances", d); } else failed++; }
+      // Chirurgiens dynamiques : null → intact ; un [] serveur n'écrase JAMAIS
+      // une liste locale non vide (protection des données d'abord).
+      if(Array.isArray(m)){ setMedecins(prev=>{ const keep=(m.length>0||(prev||[]).length===0)?m.filter(x=>x.id):prev; cache.save("medecins", keep); return keep; }); } else failed++;
       if(Array.isArray(u) && u.length){ mergeServerUsers(u); }
       await refreshPermissionsFromServer();   // rôles + overrides : serveur = source de vérité
       setPermVer(v=>v+1);
