@@ -5551,7 +5551,7 @@ function logIsTracked(p){
 const SC = {"Nouveau":"#16A34A","Contacté":"#1D73C9","Devis envoyé":"#7C3AED","Consultation planifiée":"#D97706","Confirmé":"#16A34A","Arrivé à Istanbul":"#0891B2","Post-opératoire":"#F97316","Préopératoire":"#8B5CF6","Clôturé ✓":"#16A34A"};
 
 // ── TÂCHES — listes, options & helpers partagés ───────────────────────────────
-const MEDECINS_LIST = ["Dr Anvar Ahmedov","Dr Azar Zeynalov","Dr Akin Unal","Dr Elif Öztürk","Dr VSC Dental"];
+const MEDECINS_LIST = ["Dr Anvar Ahmedov","Dr Azar Zeynalov","Dr Akin Unal","Dr Elif Öztürk","Dr VSC Dental","Dr Orkun Uyanik"];
 // Association automatique médecin → établissement
 const MEDECIN_HOPITAL = {
   "Dr Anvar Ahmedov":"Avrasya Hospital",
@@ -8116,7 +8116,7 @@ function Rdvs({user, rdvs:rawRdvs, patients, taches, finances, setRdvs, setTache
       {user.role==="admin"&&view==="liste"&&<div style={{marginTop:16}}>
         <div style={{fontSize:12,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:10}}>{tt("rdv.schedules")}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          {["Dr Anvar Ahmedov","Dr Azar Zeynalov","Dr Akin Unal","Dr Elif Öztürk","Dr VSC Dental"].map(medecin=>{
+          {["Dr Anvar Ahmedov","Dr Azar Zeynalov","Dr Akin Unal","Dr Elif Öztürk","Dr VSC Dental","Dr Orkun Uyanik"].map(medecin=>{
             const mRdvs=rdvs.filter(r=>r.medecin===medecin&&r.date>=today);
             return (
               <div key={medecin} style={{background:C.white,borderRadius:12,padding:12,border:`1px solid ${C.border}`}}>
@@ -11032,7 +11032,7 @@ function ModalPatient({user, patient, onSave, onClose}) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const PAYS = ["France","Belgique","Maroc","Canada","Suisse","Algérie","Tunisie","Sénégal","Côte d'Ivoire","Liban","UAE","Réunion","Autre"];
-  const MEDECINS = ["Dr Anvar Ahmedov","Dr Azar Zeynalov","Dr Akin Unal","Dr Elif Öztürk","Dr VSC Dental"];
+  const MEDECINS = ["Dr Anvar Ahmedov","Dr Azar Zeynalov","Dr Akin Unal","Dr Elif Öztürk","Dr VSC Dental","Dr Orkun Uyanik"];
   const HOPITAUX_NOMS = ["Avrasya Hospital","Scala Clinic","VSC Fişekhane Dental"];
   const [f, setF] = useState(()=>{
     const base = patient || {
@@ -11383,7 +11383,7 @@ function ModalPatient({user, patient, onSave, onClose}) {
 
 function ModalRdv({user, patients, rdv, onSave, onClose, taches, setTaches, onDelete, onDuplicate, onOpenPatient}) {
   const tt = t; // alias sûr : évite toute collision avec variables locales "t"
-  const MEDECINS = ["Dr Anvar Ahmedov","Dr Azar Zeynalov","Dr Akin Unal","Dr Elif Öztürk","Dr VSC Dental"];
+  const MEDECINS = ["Dr Anvar Ahmedov","Dr Azar Zeynalov","Dr Akin Unal","Dr Elif Öztürk","Dr VSC Dental","Dr Orkun Uyanik"];
   const HOPITAUX = ["Avrasya Hospital","Scala Clinic","VSC Fişekhane Dental"];
   const isEdit = !!rdv;
   const [f,setF] = useState(rdv ? {
@@ -11705,6 +11705,8 @@ function Medecins({user, patients, rdvs, finances, medecins, setMedecins}) {
     {id:3,nom:"Dr Akin Unal",spec:"Chirurgie de l'obésité & bariatrique",email:"akin.unal@nobelclinic.com",tel:"+90 532 555 0004",hopital:"Avrasya Hospital",color:"#D97706",icon:"⚕️",procedures:["Chirurgie bariatrique","Sleeve gastrectomie","Bypass gastrique","Anneau gastrique","Body Contouring"]},
     {id:4,nom:"Dr Elif Öztürk",spec:"Greffe capillaire",email:"elif.ozturk@scalaclinic.com.tr",tel:"+90 532 555 0003",hopital:"Scala Clinic",color:"#0D9488",icon:"💇",procedures:["Greffe capillaire FUE Saphir","Greffe capillaire DHI","Consultation greffe capillaire","Soins post-opératoires greffe capillaire","Médecine esthétique"]},
     {id:5,nom:"Dr VSC Dental",spec:"Chirurgie dentaire & implantologie",email:"info@vscfisek.com",tel:"+90 212 555 0052",hopital:"VSC Fişekhane Dental",color:"#16A34A",icon:"🦷",procedures:["Implants dentaires","All-on-4","All-on-6","Facettes dentaires","Couronnes","Hollywood Smile","Chirurgie orale","Traitements dentaires"]},
+    {id:6,nom:"Dr Orkun Uyanik",spec:"Chirurgie esthétique et plastique",email:"",tel:"",hopital:"Rumeli Hospital",color:"#7C3AED",icon:"🩺",
+     procedures:["Rhinoplastie","Rhinoplastie secondaire","Blépharoplastie","Lifting cervico-facial","Lifting du cou","Lip Lift","Fox Eyes","Liposuccion VASER HD","Abdominoplastie","Mommy Makeover","BBL","Augmentation mammaire","Lifting mammaire","Réduction mammaire","Gynécomastie","Lifting des bras","Lifting des cuisses"]},
   ];
   const [selected,setSelected]=useState(null);
   /* ══ LOT 1 — Chirurgiens dynamiques (fusion avec les 5 fiches historiques) ══
