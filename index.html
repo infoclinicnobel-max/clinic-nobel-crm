@@ -56,7 +56,7 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 @keyframes dhHalo{0%,100%{opacity:0.55;transform:scale(1)}50%{opacity:0.9;transform:scale(1.06)}}
 @keyframes dhSmoke{0%{transform:translateY(0) scale(0.7);opacity:0}25%{opacity:0.5}100%{transform:translateY(-140px) scale(1.5);opacity:0}}
 @keyframes dhParticle{0%{transform:translateY(0);opacity:0}15%{opacity:0.9}100%{transform:translateY(-190px);opacity:0}}
-@keyframes dhLampGlow{0%,100%{box-shadow:0 0 3px 1px rgba(212,175,55,0.08)}50%{box-shadow:0 0 5px 1px rgba(212,175,55,0.12)}}
+@keyframes dhLampGlow{0%,100%{box-shadow:0 0 18px 4px rgba(212,175,55,0.22)}50%{box-shadow:0 0 30px 10px rgba(212,175,55,0.38)}}
 @keyframes dhLampPop{0%{transform:scale(1)}40%{transform:scale(1.15) rotate(-6deg)}100%{transform:scale(1)}}
 @keyframes dhCardIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 @keyframes dhCursor{0%,100%{opacity:1}50%{opacity:0}}
@@ -781,6 +781,36 @@ const I18N = {
     "hosp.details": "Voir les détails",
     "hosp.hide": "Masquer",
     "doc.title": "Médecins",
+    "med.addTitle": "Ajouter un chirurgien",
+    "med.editTitle": "Modifier le chirurgien",
+    "med.firstname": "Prénom",
+    "med.lastname": "Nom",
+    "med.photo": "Photo (URL)",
+    "med.spec": "Spécialité principale",
+    "med.sousSpecs": "Sous-spécialités",
+    "med.hospital": "Hôpital principal",
+    "med.hospitals2": "Hôpitaux secondaires",
+    "med.phone": "Téléphone",
+    "med.address": "Adresse",
+    "med.bio": "Biographie",
+    "med.diplomas": "Diplômes",
+    "med.languages": "Langues parlées",
+    "med.experience": "Années d'expérience",
+    "med.years": "ans",
+    "med.interventions": "Interventions",
+    "med.otherInterventions": "Autres interventions",
+    "med.color": "Couleur de la carte",
+    "med.icon": "Icône",
+    "med.active": "Chirurgien actif",
+    "med.inactive": "Inactif",
+    "med.profile": "Profil",
+    "med.csvHint": "Séparer par des virgules",
+    "med.nameRequired": "Prénom et nom sont obligatoires.",
+    "med.duplicate": "Un chirurgien avec un nom identique ou quasi identique existe déjà.",
+    "med.nameLocked": "Ce nom est utilisé dans des RDV, dossiers ou finances : il ne peut plus être modifié.",
+    "med.deactivateConfirm": "Désactiver ce chirurgien ? Il restera visible dans les anciens dossiers et son historique sera conservé.",
+    "med.deactivate": "Désactiver",
+    "med.reactivate": "Réactiver",
     "doc.specialty": "Spécialité",
     "team.user": "Utilisateur",
     "team.role": "Rôle",
@@ -1893,6 +1923,36 @@ const I18N = {
     "hosp.details": "View details",
     "hosp.hide": "Hide",
     "doc.title": "Doctors",
+    "med.addTitle": "Add a surgeon",
+    "med.editTitle": "Edit surgeon",
+    "med.firstname": "First name",
+    "med.lastname": "Last name",
+    "med.photo": "Photo (URL)",
+    "med.spec": "Main specialty",
+    "med.sousSpecs": "Sub-specialties",
+    "med.hospital": "Main hospital",
+    "med.hospitals2": "Secondary hospitals",
+    "med.phone": "Phone",
+    "med.address": "Address",
+    "med.bio": "Biography",
+    "med.diplomas": "Diplomas",
+    "med.languages": "Spoken languages",
+    "med.experience": "Years of experience",
+    "med.years": "yrs",
+    "med.interventions": "Procedures",
+    "med.otherInterventions": "Other procedures",
+    "med.color": "Card color",
+    "med.icon": "Icon",
+    "med.active": "Active surgeon",
+    "med.inactive": "Inactive",
+    "med.profile": "Profile",
+    "med.csvHint": "Comma-separated",
+    "med.nameRequired": "First and last name are required.",
+    "med.duplicate": "A surgeon with an identical or near-identical name already exists.",
+    "med.nameLocked": "This name is used in appointments, records or finances: it can no longer be changed.",
+    "med.deactivateConfirm": "Deactivate this surgeon? They will remain visible in past records and their history will be kept.",
+    "med.deactivate": "Deactivate",
+    "med.reactivate": "Reactivate",
     "doc.specialty": "Specialty",
     "team.user": "User",
     "team.role": "Role",
@@ -3005,6 +3065,36 @@ const I18N = {
     "hosp.details": "Detayları gör",
     "hosp.hide": "Gizle",
     "doc.title": "Doktorlar",
+    "med.addTitle": "Cerrah ekle",
+    "med.editTitle": "Cerrahı düzenle",
+    "med.firstname": "Ad",
+    "med.lastname": "Soyad",
+    "med.photo": "Fotoğraf (URL)",
+    "med.spec": "Ana uzmanlık",
+    "med.sousSpecs": "Alt uzmanlıklar",
+    "med.hospital": "Ana hastane",
+    "med.hospitals2": "İkincil hastaneler",
+    "med.phone": "Telefon",
+    "med.address": "Adres",
+    "med.bio": "Biyografi",
+    "med.diplomas": "Diplomalar",
+    "med.languages": "Konuşulan diller",
+    "med.experience": "Deneyim yılı",
+    "med.years": "yıl",
+    "med.interventions": "Müdahaleler",
+    "med.otherInterventions": "Diğer müdahaleler",
+    "med.color": "Kart rengi",
+    "med.icon": "Simge",
+    "med.active": "Aktif cerrah",
+    "med.inactive": "Pasif",
+    "med.profile": "Profil",
+    "med.csvHint": "Virgülle ayırın",
+    "med.nameRequired": "Ad ve soyad zorunludur.",
+    "med.duplicate": "Aynı veya çok benzer ada sahip bir cerrah zaten var.",
+    "med.nameLocked": "Bu ad randevularda, dosyalarda veya finansta kullanılıyor: artık değiştirilemez.",
+    "med.deactivateConfirm": "Bu cerrah pasifleştirilsin mi? Eski dosyalarda görünür kalacak ve geçmişi korunacaktır.",
+    "med.deactivate": "Pasifleştir",
+    "med.reactivate": "Yeniden etkinleştir",
     "doc.specialty": "Uzmanlık",
     "team.user": "Kullanıcı",
     "team.role": "Rol",
@@ -4117,6 +4207,36 @@ const I18N = {
     "hosp.details": "Ver detalles",
     "hosp.hide": "Ocultar",
     "doc.title": "Médicos",
+    "med.addTitle": "Añadir un cirujano",
+    "med.editTitle": "Editar cirujano",
+    "med.firstname": "Nombre",
+    "med.lastname": "Apellido",
+    "med.photo": "Foto (URL)",
+    "med.spec": "Especialidad principal",
+    "med.sousSpecs": "Subespecialidades",
+    "med.hospital": "Hospital principal",
+    "med.hospitals2": "Hospitales secundarios",
+    "med.phone": "Teléfono",
+    "med.address": "Dirección",
+    "med.bio": "Biografía",
+    "med.diplomas": "Diplomas",
+    "med.languages": "Idiomas hablados",
+    "med.experience": "Años de experiencia",
+    "med.years": "años",
+    "med.interventions": "Intervenciones",
+    "med.otherInterventions": "Otras intervenciones",
+    "med.color": "Color de la tarjeta",
+    "med.icon": "Icono",
+    "med.active": "Cirujano activo",
+    "med.inactive": "Inactivo",
+    "med.profile": "Perfil",
+    "med.csvHint": "Separar con comas",
+    "med.nameRequired": "Nombre y apellido son obligatorios.",
+    "med.duplicate": "Ya existe un cirujano con un nombre idéntico o casi idéntico.",
+    "med.nameLocked": "Este nombre se usa en citas, expedientes o finanzas: ya no puede modificarse.",
+    "med.deactivateConfirm": "¿Desactivar este cirujano? Seguirá visible en expedientes antiguos y su historial se conservará.",
+    "med.deactivate": "Desactivar",
+    "med.reactivate": "Reactivar",
     "doc.specialty": "Especialidad",
     "team.user": "Usuario",
     "team.role": "Rol",
@@ -11569,7 +11689,7 @@ function ModalFinance({user, patients, onSave, onClose}) {
 
 
 // ── MÉDECINS ──────────────────────────────────────────────────────────────────
-function Medecins({patients, rdvs}) {
+function Medecins({user, patients, rdvs, finances, medecins, setMedecins}) {
   const tt = t; // alias sûr : évite toute collision avec variables locales "t"
   const MEDECINS_DATA = [
     {id:1,nom:"Dr Anvar Ahmedov",spec:"Chirurgie esthétique & plastique",email:"anvar.ahmedov@nobelclinic.com",tel:"+90 532 555 0001",hopital:"Avrasya Hospital",color:"#1D73C9",icon:"🔬",procedures:["Rhinoplastie","BBL / Lipofilling fessier","Liposuccion Vaser HD 360","Abdominoplastie","Augmentation mammaire","Lifting mammaire","Body Contouring","Chirurgie plastique"]},
@@ -11579,16 +11699,156 @@ function Medecins({patients, rdvs}) {
     {id:5,nom:"Dr VSC Dental",spec:"Chirurgie dentaire & implantologie",email:"info@vscfisek.com",tel:"+90 212 555 0052",hopital:"VSC Fişekhane Dental",color:"#16A34A",icon:"🦷",procedures:["Implants dentaires","All-on-4","All-on-6","Facettes dentaires","Couronnes","Hollywood Smile","Chirurgie orale","Traitements dentaires"]},
   ];
   const [selected,setSelected]=useState(null);
+  /* ══ LOT 1 — Chirurgiens dynamiques (fusion avec les 5 fiches historiques) ══
+     Les 5 fiches ci-dessus restent EN DUR (non éditables, zéro régression).
+     Les nouveaux chirurgiens vivent dans la collection serveur `medecins`.
+     nomAffiche = "Dr Prénom Nom" : clé de liaison RDV/patients/finances →
+     unicité contrôlée (doublons quasi identiques bloqués), renommage verrouillé
+     dès que le nom est utilisé dans un dossier. Désactivation, jamais de
+     suppression : l'historique est toujours conservé. */
+  const canManage = isFullRole(user && user.role);            // Admin / PDG uniquement
+  const [medView, setMedView] = useState("liste");            // liste | form
+  const [medForm, setMedForm] = useState(null);
+  const [medSaving, setMedSaving] = useState(false);
+  React.useEffect(()=>{                                        // fetch silencieux (multi-appareils)
+    let alive=true;
+    (async()=>{ try{ const s=await api.get("medecins"); if(alive&&Array.isArray(s)){ setMedecins(s); cache.save("medecins", s); } }catch(e){} })();
+    return ()=>{ alive=false; };
+  },[]);
+  const dynToCard = (m)=>({ id:m.id, nom:m.nomAffiche||("Dr "+(m.prenom||"")+" "+(m.nom||"")).trim(),
+    spec:m.spec||"", email:m.email||"", tel:m.tel||"", hopital:m.hopital||"",
+    color:m.color||"#1D73C9", icon:m.icon||"🩺",
+    procedures:String(m.procedures||"").split(",").map(x=>x.trim()).filter(Boolean),
+    builtin:false, actif:String(m.actif)!=="0", raw:m });
+  const ALL = [...MEDECINS_DATA.map(m=>({...m, builtin:true, actif:true})), ...(medecins||[]).map(dynToCard)];
+  const normName = (s)=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();
+  const nameUsedIn = (nomAffiche)=>{
+    const n = String(nomAffiche||"");
+    if(!n) return false;
+    return (rdvs||[]).some(r=>r.medecin===n)
+        || (patients||[]).some(p=>p.medecin===n)
+        || (finances||[]).some(f=>FIN_SURGEON_TYPES.indexOf(f.type)>=0 && String(f.notes||"").split(" · ")[0].trim()===n);
+  };
+  const MED_FIELD_LABELS = { prenom:"Prénom", nom:"Nom", spec:"Spécialité", sousSpecs:"Sous-spécialités",
+    hopital:"Hôpital", hopitauxSecondaires:"Hôpitaux secondaires", tel:"Téléphone", email:"E-mail",
+    whatsapp:"WhatsApp", adresse:"Adresse", bio:"Biographie", diplomes:"Diplômes", langues:"Langues",
+    experience:"Expérience", color:"Couleur", icon:"Icône", actif:"Actif", procedures:"Interventions", photo:"Photo" };
+  const MED_INTERVENTIONS = ["Rhinoplastie","BBL","Liposuccion","Abdominoplastie","Mommy Makeover","Lifting visage","Blépharoplastie","Greffe capillaire","Chirurgie bariatrique","Chirurgie dentaire"];
+  const emptyMed = { id:"", prenom:"", nom:"", nomAffiche:"", photo:"", spec:"", sousSpecs:"", hopital:"",
+    hopitauxSecondaires:"", tel:"", email:"", whatsapp:"", adresse:"", bio:"", diplomes:"", langues:"",
+    experience:"", color:"#1D73C9", icon:"🩺", actif:"1", procedures:"", historique:"[]" };
+  const openAdd = ()=>{ setMedForm({...emptyMed}); setMedView("form"); };
+  const openEdit = (raw)=>{ setMedForm({...emptyMed, ...raw}); setMedView("form"); };
+  const saveMedecin = async ()=>{
+    const f = medForm;
+    if(!String(f.prenom||"").trim() || !String(f.nom||"").trim()){ alert(tt("med.nameRequired")); return; }
+    const isNew = !f.id;
+    const nomAffiche = ("Dr "+f.prenom.trim()+" "+f.nom.trim()).replace(/\s+/g," ");
+    // Unicité : doublon exact ou quasi identique bloqué (comparaison normalisée)
+    const dup = ALL.some(m=> String(m.id)!==String(f.id) && normName(m.nom)===normName(nomAffiche));
+    if(dup){ alert(tt("med.duplicate")); return; }
+    // Verrou renommage : nom déjà utilisé dans des dossiers → prénom/nom intouchables
+    if(!isNew){
+      const before = (medecins||[]).find(m=>String(m.id)===String(f.id));
+      if(before && before.nomAffiche!==nomAffiche && nameUsedIn(before.nomAffiche)){ alert(tt("med.nameLocked")); return; }
+    }
+    setMedSaving(true);
+    const {date,heure} = nowParts();
+    const before = isNew ? null : (medecins||[]).find(m=>String(m.id)===String(f.id));
+    const rec = {...f, nomAffiche, id: f.id || ("m"+uid()),
+      creePar: f.creePar || (user&&user.id) || "", cree: f.cree || todayStr(),
+      historique: isNew ? JSON.stringify([{u:(user&&user.id)||"?",date,heure,champ:"création",ancien:"",nouveau:nomAffiche}])
+                        : buildHistGeneric(before||{}, {...f, nomAffiche}, user, MED_FIELD_LABELS)};
+    const list = isNew ? [...(medecins||[]), rec] : (medecins||[]).map(m=>String(m.id)===String(rec.id)?rec:m);
+    setMedecins(list); cache.save("medecins", list);
+    try{ await api.post("medecins", isNew?"add":"update", rec); }catch(e){}
+    setMedSaving(false); setMedView("liste"); setSelected(rec.id);
+  };
+  const toggleActif = async (raw)=>{
+    const goingOff = String(raw.actif)!=="0";
+    if(goingOff && !window.confirm(tt("med.deactivateConfirm"))) return;
+    const {date,heure} = nowParts();
+    const rec = {...raw, actif: goingOff?"0":"1",
+      historique: JSON.stringify([...(parseHist(raw.historique)), {u:(user&&user.id)||"?",date,heure,champ:"actif",ancien:goingOff?"1":"0",nouveau:goingOff?"0":"1"}])};
+    const list = (medecins||[]).map(m=>String(m.id)===String(rec.id)?rec:m);
+    setMedecins(list); cache.save("medecins", list);
+    try{ await api.post("medecins","update",rec); }catch(e){}
+  };
+  if(medView==="form" && medForm){
+    const ch=(k,v)=>setMedForm(s=>({...s,[k]:v}));
+    const procsArr = String(medForm.procedures||"").split(",").map(x=>x.trim()).filter(Boolean);
+    const togProc=(p)=>{ const a=procsArr.indexOf(p)>=0?procsArr.filter(x=>x!==p):[...procsArr,p]; ch("procedures",a.join(", ")); };
+    const editingLocked = !!medForm.id && nameUsedIn((medecins||[]).find(m=>String(m.id)===String(medForm.id))?.nomAffiche);
+    const inp={width:"100%",padding:"10px 12px",border:`1.5px solid ${C.border}`,borderRadius:10,fontSize:13,outline:"none",background:C.white,color:C.text,boxSizing:"border-box"};
+    const lbl={fontSize:11,fontWeight:800,color:C.muted,textTransform:"uppercase",margin:"12px 0 5px",display:"block"};
+    return (
+      <div>
+        <button onClick={()=>setMedView("liste")} style={{border:"none",background:"none",cursor:"pointer",color:C.navy,fontWeight:700,fontSize:13,marginBottom:12}}>← {tt("common.back")}</button>
+        <Card>
+          <SecTitle icon="🩺" children={medForm.id?tt("med.editTitle"):tt("med.addTitle")}/>
+          {editingLocked && <div style={{background:"#FEF3C7",border:"1px solid #F59E0B55",borderRadius:10,padding:"8px 12px",fontSize:12,color:"#92400E",marginBottom:10}}>🔒 {tt("med.nameLocked")}</div>}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div><label style={lbl}>{tt("med.firstname")} *</label><input style={inp} value={medForm.prenom} disabled={editingLocked} onChange={e=>ch("prenom",e.target.value)}/></div>
+            <div><label style={lbl}>{tt("med.lastname")} *</label><input style={inp} value={medForm.nom} disabled={editingLocked} onChange={e=>ch("nom",e.target.value)}/></div>
+          </div>
+          <label style={lbl}>{tt("med.photo")}</label><input style={inp} value={medForm.photo} onChange={e=>ch("photo",e.target.value)} placeholder="https://…"/>
+          <label style={lbl}>{tt("med.spec")}</label><input style={inp} value={medForm.spec} onChange={e=>ch("spec",e.target.value)}/>
+          <label style={lbl}>{tt("med.sousSpecs")}</label><input style={inp} value={medForm.sousSpecs} onChange={e=>ch("sousSpecs",e.target.value)} placeholder={tt("med.csvHint")}/>
+          <label style={lbl}>{tt("med.hospital")}</label><input style={inp} value={medForm.hopital} onChange={e=>ch("hopital",e.target.value)}/>
+          <label style={lbl}>{tt("med.hospitals2")}</label><input style={inp} value={medForm.hopitauxSecondaires} onChange={e=>ch("hopitauxSecondaires",e.target.value)} placeholder={tt("med.csvHint")}/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div><label style={lbl}>{tt("med.phone")}</label><input style={inp} value={medForm.tel} onChange={e=>ch("tel",e.target.value)}/></div>
+            <div><label style={lbl}>WhatsApp</label><input style={inp} value={medForm.whatsapp} onChange={e=>ch("whatsapp",e.target.value)}/></div>
+          </div>
+          <label style={lbl}>E-mail</label><input style={inp} value={medForm.email} onChange={e=>ch("email",e.target.value)}/>
+          <label style={lbl}>{tt("med.address")}</label><input style={inp} value={medForm.adresse} onChange={e=>ch("adresse",e.target.value)}/>
+          <label style={lbl}>{tt("med.bio")}</label><textarea style={{...inp,minHeight:70}} value={medForm.bio} onChange={e=>ch("bio",e.target.value)}/>
+          <label style={lbl}>{tt("med.diplomas")}</label><textarea style={{...inp,minHeight:50}} value={medForm.diplomes} onChange={e=>ch("diplomes",e.target.value)}/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div><label style={lbl}>{tt("med.languages")}</label><input style={inp} value={medForm.langues} onChange={e=>ch("langues",e.target.value)} placeholder={tt("med.csvHint")}/></div>
+            <div><label style={lbl}>{tt("med.experience")}</label><input style={inp} value={medForm.experience} onChange={e=>ch("experience",e.target.value)} placeholder="15"/></div>
+          </div>
+          <label style={lbl}>{tt("med.interventions")}</label>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+            {MED_INTERVENTIONS.map(p=>(
+              <label key={p} style={{display:"flex",alignItems:"center",gap:8,fontSize:12.5,color:C.text,cursor:"pointer",padding:"4px 0"}}>
+                <input type="checkbox" checked={procsArr.indexOf(p)>=0} onChange={()=>togProc(p)}/>{p}
+              </label>
+            ))}
+          </div>
+          <label style={lbl}>{tt("med.otherInterventions")}</label>
+          <input style={inp} value={procsArr.filter(p=>MED_INTERVENTIONS.indexOf(p)<0).join(", ")}
+                 onChange={e=>{ const extra=e.target.value.split(",").map(x=>x.trim()).filter(Boolean); ch("procedures",[...procsArr.filter(p=>MED_INTERVENTIONS.indexOf(p)>=0),...extra].join(", ")); }}
+                 placeholder={tt("med.csvHint")}/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div><label style={lbl}>{tt("med.color")}</label><input type="color" style={{...inp,padding:4,height:42}} value={medForm.color} onChange={e=>ch("color",e.target.value)}/></div>
+            <div><label style={lbl}>{tt("med.icon")}</label><input style={inp} value={medForm.icon} onChange={e=>ch("icon",e.target.value)}/></div>
+          </div>
+          <label style={{display:"flex",alignItems:"center",gap:10,margin:"14px 0",fontSize:13,fontWeight:700,color:C.text,cursor:"pointer"}}>
+            <input type="checkbox" checked={String(medForm.actif)!=="0"} onChange={e=>ch("actif",e.target.checked?"1":"0")}/>{tt("med.active")}
+          </label>
+          <div style={{display:"flex",gap:10,marginTop:14}}>
+            <button onClick={()=>setMedView("liste")} style={{flex:1,padding:"12px",border:`1.5px solid ${C.border}`,borderRadius:11,background:C.white,color:C.muted,fontWeight:700,fontSize:13,cursor:"pointer"}}>{tt("common.cancel")}</button>
+            <button onClick={saveMedecin} disabled={medSaving} style={{flex:2,padding:"12px",border:"none",borderRadius:11,background:C.navy,color:C.white,fontWeight:800,fontSize:13,cursor:"pointer",opacity:medSaving?0.6:1}}>{medSaving?"…":tt("common.save")}</button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
   if(selected){
-    const m=MEDECINS_DATA.find(x=>x.id===selected);
+    const m=ALL.find(x=>String(x.id)===String(selected));
+    if(!m){ setSelected(null); return null; }
     const mRdvs=(rdvs||[]).filter(r=>r.medecin===m.nom);
     const mPatients=(patients||[]).filter(p=>mRdvs.some(r=>r.patientId===p.id));
     const rdvsThisMonth=mRdvs.filter(r=>r.date&&r.date.startsWith(todayStr().slice(0,7)));
     return (
       <div>
         <button onClick={()=>setSelected(null)} style={{border:"none",background:"none",cursor:"pointer",color:m.color,fontWeight:700,fontSize:13,marginBottom:14,display:"flex",alignItems:"center",gap:6}}>← {tt("common.back")} — {tt("nav.medecins")}</button>
-        <div style={{background:`linear-gradient(135deg,${m.color},${m.color}cc)`,borderRadius:20,padding:"24px 20px",marginBottom:14}}>
-          <div style={{fontSize:44,marginBottom:10}}>{m.icon}</div>
+        <div style={{background:`linear-gradient(135deg,${m.color},${m.color}cc)`,borderRadius:20,padding:"24px 20px",marginBottom:14,opacity:m.actif===false?0.75:1}}>
+          {m.raw&&m.raw.photo
+            ? <img src={m.raw.photo} alt="" onError={e=>{try{e.target.style.display="none";}catch(x){}}} style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"2px solid rgba(255,255,255,0.7)",marginBottom:10}}/>
+            : <div style={{fontSize:44,marginBottom:10}}>{m.icon}</div>}
+          {m.actif===false&&<div style={{display:"inline-block",background:"rgba(255,255,255,0.25)",color:C.white,fontSize:11,fontWeight:800,padding:"3px 10px",borderRadius:99,marginBottom:8}}>{tt("med.inactive")}</div>}
           <div style={{color:C.white,fontSize:22,fontWeight:800,marginBottom:4}}>{m.nom}</div>
           <Badge text={m.spec} color={C.white}/>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:14}}>
@@ -11603,9 +11863,26 @@ function Medecins({patients, rdvs}) {
         <Card>
           <SecTitle icon="📋" children={tt("doc.contact")}/>
           <div style={{fontSize:13,color:C.text,lineHeight:2.4}}>
-            <div>📧 {m.email}</div><div>📱 {m.tel}</div><div>🏥 {m.hopital}</div>
+            <div>📧 {m.email||"—"}</div><div>📱 {m.tel||"—"}</div><div>🏥 {m.hopital||"—"}</div>
+            {m.raw&&m.raw.whatsapp&&<div>💬 WhatsApp : {m.raw.whatsapp}</div>}
+            {m.raw&&m.raw.adresse&&<div>📍 {m.raw.adresse}</div>}
           </div>
         </Card>
+        {m.raw&&(m.raw.bio||m.raw.diplomes||m.raw.langues||m.raw.experience||m.raw.sousSpecs||m.raw.hopitauxSecondaires)&&<Card>
+          <SecTitle icon="👤" children={tt("med.profile")}/>
+          <div style={{fontSize:12.5,color:C.text,lineHeight:2}}>
+            {m.raw.sousSpecs&&<div><b>{tt("med.sousSpecs")} :</b> {m.raw.sousSpecs}</div>}
+            {m.raw.hopitauxSecondaires&&<div><b>{tt("med.hospitals2")} :</b> {m.raw.hopitauxSecondaires}</div>}
+            {m.raw.experience&&<div><b>{tt("med.experience")} :</b> {m.raw.experience} {tt("med.years")}</div>}
+            {m.raw.langues&&<div><b>{tt("med.languages")} :</b> {m.raw.langues}</div>}
+            {m.raw.diplomes&&<div><b>{tt("med.diplomas")} :</b> {m.raw.diplomes}</div>}
+            {m.raw.bio&&<div style={{marginTop:6,color:C.muted}}>{m.raw.bio}</div>}
+          </div>
+        </Card>}
+        {canManage&&!m.builtin&&<div style={{display:"flex",gap:10,marginBottom:14}}>
+          <button onClick={()=>openEdit(m.raw)} style={{flex:1,padding:"11px",border:`1.5px solid ${C.navy}44`,borderRadius:11,background:C.navy+"0d",color:C.navy,fontWeight:700,fontSize:13,cursor:"pointer"}}>✏️ {tt("common.edit")}</button>
+          <button onClick={()=>toggleActif(m.raw)} style={{flex:1,padding:"11px",border:`1.5px solid ${m.actif===false?C.green:"#B45309"}55`,borderRadius:11,background:"transparent",color:m.actif===false?C.green:"#B45309",fontWeight:700,fontSize:13,cursor:"pointer"}}>{m.actif===false?("✅ "+tt("med.reactivate")):("⏸ "+tt("med.deactivate"))}</button>
+        </div>}
         <Card>
           <SecTitle icon="⚕️" children={tt("patient.procedure")}/>
           <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
@@ -11633,15 +11910,20 @@ function Medecins({patients, rdvs}) {
   }
   return (
     <div>
-      <p style={{fontSize:13,color:C.muted,marginBottom:14}}>{tt("doc.medicalTeam")}</p>
-      {MEDECINS_DATA.map(m=>{
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+        <p style={{fontSize:13,color:C.muted,margin:0,flex:1}}>{tt("doc.medicalTeam")}</p>
+        {canManage&&<button onClick={openAdd} style={{border:"none",background:C.navy,color:C.white,fontWeight:800,fontSize:13,padding:"10px 16px",borderRadius:11,cursor:"pointer"}}>➕ {tt("med.addTitle")}</button>}
+      </div>
+      {ALL.map(m=>{
         const mRdvs=(rdvs||[]).filter(r=>r.medecin===m.nom);
         return (
-          <Card key={m.id} onClick={()=>setSelected(m.id)} style={{borderLeft:`4px solid ${m.color}`}}>
+          <Card key={m.id} onClick={()=>setSelected(m.id)} style={{borderLeft:`4px solid ${m.color}`,opacity:m.actif===false?0.6:1}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}>
-              <div style={{width:52,height:52,borderRadius:14,background:m.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{m.icon}</div>
+              {m.raw&&m.raw.photo
+                ? <img src={m.raw.photo} alt="" onError={e=>{try{e.target.style.display="none";}catch(x){}}} style={{width:52,height:52,borderRadius:14,objectFit:"cover",flexShrink:0}}/>
+                : <div style={{width:52,height:52,borderRadius:14,background:m.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{m.icon}</div>}
               <div style={{flex:1}}>
-                <div style={{fontWeight:800,fontSize:15,color:C.text,marginBottom:4}}>{m.nom}</div>
+                <div style={{fontWeight:800,fontSize:15,color:C.text,marginBottom:4}}>{m.nom}{m.actif===false&&<span style={{marginLeft:8,background:C.bg,color:C.muted,fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:99}}>{tt("med.inactive")}</span>}</div>
                 <Badge text={m.spec} color={m.color} small/>
                 <div style={{fontSize:12,color:C.muted,marginTop:6}}>📱 {m.tel} · 🏥 {m.hopital}</div>
               </div>
@@ -14797,10 +15079,10 @@ function AccueilPremiumDrHouse({ user, onOpenAI, rdvs=[], taches=[], patients=[]
     const lampClick = ()=>{ setOpen(true); };
     return (
       <button onClick={lampClick} aria-label="Dr House" title={tt("ai.dh.reopen")}
-        style={{position:"fixed",bottom:146,right:16,zIndex:1001,width:58,height:58,borderRadius:"50%",border:"1px solid rgba(212,175,55,0.30)",
-          padding:0,overflow:"hidden",cursor:"pointer",background:"rgba(10,10,18,0.06)",animation:"dhLampGlow 2.6s ease-in-out infinite, dhLampPop 5s ease-in-out infinite"}}>
+        style={{position:"fixed",bottom:146,right:16,zIndex:1001,width:58,height:58,borderRadius:"50%",border:"2px solid rgba(212,175,55,0.55)",
+          padding:0,overflow:"hidden",cursor:"pointer",background:"rgba(10,10,18,0.30)",backdropFilter:"blur(6px) saturate(1.15)",WebkitBackdropFilter:"blur(6px) saturate(1.15)",animation:"dhLampGlow 2.6s ease-in-out infinite, dhLampPop 5s ease-in-out infinite"}}>
         {imgOk
-          ? <img src="./ia-lamp.jpg" alt="" loading="lazy" decoding="async" onError={()=>setImgOk(false)} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center 60%",opacity:0.20}}/>
+          ? <img src="./ia-lamp.jpg" alt="" loading="lazy" decoding="async" onError={()=>setImgOk(false)} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center 60%",opacity:0.55}}/>
           : <span style={{fontSize:28,lineHeight:"54px"}}>🪔</span>}
       </button>
     );
@@ -15750,6 +16032,7 @@ function App() {
   const [rdvs,setRdvs] = useState(()=>cache.load("rdvs")||[]);
   const [finances,setFinances] = useState(()=>cache.load("finances")||[]);
   const [taches,setTaches] = useState(()=>cache.load("taches")||[]);
+  const [medecins,setMedecins] = useState(()=>cache.load("medecins")||[]);
   const [hopitaux,setHopitaux] = useState(()=>{
     // Migration : supprimer les anciens hôpitaux et utiliser les nouveaux
     const cached = cache.load("hopitaux");
@@ -16311,7 +16594,7 @@ function App() {
           {activeView==="finances"&&<Finances user={userFull} finances={vFinances} patients={vPatients} rdvs={vRdvs} onAdd={()=>setModal({type:"finance"})} onDelete={deleteFinance} onSave={saveFinance} onUpdate={updateFinance} onSavePatient={savePatient}/>}
           {activeView==="hopitaux"&&<Hopitaux user={userFull} patients={patients} rdvs={rdvs} hopitaux={hopitaux} setHopitaux={setHopitaux} syncing={syncing} setSyncing={setSyncing}/>}
           {activeView==="equipe"&&<VueEquipe patients={patients} rdvs={rdvs} taches={taches} finances={finances}/>}
-          {activeView==="medecins"&&<Medecins patients={patients} rdvs={rdvs}/>}
+          {activeView==="medecins"&&<Medecins user={userFull} patients={patients} rdvs={rdvs} finances={finances} medecins={medecins} setMedecins={setMedecins}/>}
           {activeView==="messagerie"&&<Messagerie user={userFull} patients={vPatients}/>}
           {activeView==="notifications"&&<Notifications user={userFull} patients={vPatients} rdvs={vRdvs} taches={vTaches} finances={vFinances}/>}
           {activeView==="recherche"&&<RechercheGlobale patients={vPatients} rdvs={vRdvs} taches={vTaches} finances={isSurgeon(userFull)?[]:vFinances} onSelectPatient={p=>{ if(isSurgeon(userFull)) return; setSelected(p);setView("patients"); }}/>}
@@ -16336,8 +16619,8 @@ function App() {
       </div>}
 
       {/* BOUTON FLOTTANT ASSISTANT IA (lecture seule) */}
-      {user && aiCan(userFull,"ai_use") && !aiOpen && <button onClick={()=>setAiOpen(true)} aria-label="Dr House IA" title="Dr House IA" className="dh-avatar" style={{position:"fixed",bottom:78,right:16,zIndex:1000,width:56,height:56,borderRadius:"50%",border:"1px solid rgba(212,175,55,0.30)",padding:0,overflow:"hidden",cursor:"pointer",background:"rgba(10,10,18,0.06)",boxShadow:"0 0 4px 1px rgba(212,175,55,0.10)"}}>
-        <img src="./ia-face.jpg" alt="Dr House IA" onError={e=>{try{e.target.style.display="none";e.target.parentNode.textContent="👨‍⚕️";e.target.parentNode.style.fontSize="26px";e.target.parentNode.style.color="#fff";}catch(x){}}} style={{width:"100%",height:"100%",objectFit:"cover",display:"block",opacity:0.25}}/>
+      {user && aiCan(userFull,"ai_use") && !aiOpen && <button onClick={()=>setAiOpen(true)} aria-label="Dr House IA" title="Dr House IA" className="dh-avatar" style={{position:"fixed",bottom:78,right:16,zIndex:1000,width:56,height:56,borderRadius:"50%",border:"2px solid rgba(212,175,55,0.55)",padding:0,overflow:"hidden",cursor:"pointer",background:"rgba(10,10,18,0.30)",backdropFilter:"blur(6px) saturate(1.15)",WebkitBackdropFilter:"blur(6px) saturate(1.15)",boxShadow:"0 0 16px 3px #D4AF3733, 0 6px 20px rgba(11,31,58,0.22)"}}>
+        <img src="./ia-face.jpg" alt="Dr House IA" onError={e=>{try{e.target.style.display="none";e.target.parentNode.textContent="👨‍⚕️";e.target.parentNode.style.fontSize="26px";e.target.parentNode.style.color="#fff";}catch(x){}}} style={{width:"100%",height:"100%",objectFit:"cover",display:"block",opacity:0.55}}/>
       </button>}
       {aiOpen && <AssistantIA user={userFull} patient={activeView==="fiche"?selected:null} patients={vPatients} finances={vFinances} rdvs={vRdvs} taches={vTaches} activeView={activeView} onClose={()=>setAiOpen(false)} initialQuestion={aiInitQ} onInitConsumed={()=>setAiInitQ(null)}/>}
       {/* ── MODE MAINTENANCE (V1.1) : admin/PDG conservent l'accès complet ── */}
