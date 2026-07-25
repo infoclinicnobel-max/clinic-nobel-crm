@@ -5825,6 +5825,37 @@ const isCRMDateValid = (v) => { const d=normalizeDate(v); if(!d) return false; c
 // ── API ───────────────────────────────────────────────────────────────────────
 let AUTH_TOKEN = (()=>{ try{ return localStorage.getItem("cn_token")||""; }catch(e){ return ""; } })();
 const setAuthToken = (t)=>{ AUTH_TOKEN = t||""; try{ if(t) localStorage.setItem("cn_token",t); else localStorage.removeItem("cn_token"); }catch(e){} };
+const isLocalAuthAllowed = () => {
+  try {
+    const h = String(location.hostname||"").toLowerCase();
+    return location.protocol==="file:" || h==="localhost" || h==="127.0.0.1";
+  } catch(e) { return false; }
+};
+const isServerLoginRequired = () => !isLocalAuthAllowed();
+const serverUserForStorage = (u) => {
+  const clean = {...(u||{})};
+  delete clean.password;
+  delete clean.passHash;
+  delete clean.salt;
+  return clean;
+};
+const tokenClaimsUnsafe = (token) => {
+  try {
+    const part = String(token||"").split(".")[0];
+    if(!part) return null;
+    const base64 = part.replace(/-/g,"+").replace(/_/g,"/");
+    const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
+    const json = decodeURIComponent(Array.prototype.map.call(atob(padded), c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join(""));
+    return JSON.parse(json);
+  } catch(e) { return null; }
+};
+const sessionTokenLooksUsable = (token, user) => {
+  const claims = tokenClaimsUnsafe(token);
+  if(!claims || !claims.u || !claims.e) return false;
+  if(Number(claims.e) <= Date.now()) return false;
+  if(user && user.id && String(claims.u)!==String(user.id)) return false;
+  return true;
+};
 
 const api = {
   // Retourne un TABLEAU en cas de succès, NULL en cas d'échec (réseau, timeout,
@@ -5997,30 +6028,50 @@ function LoginScreen({onLogin, lang, onLangChange}) {
   const [error,setError] = useState("");
   const [showPass,setShowPass] = useState(false);
   const handleLogin = async () => {
-    const mail = email.trim();
-    let user = USERS.find(u=>u.email===mail&&u.password===pass);
+    const mail = email.trim().toLowerCase();
+    const serverRequired = isServerLoginRequired();
+    let user = serverRequired ? null : USERS.find(u=>String(u.email||"").toLowerCase()===mail&&u.password===pass);
     // Si non trouvé localement : connexion sécurisée côté serveur (haché + jeton)
     if(!user){
       try {
         const res = await api.login(mail, pass);
-        if(res && res.ok && res.user){
-          setAuthToken(res.token||"");
-          mergeServerUsers([{...res.user, password:pass}]); // cache local (permet reconnexion hors-ligne)
-          user = USERS.find(u=>u.id===res.user.id) || res.user;
+        if(res && res.ok && res.user && res.token){
+          setAuthToken(res.token);
+          user = serverUserForStorage(res.user);
+          mergeServerUsers([user]);
         } else if(res && res.error){
           setError(res.error==="compte désactivé"?"Ce compte est désactivé. Contactez l'administrateur.":"Email ou mot de passe incorrect.");
           return;
         }
       } catch(e){}
     }
+    if(serverRequired && !user){
+      setAuthToken("");
+      try{ localStorage.removeItem("cn_user"); localStorage.removeItem("cn2_user"); }catch(e){}
+      setError("Connexion serveur refusee. Verifiez l'email et le mot de passe.");
+      return;
+    }
     if(!user){ setError("Email ou mot de passe incorrect."); return; }
     if(user.statut==="Inactif"){ setError("Ce compte est désactivé. Contactez l'administrateur."); return; }
     // FIX CACHE PERMISSIONS : rafraîchissement systématique à CHAQUE connexion,
     // y compris par le chemin local (c'était la faille : les anciens utilisateurs
     // reconnectés localement gardaient leurs permissions en cache à vie).
+    if(serverRequired && !sessionTokenLooksUsable(AUTH_TOKEN, user)){
+      setAuthToken("");
+      try{ localStorage.removeItem("cn_user"); localStorage.removeItem("cn2_user"); }catch(e){}
+      setError("Session serveur invalide. Reconnectez-vous.");
+      return;
+    }
     try{ await refreshPermissionsFromServer(); }catch(e){}
-    localStorage.setItem("cn_user",JSON.stringify(user));
-    onLogin(user);
+    if(serverRequired && !sessionTokenLooksUsable(AUTH_TOKEN, user)){
+      setAuthToken("");
+      try{ localStorage.removeItem("cn_user"); localStorage.removeItem("cn2_user"); }catch(e){}
+      setError("Session serveur invalide. Reconnectez-vous.");
+      return;
+    }
+    const storedUser = serverRequired ? serverUserForStorage(user) : user;
+    localStorage.setItem("cn_user",JSON.stringify(storedUser));
+    onLogin(storedUser);
   };
   const inp = {width:"100%",padding:"12px 14px",border:"1px solid #E8ECF2",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box",background:"#F4F6FA"};
   return (
@@ -16120,7 +16171,21 @@ function KnowledgeGraphAdmin({ user }){
 
 function App() {
   const [user,setUser] = useState(()=>{
-    try{ const s=localStorage.getItem("cn_user"); return s?JSON.parse(s):null; }catch(e){return null;}
+    try{
+      const s=localStorage.getItem("cn_user");
+      if(!s) return null;
+      const stored = JSON.parse(s);
+      if(isServerLoginRequired()){
+        const token = localStorage.getItem("cn_token")||"";
+        if(!sessionTokenLooksUsable(token, stored)){
+          localStorage.removeItem("cn_user");
+          localStorage.removeItem("cn2_user");
+          setAuthToken("");
+          return null;
+        }
+      }
+      return stored;
+    }catch(e){return null;}
   });
   const [lang,setLangState] = useState(CURRENT_LANG);
   const changeLang = (code)=>{ setLang(code); setLangState(code); };
@@ -16534,7 +16599,7 @@ function App() {
   useEffect(()=>{ if(user && (activeView==="finances"||activeView==="analyses")) ensureFinances(); },[activeView, user]);
   const TITLES = {dashboard:t("title.dashboard"),equipe:t("title.equipe")+" — Veys Turan "+t("role.pdg"),patients:t("title.patients"),rdvs:t("title.rdvs"),taches:t("title.taches"),agenda:t("title.agenda"),analyses:t("title.analyses"),finances:t("title.finances"),hopitaux:t("title.hopitaux"),medecins:t("title.medecins"),messagerie:t("title.messagerie"),notifications:t("title.notifications"),recherche:t("title.recherche"),utilisateurs:t("title.utilisateurs")};
 
-  if(!user) return <LoginScreen lang={lang} onLangChange={changeLang} onLogin={u=>{const full=USERS.find(x=>x.id===u.id)||u; setUser(full);}} />;
+  if(!user) return <LoginScreen lang={lang} onLangChange={changeLang} onLogin={u=>{const full=isServerLoginRequired()?u:(USERS.find(x=>x.id===u.id)||u); setUser(full);}} />;
 
   const userFull = USERS.find(u2=>u2.id===user.id)||user;
 
