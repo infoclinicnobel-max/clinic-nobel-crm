@@ -5875,6 +5875,64 @@ const api = {
   }
 };
 
+function drHouseOpenAIRequestId(){
+  return "dh_ui_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+}
+
+function drHouseOpenAIShouldUse(question){
+  const intent = aiDetectIntent(question);
+  return ["summary","payment","relance","draft","translate","agenda"].indexOf(intent) < 0;
+}
+
+function drHouseOpenAIWarn(reason, requestId){
+  try {
+    console.warn("Dr House OpenAI fallback:", {
+      reason:String(reason||"UNKNOWN").slice(0,80),
+      requestId:String(requestId||"").slice(0,80)
+    });
+  } catch(e){}
+}
+
+async function drHouseOpenAIChatAnswer(question){
+  const q = String(question||"").trim();
+  const requestId = drHouseOpenAIRequestId();
+  if(!q) return { ok:false, error:"EMPTY_QUESTION", requestId };
+  if(!AUTH_TOKEN) return { ok:false, error:"AUTH_REQUIRED", requestId };
+
+  const ctrl = (typeof AbortController!=="undefined") ? new AbortController() : null;
+  const timer = setTimeout(()=>{ try{ ctrl && ctrl.abort(); }catch(e){} }, 20000);
+  try {
+    const payload = {
+      action:"drhouse_openai",
+      type:"drhouse_openai",
+      token:AUTH_TOKEN,
+      question:q,
+      locale:localeForLang(),
+      requestId
+    };
+    const r = await fetch(SCRIPT_URL, {
+      method:"POST",
+      cache:"no-cache",
+      redirect:"follow",
+      headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify(payload),
+      signal:ctrl?ctrl.signal:undefined
+    });
+    const raw = await r.text();
+    if(!r.ok) return { ok:false, error:"HTTP_"+r.status, requestId };
+    const d = JSON.parse(raw);
+    const text = String((d && (d.answer || d.text || d.output)) || "").trim();
+    if(!d || d.ok!==true || !text) {
+      return { ok:false, error:(d && d.error && (d.error.code || d.error.message)) || "EMPTY_RESPONSE", requestId:(d && d.requestId) || requestId };
+    }
+    return { ok:true, text, answer:text, provider:d.provider||"openai", model:d.model||"", patientDataUsed:d.patientDataUsed===true, requestId:(d && d.requestId) || requestId };
+  } catch(e) {
+    return { ok:false, error:(e && e.name==="AbortError") ? "TIMEOUT" : "NETWORK_ERROR", requestId };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Local cache to persist data across reloads
 const cache = {
   save: (key, data) => {
@@ -15325,7 +15383,17 @@ function AssistantIA({ user, patient, patients=[], finances, activeView, onClose
         setChatBusy(false); return;
       }
       // Mémoire de conversation : on passe le sujet courant au moteur.
-      const r = await aiChatRespond(q, user, hasPatient?patient:null, finances, { topic: convTopic });
+      let r = null;
+      if(drHouseOpenAIShouldUse(q)){
+        const remote = await drHouseOpenAIChatAnswer(q);
+        if(remote && remote.ok && remote.text && remote.patientDataUsed !== true){
+          r = { text:remote.text, medLevel:aiMedicalLevel(remote.text), suggestions:[], medExtra:null, topic:null, provider:remote.provider||"openai" };
+          try{ logIA(user?user.id:"", "proposed", "chat_openai", "ia", "", "", "", remote.requestId||"" ); }catch(e){}
+        } else {
+          drHouseOpenAIWarn(remote && remote.error, remote && remote.requestId);
+        }
+      }
+      if(!r) r = await aiChatRespond(q, user, hasPatient?patient:null, finances, { topic: convTopic });
       if(r.topic) setConvTopic(r.topic);   // met à jour le sujet mémorisé
       setChatMsgs(m=>[...m, { role:"assistant", text:r.text, medLevel:r.medLevel||"none", suggestions:r.suggestions||[], medExtra:r.medExtra||null, feedback:null, id:uid() }]);
     } catch(e){
