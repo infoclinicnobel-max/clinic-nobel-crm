@@ -81,11 +81,16 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 }
 
 .upcoming-patient-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.agenda-finance-cards{display:none}
 @media (max-width:900px){
   .upcoming-patient-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media (max-width:520px){
   .upcoming-patient-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:700px){
+  .agenda-finance-table{display:none}
+  .agenda-finance-cards{display:grid}
 }
 
 /* ── Phase 18 : Dr House compagnon permanent ── */
@@ -1215,6 +1220,28 @@ const I18N = {
     "agenda.addEvent": "Ajouter un événement",
     "agenda.cannotDisplay": "Impossible d'afficher ce détail",
     "agenda.invalidData": "Cet événement contient une donnée invalide.",
+    "agenda.finTitle": "Statut financier",
+    "agenda.finLoading": "Chargement financier…",
+    "agenda.totalPlanned": "Total prévu",
+    "agenda.depositsReceived": "Acomptes reçus",
+    "agenda.totalCollected": "Total encaissé",
+    "agenda.remainingCollect": "Reste à encaisser",
+    "agenda.activePatients": "Actifs",
+    "agenda.closedWithBalance": "Clôturés avec reste",
+    "agenda.closedRemaining": "Reste des clôturés",
+    "agenda.paidPatients": "Soldés",
+    "agenda.tariffMissing": "Tarif à renseigner",
+    "agenda.toCalculate": "À calculer",
+    "agenda.depositMissing": "Acompte manquant",
+    "agenda.depositReceived": "Acompte reçu",
+    "agenda.partialPayment": "Paiement partiel",
+    "agenda.paidInFull": "Soldé",
+    "agenda.overpaid": "Trop-perçu",
+    "agenda.incompleteData": "Données incomplètes",
+    "agenda.closedPaid": "Clôturé — soldé",
+    "agenda.closedDue": "Clôturé — reste à recevoir",
+    "agenda.viewAllPatients": "Voir tous les patients",
+    "agenda.showLessPatients": "Réduire",
     "team.ceoDashboard": "Tableau de bord PDG",
     "team.fullTeamView": "Vue complète de l'équipe Clinic Nobel Istanbul",
     "team.totalRevenue": "Revenus totaux",
@@ -2369,6 +2396,28 @@ const I18N = {
     "agenda.addEvent": "Add an event",
     "agenda.cannotDisplay": "Cannot display this detail",
     "agenda.invalidData": "This event contains invalid data.",
+    "agenda.finTitle": "Financial status",
+    "agenda.finLoading": "Loading finances…",
+    "agenda.totalPlanned": "Planned total",
+    "agenda.depositsReceived": "Deposits received",
+    "agenda.totalCollected": "Total collected",
+    "agenda.remainingCollect": "Remaining to collect",
+    "agenda.activePatients": "Active",
+    "agenda.closedWithBalance": "Closed with balance",
+    "agenda.closedRemaining": "Closed balance",
+    "agenda.paidPatients": "Paid",
+    "agenda.tariffMissing": "Tariff to complete",
+    "agenda.toCalculate": "To calculate",
+    "agenda.depositMissing": "Deposit missing",
+    "agenda.depositReceived": "Deposit received",
+    "agenda.partialPayment": "Partial payment",
+    "agenda.paidInFull": "Paid",
+    "agenda.overpaid": "Overpaid",
+    "agenda.incompleteData": "Incomplete data",
+    "agenda.closedPaid": "Closed — paid",
+    "agenda.closedDue": "Closed — balance due",
+    "agenda.viewAllPatients": "View all patients",
+    "agenda.showLessPatients": "Show less",
     "team.ceoDashboard": "CEO Dashboard",
     "team.fullTeamView": "Full team view of Clinic Nobel Istanbul",
     "team.totalRevenue": "Total revenue",
@@ -3523,6 +3572,28 @@ const I18N = {
     "agenda.addEvent": "Etkinlik ekle",
     "agenda.cannotDisplay": "Bu ayrıntı gösterilemiyor",
     "agenda.invalidData": "Bu etkinlik geçersiz veri içeriyor.",
+    "agenda.finTitle": "Finansal durum",
+    "agenda.finLoading": "Finans yükleniyor…",
+    "agenda.totalPlanned": "Planlanan toplam",
+    "agenda.depositsReceived": "Alınan kaporalar",
+    "agenda.totalCollected": "Toplam tahsilat",
+    "agenda.remainingCollect": "Alınacak bakiye",
+    "agenda.activePatients": "Aktif",
+    "agenda.closedWithBalance": "Bakiyeli kapalı",
+    "agenda.closedRemaining": "Kapalı bakiye",
+    "agenda.paidPatients": "Ödenmiş",
+    "agenda.tariffMissing": "Tarife girilecek",
+    "agenda.toCalculate": "Hesaplanacak",
+    "agenda.depositMissing": "Kapora eksik",
+    "agenda.depositReceived": "Kapora alındı",
+    "agenda.partialPayment": "Kısmi ödeme",
+    "agenda.paidInFull": "Ödendi",
+    "agenda.overpaid": "Fazla ödeme",
+    "agenda.incompleteData": "Eksik veri",
+    "agenda.closedPaid": "Kapalı — ödendi",
+    "agenda.closedDue": "Kapalı — bakiye var",
+    "agenda.viewAllPatients": "Tüm hastaları gör",
+    "agenda.showLessPatients": "Daralt",
     "team.ceoDashboard": "CEO Paneli",
     "team.fullTeamView": "Clinic Nobel İstanbul ekip görünümü",
     "team.totalRevenue": "Toplam gelir",
@@ -4677,6 +4748,28 @@ const I18N = {
     "agenda.addEvent": "Añadir un evento",
     "agenda.cannotDisplay": "No se puede mostrar este detalle",
     "agenda.invalidData": "Este evento contiene datos no válidos.",
+    "agenda.finTitle": "Estado financiero",
+    "agenda.finLoading": "Cargando finanzas…",
+    "agenda.totalPlanned": "Total previsto",
+    "agenda.depositsReceived": "Anticipos recibidos",
+    "agenda.totalCollected": "Total cobrado",
+    "agenda.remainingCollect": "Resto por cobrar",
+    "agenda.activePatients": "Activos",
+    "agenda.closedWithBalance": "Cerrados con saldo",
+    "agenda.closedRemaining": "Saldo cerrados",
+    "agenda.paidPatients": "Saldados",
+    "agenda.tariffMissing": "Tarifa por completar",
+    "agenda.toCalculate": "Por calcular",
+    "agenda.depositMissing": "Anticipo pendiente",
+    "agenda.depositReceived": "Anticipo recibido",
+    "agenda.partialPayment": "Pago parcial",
+    "agenda.paidInFull": "Saldado",
+    "agenda.overpaid": "Pago excedente",
+    "agenda.incompleteData": "Datos incompletos",
+    "agenda.closedPaid": "Cerrado — saldado",
+    "agenda.closedDue": "Cerrado — saldo pendiente",
+    "agenda.viewAllPatients": "Ver todos los pacientes",
+    "agenda.showLessPatients": "Reducir",
     "team.ceoDashboard": "Panel del CEO",
     "team.fullTeamView": "Vista completa del equipo Clinic Nobel Estambul",
     "team.totalRevenue": "Ingresos totales",
@@ -8627,6 +8720,251 @@ function getPatientPaid(p, finances){
 function getPatientBalance(p, finances){
   return Math.max(getPatientTotal(p) - getPatientPaid(p, finances), 0);
 }
+function financeCurrencyCode(v){
+  const raw = String(v||"").trim().toUpperCase();
+  if(!raw || raw==="€" || raw==="EURO" || raw==="EUROS") return "EUR";
+  if(raw==="₺" || raw==="TL" || raw==="TRY") return "TRY";
+  if(raw==="$" || raw==="USD") return "USD";
+  if(raw==="£" || raw==="GBP") return "GBP";
+  return raw.replace(/[^A-Z]/g,"").slice(0,3) || "EUR";
+}
+function fmtMoneyCurrency(amount, currency){
+  const cur = financeCurrencyCode(currency);
+  try {
+    return new Intl.NumberFormat(localeForLang(), {style:"currency", currency:cur, maximumFractionDigits:0}).format(Number(amount)||0);
+  } catch(e) {
+    return `${Math.round(Number(amount)||0).toLocaleString(localeForLang())} ${cur}`;
+  }
+}
+function addAgendaMoney(group, currency, key, amount){
+  const cur = financeCurrencyCode(currency);
+  if(!group[cur]) group[cur] = {currency:cur, planned:0, deposit:0, collected:0, remaining:0, closedRemaining:0};
+  group[cur][key] += Number(amount)||0;
+}
+function fmtAgendaMoneyGroup(group, key, zeroCurrency){
+  const rows = Object.values(group||{}).filter(g=>Math.abs(Number(g[key])||0)>0);
+  if(!rows.length) return zeroCurrency ? fmtMoneyCurrency(0, zeroCurrency) : "—";
+  return rows.sort((a,b)=>a.currency.localeCompare(b.currency)).map(g=>`${g.currency} ${fmtMoneyCurrency(g[key], g.currency)}`).join(" · ");
+}
+function agendaMonthStart(year, month){ return `${year}-${String(month+1).padStart(2,"0")}-01`; }
+function agendaMonthEnd(year, month){ return dateFromParts(year, month, new Date(year, month+1, 0).getDate()); }
+function agendaEventTypeToken(evt){ return normalizeToken(evt && evt.type); }
+function isAgendaArrivalEvent(evt){ return agendaEventTypeToken(evt).includes("arrivee"); }
+function isAgendaSurgeryEvent(evt){
+  const type = agendaEventTypeToken(evt);
+  return type.includes("chirurg") || type.includes("operat") || type.includes("intervent");
+}
+function agendaCanonicalDateInMonth(patient, linkedEvents, from, to){
+  const check = d => d && isRealIsoDate(d) && d>=from && d<=to;
+  const arrival = normalizeDate(patient && patient.dateArrivee);
+  if(check(arrival)) return arrival;
+  const operation = normalizeDate(patient && patient.dateOperation);
+  if(check(operation)) return operation;
+  const arrivals = (linkedEvents||[]).filter(isAgendaArrivalEvent).map(e=>normalizeDate(e.date)).filter(check).sort();
+  if(arrivals.length) return arrivals[0];
+  const surgeries = (linkedEvents||[]).filter(isAgendaSurgeryEvent).map(e=>normalizeDate(e.date)).filter(check).sort();
+  return surgeries[0] || null;
+}
+function agendaPatientName(p){
+  return [p && p.prenom, p && p.nom].filter(Boolean).join(" ").trim() || t("patient.default");
+}
+function agendaPatientIntervention(p, events){
+  const values = [];
+  opsArray(p).forEach(v=>values.push(v));
+  (events||[]).forEach(e=>{ if(isAgendaSurgeryEvent(e)) values.push(e.procedure || e.intervention || e.type); });
+  const seen = new Set();
+  const clean = values.map(v=>String(v||"").trim()).filter(Boolean).filter(v=>{
+    const k = normalizeToken(v);
+    if(!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  return clean.length ? clean.join(" + ") : t("agenda.incompleteData");
+}
+function agendaPatientPaidByCurrency(p, finances){
+  const out = {};
+  (finances||[]).filter(f=>String(f.patientId)===String(p && p.id) && isPatientCashFlow(f)).forEach(f=>{
+    const cur = financeCurrencyCode(f.devise || (p && p.devise));
+    out[cur] = (out[cur]||0) + finSignedAmount(f);
+  });
+  return out;
+}
+function agendaPatientDepositByCurrency(p, finances){
+  const out = {};
+  (finances||[]).filter(f=>String(f.patientId)===String(p && p.id) && f.type==="Acompte" && isPatientCashFlow(f)).forEach(f=>{
+    const cur = financeCurrencyCode(f.devise || (p && p.devise));
+    out[cur] = (out[cur]||0) + Math.max(finSignedAmount(f), 0);
+  });
+  (finances||[]).filter(f=>String(f.patientId)===String(p && p.id) && f.type==="Remboursement" && isPatientCashFlow(f)).forEach(f=>{
+    const cur = financeCurrencyCode(f.devise || (p && p.devise));
+    if(out[cur]>0) out[cur] = Math.max(out[cur] + finSignedAmount(f), 0);
+  });
+  return out;
+}
+function agendaCurrencyMapLabel(map, zeroCurrency){
+  const rows = Object.keys(map||{}).map(currency=>({currency, amount:Number(map[currency])||0})).filter(r=>Math.abs(r.amount)>0);
+  if(!rows.length) return zeroCurrency ? fmtMoneyCurrency(0, zeroCurrency) : "—";
+  return rows.sort((a,b)=>a.currency.localeCompare(b.currency)).map(r=>`${r.currency} ${fmtMoneyCurrency(r.amount, r.currency)}`).join(" · ");
+}
+function agendaFinancialStatus(row){
+  if(!row.totalKnown) return t("agenda.tariffMissing");
+  if(row.currencyMismatch) return t("agenda.incompleteData");
+  if(row.paidMain > row.total) return t("agenda.overpaid");
+  if(row.closed && row.remaining>0) return t("agenda.closedDue");
+  if(row.closed && row.remaining<=0) return t("agenda.closedPaid");
+  if(row.remaining<=0) return t("agenda.paidInFull");
+  if(row.depositMain>0) return t("agenda.depositReceived");
+  if(row.paidMain>0) return t("agenda.partialPayment");
+  return t("agenda.depositMissing");
+}
+function buildAgendaMonthlyFinanceSummary(patients, rdvs, finances, year, month){
+  const from = agendaMonthStart(year, month);
+  const to = agendaMonthEnd(year, month);
+  const byPatient = new Map();
+  (rdvs||[]).forEach(r=>{
+    const pid = String(r && r.patientId || "");
+    if(!pid) return;
+    if(!byPatient.has(pid)) byPatient.set(pid, []);
+    byPatient.get(pid).push(r);
+  });
+  const seen = new Set();
+  const rows = [];
+  (patients||[]).forEach((p,i)=>{
+    const id = String((p && p.id) || `row_${i}`);
+    if(seen.has(id)) return;
+    seen.add(id);
+    const events = byPatient.get(id) || [];
+    const date = agendaCanonicalDateInMonth(p, events, from, to);
+    if(!date) return;
+    const total = getPatientTotal(p);
+    const totalKnown = total > 0;
+    const currency = financeCurrencyCode(p && p.devise);
+    const paidByCurrency = agendaPatientPaidByCurrency(p, finances);
+    const depositByCurrency = agendaPatientDepositByCurrency(p, finances);
+    const paidMain = paidByCurrency[currency] || 0;
+    const depositMain = depositByCurrency[currency] || 0;
+    const otherCurrencies = Object.keys(paidByCurrency).filter(c=>c!==currency && Math.abs(paidByCurrency[c])>0);
+    const remaining = totalKnown ? Math.max(total - paidMain, 0) : null;
+    const closed = isPatientClosed(p);
+    const row = {id, patient:p, name:agendaPatientName(p), date, intervention:agendaPatientIntervention(p, events), total, totalKnown, currency, paidByCurrency, depositByCurrency, paidMain, depositMain, remaining, closed, currencyMismatch:otherCurrencies.length>0};
+    row.status = agendaFinancialStatus(row);
+    rows.push(row);
+  });
+  rows.sort((a,b)=>a.date.localeCompare(b.date) || a.name.localeCompare(b.name));
+  const totals = {};
+  let incomplete = 0, activeCount = 0, closedCount = 0, paidCount = 0, closedWithBalance = 0;
+  rows.forEach(row=>{
+    if(row.closed) closedCount++; else activeCount++;
+    if(row.totalKnown && row.remaining<=0) paidCount++;
+    if(!row.totalKnown) incomplete++;
+    if(row.totalKnown){
+      addAgendaMoney(totals, row.currency, "planned", row.total);
+      addAgendaMoney(totals, row.currency, "remaining", row.remaining);
+      if(row.closed && row.remaining>0){
+        closedWithBalance++;
+        addAgendaMoney(totals, row.currency, "closedRemaining", row.remaining);
+      }
+    }
+    Object.keys(row.depositByCurrency||{}).forEach(cur=>addAgendaMoney(totals, cur, "deposit", row.depositByCurrency[cur]));
+    Object.keys(row.paidByCurrency||{}).forEach(cur=>addAgendaMoney(totals, cur, "collected", row.paidByCurrency[cur]));
+  });
+  return {from, to, rows, totals, activeCount, closedCount, paidCount, closedWithBalance, incomplete};
+}
+
+function AgendaMonthlyFinanceSummaryCard({summary, monthLabel, financesReady, user, onSelectPatient}){
+  const [expanded, setExpanded] = useState(false);
+  if(isSurgeon(user)) return null;
+  const rows = summary.rows || [];
+  const shownRows = expanded ? rows : rows.slice(0, 8);
+  const hasMore = rows.length > 8;
+  const canOpen = !!onSelectPatient && !isSurgeon(user) && can(user, "patients", "view");
+  const monthTitle = String(monthLabel||"").toUpperCase();
+  const badgeColor = row => row.status===t("agenda.paidInFull") || row.status===t("agenda.closedPaid") ? C.green
+    : row.status===t("agenda.tariffMissing") || row.status===t("agenda.incompleteData") || row.status===t("agenda.overpaid") ? C.red
+    : C.amber;
+  const patientLabel = row => canOpen ? (
+    <button onClick={()=>onSelectPatient(row.patient)} style={{border:"none",background:"none",padding:0,cursor:"pointer",fontWeight:800,color:C.navy,textAlign:"left",fontSize:12}}>{row.name}</button>
+  ) : <span style={{fontWeight:800,color:C.text}}>{row.name}</span>;
+  const tariff = row => row.totalKnown ? fmtMoneyCurrency(row.total, row.currency) : t("agenda.tariffMissing");
+  const deposit = row => agendaCurrencyMapLabel(row.depositByCurrency, row.currency);
+  const collected = row => agendaCurrencyMapLabel(row.paidByCurrency, row.currency);
+  const remaining = row => row.totalKnown ? fmtMoneyCurrency(row.remaining, row.currency) : t("agenda.toCalculate");
+  const kpis = [
+    {label:"Patients", value:String(rows.length), color:C.blue},
+    {label:t("agenda.totalPlanned"), value:fmtAgendaMoneyGroup(summary.totals, "planned"), color:C.navy},
+    {label:t("agenda.depositsReceived"), value:fmtAgendaMoneyGroup(summary.totals, "deposit", "EUR"), color:C.green},
+    {label:t("agenda.totalCollected"), value:fmtAgendaMoneyGroup(summary.totals, "collected", "EUR"), color:C.gold},
+    {label:t("agenda.remainingCollect"), value:fmtAgendaMoneyGroup(summary.totals, "remaining"), color:C.amber},
+  ];
+  const th = {padding:"7px 7px",textAlign:"left",fontSize:10,color:C.muted,textTransform:"uppercase",fontWeight:900,borderBottom:`1px solid ${C.border}`};
+  const td = {padding:"7px 7px",fontSize:12,color:C.text,borderBottom:`1px solid ${C.bg}`,verticalAlign:"top"};
+  return (
+    <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:14,padding:12,marginBottom:10}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:9}}>
+        <div style={{minWidth:0}}>
+          <div style={{fontSize:12,fontWeight:900,color:C.navy,letterSpacing:"0.04em"}}>{t("agenda.finTitle").toUpperCase()} — {monthTitle}</div>
+          <div style={{fontSize:10.5,color:C.muted,fontWeight:700,marginTop:2}}>{fmtJour(summary.from)} → {fmtJour(summary.to)}</div>
+        </div>
+        {!financesReady&&<Badge text={t("agenda.finLoading")} color={C.amber} small/>}
+      </div>
+      {!financesReady&&<div style={{fontSize:12,color:C.muted,fontWeight:700,padding:"8px 0"}}>{t("agenda.finLoading")}</div>}
+      {financesReady&&<>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(105px,1fr))",gap:7,marginBottom:8}}>
+        {kpis.map(k=>(
+          <div key={k.label} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"8px 7px",textAlign:"center",minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:900,color:k.color,overflowWrap:"anywhere"}}>{k.value}</div>
+            <div style={{fontSize:9.5,color:C.muted,fontWeight:800,marginTop:2}}>{k.label}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",fontSize:10.5,color:C.muted,fontWeight:800,marginBottom:8}}>
+        <span>{t("agenda.activePatients")} : {summary.activeCount}</span>
+        <span>{t("dash.closedPatients")} : {summary.closedCount}</span>
+        <span>{t("agenda.paidPatients")} : {summary.paidCount}</span>
+        <span>{t("agenda.closedWithBalance")} : {summary.closedWithBalance}</span>
+        <span>{t("agenda.closedRemaining")} : {fmtAgendaMoneyGroup(summary.totals, "closedRemaining")}</span>
+        {summary.incomplete>0&&<span style={{color:C.red}}>{t("agenda.tariffMissing")} : {summary.incomplete}</span>}
+      </div>
+      <div className="agenda-finance-table">
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr>{["Patient","Tarif","Acompte",t("agenda.totalCollected"),t("agenda.remainingCollect"),"Statut"].map(h=><th key={h} style={th}>{h}</th>)}</tr></thead>
+          <tbody>
+            {shownRows.map(row=>(
+              <tr key={row.id}>
+                <td style={td}>{patientLabel(row)}<div style={{fontSize:10,color:C.muted,marginTop:2}}>{fmtJour(row.date)}</div></td>
+                <td style={td}>{tariff(row)}</td>
+                <td style={td}>{deposit(row)}</td>
+                <td style={td}>{collected(row)}</td>
+                <td style={td}>{remaining(row)}</td>
+                <td style={td}><span style={{display:"inline-block",borderRadius:99,padding:"3px 7px",background:badgeColor(row)+"18",color:badgeColor(row),fontSize:10,fontWeight:900}}>{row.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="agenda-finance-cards" style={{gap:7}}>
+        {shownRows.map(row=>(
+          <div key={row.id} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:9}}>
+            <div style={{display:"flex",justifyContent:"space-between",gap:8,marginBottom:5}}>
+              <div style={{minWidth:0}}>{patientLabel(row)}</div>
+              <span style={{fontSize:10,color:C.muted,fontWeight:800,whiteSpace:"nowrap"}}>{fmtJour(row.date)}</span>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:11}}>
+              <div><span style={{color:C.muted}}>Tarif</span><br/><b>{tariff(row)}</b></div>
+              <div><span style={{color:C.muted}}>Acompte</span><br/><b>{deposit(row)}</b></div>
+              <div><span style={{color:C.muted}}>{t("agenda.totalCollected")}</span><br/><b>{collected(row)}</b></div>
+              <div><span style={{color:C.muted}}>{t("agenda.remainingCollect")}</span><br/><b>{remaining(row)}</b></div>
+            </div>
+            <div style={{marginTop:6}}><span style={{display:"inline-block",borderRadius:99,padding:"3px 7px",background:badgeColor(row)+"18",color:badgeColor(row),fontSize:10,fontWeight:900}}>{row.status}</span></div>
+          </div>
+        ))}
+      </div>
+      {rows.length===0&&<div style={{fontSize:12,color:C.muted,textAlign:"center",padding:"8px 0"}}>{t("agenda.noEvent")}</div>}
+      {hasMore&&<button onClick={()=>setExpanded(!expanded)} style={{marginTop:8,border:`1px solid ${C.border}`,background:C.white,borderRadius:9,padding:"6px 10px",cursor:"pointer",fontSize:11,fontWeight:800,color:C.navy}}>{expanded?t("agenda.showLessPatients"):t("agenda.viewAllPatients")}</button>}
+      </>}
+    </div>
+  );
+}
 // ── POSTE 3 : HONORAIRES & PAIEMENTS CHIRURGIEN ──────────────────────────────
 // DEUX notions distinctes, toutes deux SÉPARÉES des encaissements patients :
 //  · "Honoraires chirurgien" = montant PRÉVU/DÛ (engagement, pas un mouvement d'argent)
@@ -12467,7 +12805,7 @@ function Hopitaux({user, patients, rdvs, hopitaux, setHopitaux, syncing, setSync
 
 // ── AGENDA CALENDRIER ─────────────────────────────────────────────────────────
 // ── COULEURS ÉVÉNEMENTS (déjà déclarées en haut) ─────────────────────────────
-function Agenda({user, rdvs, taches, patients, finances, onAddRdv, onSelectPatient}) {
+function Agenda({user, rdvs, taches, patients, finances, financesLoaded, onAddRdv, onSelectPatient}) {
   const tt = t; // alias sûr : évite toute collision avec variables locales "t"
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState("mois");
@@ -12489,6 +12827,11 @@ function Agenda({user, rdvs, taches, patients, finances, onAddRdv, onSelectPatie
 
   const getP = id => patients.find(p=>String(p.id)===String(id));
   const getU = id => USERS.find(u=>u.id===id);
+  const monthFinance = React.useMemo(
+    ()=>buildAgendaMonthlyFinanceSummary(patients, rdvs, finances, year, month),
+    [patients, rdvs, finances, year, month]
+  );
+  const financesReady = financesLoaded || (finances||[]).length>0;
 
   // ── Construire tous les événements (RDV + Tâches + Finances) ──────────────
   const allEvents = [
@@ -12764,6 +13107,8 @@ function Agenda({user, rdvs, taches, patients, finances, onAddRdv, onSelectPatie
           ))}
         </div>
       </div>
+
+      <AgendaMonthlyFinanceSummaryCard summary={monthFinance} monthLabel={`${MOIS[month]} ${year}`} financesReady={financesReady} user={user} onSelectPatient={onSelectPatient}/>
 
       {/* ── Barre d'outils ── */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
@@ -16779,7 +17124,7 @@ function App() {
   // Le signal BOOTED se pose aussi sur l'écran de connexion (sinon la garde
   // anti-page-blanche rechargeait la page pendant la saisie du mot de passe).
   useEffect(()=>{ try{ window.__CRM_BOOTED = true; sessionStorage.removeItem("cn_boot_retry"); }catch(e){} },[]);
-  useEffect(()=>{ if(user && (activeView==="finances"||activeView==="analyses")) ensureFinances(); },[activeView, user]);
+  useEffect(()=>{ if(user && (activeView==="finances"||activeView==="analyses"||activeView==="agenda")) ensureFinances(); },[activeView, user]);
   const TITLES = {dashboard:t("title.dashboard"),equipe:t("title.equipe")+" — Veys Turan "+t("role.pdg"),patients:t("title.patients"),rdvs:t("title.rdvs"),taches:t("title.taches"),agenda:t("title.agenda"),analyses:t("title.analyses"),finances:t("title.finances"),hopitaux:t("title.hopitaux"),medecins:t("title.medecins"),messagerie:t("title.messagerie"),notifications:t("title.notifications"),recherche:t("title.recherche"),utilisateurs:t("title.utilisateurs")};
 
   if(!user) return <LoginScreen lang={lang} onLangChange={changeLang} onLogin={u=>{const full=isServerLoginRequired()?u:(USERS.find(x=>x.id===u.id)||u); setUser(full);}} />;
@@ -16939,7 +17284,7 @@ function App() {
           {activeView==="fiche"&&selected&&<FichePatient user={userFull} patient={selected} patients={vPatients} rdvs={vRdvs} finances={vFinances} taches={vTaches} onEdit={()=>setModal({type:"patient",data:selected})} onDelete={()=>deletePatient(selected.id)} onStageChange={changeStage} onBack={goBack} onSavePatient={savePatient} onUpdateRdv={updateRdv}/>}
           {activeView==="rdvs"&&<Rdvs user={userFull} rdvs={vRdvs} patients={vPatients} taches={vTaches} finances={vFinances} setRdvs={setRdvs} setTaches={setTaches} onAdd={()=>setModal({type:"rdv"})} onDelete={deleteRdv} onEdit={(r)=>setModal({type:"rdv",data:r})} onUpdate={(r)=>setModal({type:"rdv",data:r})} onOpenPatient={openPatientById}/>}
           {activeView==="taches"&&<Taches user={userFull} taches={vTaches} setTaches={setTaches} patients={vPatients} rdvs={vRdvs} hopitaux={hopitaux} syncing={syncing} setSyncing={setSyncing}/>}
-          {activeView==="agenda"&&<Agenda user={userFull} rdvs={vRdvs} taches={vTaches} patients={vPatients} finances={vFinances} onAddRdv={()=>setModal({type:"rdv"})} onSelectPatient={p=>{setSelected(p);setView("patients");}}/>}
+          {activeView==="agenda"&&<Agenda user={userFull} rdvs={vRdvs} taches={vTaches} patients={vPatients} finances={vFinances} financesLoaded={finLoadedRef.current} onAddRdv={()=>setModal({type:"rdv"})} onSelectPatient={p=>{setSelected(p);setView("patients");}}/>}
           {activeView==="analyses"&&<Analyses patients={vPatients} finances={vFinances}/>}
           {activeView==="finances"&&<Finances user={userFull} finances={vFinances} patients={vPatients} rdvs={vRdvs} onAdd={()=>setModal({type:"finance"})} onDelete={deleteFinance} onSave={saveFinance} onUpdate={updateFinance} onSavePatient={savePatient}/>}
           {activeView==="hopitaux"&&<Hopitaux user={userFull} patients={patients} rdvs={rdvs} hopitaux={hopitaux} setHopitaux={setHopitaux} syncing={syncing} setSyncing={setSyncing}/>}
