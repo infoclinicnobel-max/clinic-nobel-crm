@@ -75,6 +75,9 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   .dh-scene{height:56vh;right:-6vw;bottom:0}
   .dh-card{max-width:94vw !important;margin:12px auto 0 !important}
   .dh-wrap{align-items:flex-start !important;padding-top:14px !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch;padding-bottom:calc(20px + env(safe-area-inset-bottom)) !important}
+  button.dh-avatar[aria-label="Dr House IA"]{opacity:.62 !important}
+  button.dh-avatar[aria-label="Dr House IA"]:hover,
+  button.dh-avatar[aria-label="Dr House IA"]:active{opacity:.78 !important}
 }
 /* ── Phase 18 : Dr House compagnon permanent ── */
 @keyframes dhAvatarFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
@@ -12376,6 +12379,17 @@ function Agenda({user, rdvs, taches, patients, finances, onAddRdv, onSelectPatie
   });
 
   const getEventsForDay = ds => filtered.filter(e=>e.date===ds).sort((a,b)=>(a.heure||"").localeCompare(b.heure||""));
+  const normalizeEvtType = e => String(e?.type||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  const isSurgeryEvent = e => {
+    const type = normalizeEvtType(e);
+    return type.includes("chirurg") || type.includes("operat") || type.includes("intervent");
+  };
+  const getSurgeryCount = evts => evts.filter(isSurgeryEvent).length;
+  const SurgeryCountBadge = ({count, isSel}) => count > 0 ? (
+    <div title={`${count} ${tt("agenda.surgeries")}`} aria-label={`${count} ${tt("agenda.surgeries")}`} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:16,height:14,padding:"0 5px",borderRadius:99,background:isSel?"rgba(255,255,255,0.92)":C.green,color:isSel?C.navy:C.white,fontSize:8.5,fontWeight:900,lineHeight:1,border:`1px solid ${isSel?"rgba(255,255,255,0.7)":"rgba(22,163,74,0.28)"}`,boxShadow:isSel?"none":"0 2px 6px rgba(22,163,74,0.22)"}}>
+      {count}
+    </div>
+  ) : null;
 
   // ── Statistiques du jour ───────────────────────────────────────────────────
   const todayEvts = allEvents.filter(e=>e.date===today);
@@ -12647,15 +12661,17 @@ function Agenda({user, rdvs, taches, patients, finances, onAddRdv, onSelectPatie
             const evts=getEventsForDay(ds);
             const isToday=ds===today;
             const isSel=ds===selectedDay;
+            const surgeryCount=getSurgeryCount(evts);
             // Couleurs multiples
-            const colors=[...new Set(evts.map(e=>e.source==="tache"?C.muted:e.source==="finance"?C.amber:getEvtColor(e.type)))].slice(0,3);
+            const colors=[...new Set(evts.filter(e=>!isSurgeryEvent(e)).map(e=>e.source==="tache"?C.muted:e.source==="finance"?C.amber:getEvtColor(e.type)))].slice(0,3);
             return (
               <div key={i} onClick={()=>setSelectedDay(isSel&&viewMode==="mois"?null:ds)} style={{minHeight:48,borderRadius:9,padding:"4px 2px",cursor:"pointer",textAlign:"center",background:isSel?C.navy:isToday?"#EFF6FF":C.white,border:`1px solid ${isSel?C.navy:isToday?C.blue:C.border}`,transition:"all 0.15s",position:"relative"}}>
                 <div style={{fontSize:11,fontWeight:isToday||isSel?800:400,color:isSel?C.white:isToday?C.blue:C.text,marginBottom:2}}>{d}</div>
-                <div style={{display:"flex",justifyContent:"center",gap:2,flexWrap:"wrap"}}>
+                <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:3,flexWrap:"wrap",minHeight:14}}>
+                  <SurgeryCountBadge count={surgeryCount} isSel={isSel}/>
                   {colors.map((col,ci)=><div key={ci} style={{width:5,height:5,borderRadius:99,background:isSel?"rgba(255,255,255,0.8)":col}}/>)}
                 </div>
-                {evts.length>2&&<div style={{fontSize:7,color:isSel?"rgba(255,255,255,0.7)":C.muted,fontWeight:700,marginTop:1}}>{evts.length}</div>}
+                {evts.length>2&&evts.length!==surgeryCount&&<div style={{fontSize:7,color:isSel?"rgba(255,255,255,0.7)":C.muted,fontWeight:700,marginTop:1}}>{evts.length}</div>}
               </div>
             );
           })}
@@ -12678,14 +12694,17 @@ function Agenda({user, rdvs, taches, patients, finances, onAddRdv, onSelectPatie
             const evts=getEventsForDay(ds);
             const isToday=ds===today;
             const isSel=ds===selectedDay;
+            const surgeryCount=getSurgeryCount(evts);
+            const otherEvts=evts.filter(e=>!isSurgeryEvent(e));
             return (
               <div key={i} onClick={()=>setSelectedDay(ds)} style={{borderRadius:10,padding:"7px 3px",cursor:"pointer",textAlign:"center",background:isSel?C.navy:isToday?"#EFF6FF":C.white,border:`1px solid ${isSel?C.navy:isToday?C.blue:C.border}`}}>
                 <div style={{fontSize:9,fontWeight:700,color:isSel?C.white:C.muted,marginBottom:2}}>{JOURS[i]}</div>
                 <div style={{fontSize:14,fontWeight:800,color:isSel?C.white:isToday?C.blue:C.text,marginBottom:3}}>{d}</div>
-                {evts.slice(0,2).map((e,ei)=>(
+                <SurgeryCountBadge count={surgeryCount} isSel={isSel}/>
+                {otherEvts.slice(0,2).map((e,ei)=>(
                   <div key={ei} style={{width:"85%",height:3,borderRadius:99,background:isSel?"rgba(255,255,255,0.7)":getEvtColor(e.type),margin:"1px auto"}}/>
                 ))}
-                {evts.length>0&&<div style={{fontSize:8,color:isSel?"rgba(255,255,255,0.7)":C.muted,marginTop:2,fontWeight:700}}>{evts.length}</div>}
+                {evts.length>0&&evts.length!==surgeryCount&&<div style={{fontSize:8,color:isSel?"rgba(255,255,255,0.7)":C.muted,marginTop:2,fontWeight:700}}>{evts.length}</div>}
               </div>
             );
           })}
