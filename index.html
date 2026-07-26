@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/>
@@ -79,6 +79,15 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   button.dh-avatar[aria-label="Dr House IA"]:hover,
   button.dh-avatar[aria-label="Dr House IA"]:active{opacity:.78 !important}
 }
+
+.upcoming-patient-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+@media (max-width:900px){
+  .upcoming-patient-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .upcoming-patient-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
 /* ── Phase 18 : Dr House compagnon permanent ── */
 @keyframes dhAvatarFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes dhBlink{0%,92%,100%{filter:brightness(1)}95%,97%{filter:brightness(0.82)}}
@@ -4963,17 +4972,17 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyrg8r0lLSkjEXHbsUTm
 // ── UTILISATEURS ──────────────────────────────────────────────────────────────
 const USERS = [
   {
-    id:"ib", email:"info.clinicnobel@gmail.com", password:"",
+    id:"ib", email:"info.clinicnobel@gmail.com",
     nom:"Turan", prenom:"Veys", sexe:"Homme", role:"admin", color:"#0B1F3A",
     access:["dashboard","patients","rdvs","analyses","finances","medecins","hopitaux","equipe","taches"]
   },
   {
-    id:"andrea", email:"andrea@clinicnobel.com", password:"",
+    id:"andrea", email:"andrea@clinicnobel.com",
     nom:"Andréa", prenom:"Andréa", sexe:"Femme", role:"commerciale", color:"#7C3AED",
     access:["dashboard","patients","rdvs","finances","taches"]
   },
   {
-    id:"ceyda", email:"ceyda@clinicnobel.com", password:"",
+    id:"ceyda", email:"ceyda@clinicnobel.com",
     nom:"Ceyda", prenom:"Ceyda", sexe:"Femme", role:"coordinatrice", color:"#0891B2",
     access:["dashboard","rdvs","patients","taches"]
   },
@@ -6264,12 +6273,12 @@ function DashboardPersonnel({user, patients, rdvs, taches, finances}) {
     <div>
       <Card style={{padding:"14px 14px 12px"}}>
         <SecTitle icon="📊">{t("dash.upcomingPatients")}</SecTitle>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:8}}>
+        <div className="upcoming-patient-grid">
           {upcomingCells.map(c=>(
             <div key={c.key} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:"10px 8px",minHeight:62,textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
               <div style={{fontSize:22,fontWeight:900,color:c.color,lineHeight:1}}>{c.value}</div>
-              <div style={{fontSize:11,fontWeight:800,color:C.text,marginTop:5,whiteSpace:"nowrap"}}>{c.label}</div>
-              {c.sub&&<div style={{fontSize:9.5,color:C.muted,marginTop:2,whiteSpace:"nowrap"}}>{c.sub}</div>}
+              <div style={{fontSize:11,fontWeight:800,color:C.text,marginTop:5,lineHeight:1.15,textAlign:"center"}}>{c.label}</div>
+              {c.sub&&<div style={{fontSize:9.5,color:C.muted,marginTop:2,lineHeight:1.15,textAlign:"center"}}>{c.sub}</div>}
             </div>
           ))}
         </div>
