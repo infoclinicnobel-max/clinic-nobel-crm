@@ -6110,6 +6110,166 @@ function buildHomeUpcomingFinancialDetail(items, finances){
   return {rows, totals};
 }
 
+const DH_FINANCE_MONTHS = [
+  ["janvier","january","ocak","enero"],
+  ["fevrier","february","subat","febrero"],
+  ["mars","march","mart","marzo"],
+  ["avril","april","nisan","abril"],
+  ["mai","may","mayis","mayo"],
+  ["juin","june","haziran","junio"],
+  ["juillet","july","temmuz","julio"],
+  ["aout","august","agustos","agosto"],
+  ["septembre","september","eylul","septiembre"],
+  ["octobre","october","ekim","octubre"],
+  ["novembre","november","kasim","noviembre"],
+  ["decembre","december","aralik","diciembre"]
+];
+
+function dhFinancialQuestionInfo(question){
+  const q = aiNormalize(question);
+  if(!q) return null;
+  const has = (...ws)=>ws.some(w=>q.includes(aiNormalize(w)));
+  const financeWord = has("finance","financier","financiere","paiement","paye","payé","solde","soldé","encaisse","encaissé","encaisser","acompte","reste a encaisser","reste à encaisser","reste a recevoir","montant","tarif","budget","chiffre","recette","cash","payment","paid","balance","deposit","remaining","collected","tahsilat","odeme","ödeme","kapora","saldo","anticipo","cobrado","por cobrar");
+  const crmWord = has("patient","patients","mois","mensuel","agenda","a venir","à venir","prochain","prochains","cloture","clôturé","clotures","clôturés","non solde","non soldé","reste","statut financier","status financier","financial status");
+  if(!financeWord && !crmWord) return null;
+  const asksInternal = has("statut financier","status financier","finances crm","patients a venir","patients à venir","combien reste","qui reste","non solde","non soldé","reste a encaisser","reste à encaisser","reste a recevoir","cloture","clôturé","acompte","encaissé","encaisse","montants a venir","montants à venir") || (financeWord && crmWord);
+  if(!asksInternal) return null;
+  return {
+    wantsDetails: has("detail","détail","details","détails","liste","lister","qui","noms","nom des patients","patient par patient","affiche","afficher","show","list","detalle","detay"),
+    closedBalance: has("cloture avec reste","clôturé avec reste","clotures avec reste","clôturés avec reste","reste des clotures","reste des clôturés","closed with balance"),
+    unpaid: has("non solde","non soldé","non paye","non payé","reste a encaisser","reste à encaisser","reste a recevoir","reste à recevoir","impaye","impayé","unpaid","remaining"),
+    upcoming: has("a venir","à venir","prochain","prochains","upcoming","next","gelecek","proximo","próximo")
+  };
+}
+
+function dhFinancialPeriod(question){
+  const q = aiNormalize(question);
+  const today = normalizeDate(todayStr()) || dateFromParts(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  const [cy, cm] = today.split("-").map(Number);
+  const rangeMatch = q.match(/\b(1|3|6|12)\s*(?:prochains?|mois|months?|ay|mes|meses)\b/);
+  if(rangeMatch){
+    const key = "m" + rangeMatch[1];
+    return {kind:"upcoming", key, label:`${rangeMatch[1]} prochains mois`};
+  }
+  if(/\b(mois prochain|next month|gelecek ay|proximo mes|pr[oó]ximo mes)\b/.test(q)){
+    const d = new Date(cy, cm, 1);
+    return {kind:"month", year:d.getFullYear(), month:d.getMonth(), label:new Intl.DateTimeFormat(localeForLang(), {month:"long", year:"numeric"}).format(d)};
+  }
+  for(let i=0;i<DH_FINANCE_MONTHS.length;i++){
+    if(DH_FINANCE_MONTHS[i].some(k=>q.includes(k))){
+      const yearMatch = q.match(/\b(20\d{2})\b/);
+      let y = yearMatch ? Number(yearMatch[1]) : cy;
+      if(!yearMatch && i < (cm - 1)) y++;
+      return {kind:"month", year:y, month:i, label:new Intl.DateTimeFormat(localeForLang(), {month:"long", year:"numeric"}).format(new Date(y, i, 1))};
+    }
+  }
+  if(/\b(ce mois|mois courant|this month|bu ay|este mes)\b/.test(q)){
+    return {kind:"month", year:cy, month:cm-1, label:new Intl.DateTimeFormat(localeForLang(), {month:"long", year:"numeric"}).format(new Date(cy, cm-1, 1))};
+  }
+  return {kind:"month", year:cy, month:cm-1, label:new Intl.DateTimeFormat(localeForLang(), {month:"long", year:"numeric"}).format(new Date(cy, cm-1, 1))};
+}
+
+function dhFinancialCachedFinances(finances){
+  if(Array.isArray(finances) && finances.length) return finances;
+  try{ const cached = cache.load("finances"); if(Array.isArray(cached)) return cached; }catch(e){}
+  return Array.isArray(finances) ? finances : [];
+}
+
+function dhFinancialRowsFromItems(items, finances){
+  const detail = buildHomeUpcomingFinancialDetail(items, finances);
+  const totals = {};
+  let activeCount = 0, closedCount = 0, paidCount = 0, closedWithBalance = 0, incomplete = 0;
+  detail.rows.forEach(row=>{
+    const closed = isPatientClosed(row.patient);
+    if(closed) closedCount++; else activeCount++;
+    if(!row.totalKnown) incomplete++;
+    if(row.totalKnown && row.remaining<=0) paidCount++;
+    if(row.totalKnown && closed && row.remaining>0) closedWithBalance++;
+    if(row.totalKnown){
+      addAgendaMoney(totals, row.currency, "planned", row.total);
+      addAgendaMoney(totals, row.currency, "remaining", row.remaining);
+      if(closed && row.remaining>0) addAgendaMoney(totals, row.currency, "closedRemaining", row.remaining);
+    }
+    const deposits = agendaPatientDepositByCurrency(row.patient, finances);
+    Object.keys(deposits).forEach(cur=>addAgendaMoney(totals, cur, "deposit", deposits[cur]));
+    Object.keys(row.paidByCurrency||{}).forEach(cur=>addAgendaMoney(totals, cur, "collected", row.paidByCurrency[cur]));
+  });
+  return {rows:detail.rows, totals, activeCount, closedCount, paidCount, closedWithBalance, incomplete};
+}
+
+function dhFinancialSummaryForPeriod(patients, rdvs, finances, period){
+  if(period.kind==="upcoming"){
+    const up = buildUpcomingPatientSummary(patients, rdvs, {today:todayStr()});
+    const range = up.ranges && up.ranges[period.key] ? up.ranges[period.key] : up.ranges.m1;
+    const summary = dhFinancialRowsFromItems(range.patients, finances);
+    return {...summary, from:range.start, to:range.end, label:period.label};
+  }
+  return {...buildAgendaMonthlyFinanceSummary(patients, rdvs, finances, period.year, period.month), label:period.label};
+}
+
+function dhFinancialRowLine(row, finances){
+  const depositMap = row.depositByCurrency || agendaPatientDepositByCurrency(row.patient, finances);
+  const paidMap = row.paidByCurrency || agendaPatientPaidByCurrency(row.patient, finances);
+  const tariff = row.totalKnown ? fmtMoneyCurrency(row.total, row.currency) : t("agenda.tariffMissing");
+  const deposit = agendaCurrencyMapLabel(depositMap, row.currency);
+  const collected = agendaCurrencyMapLabel(paidMap, row.currency);
+  const remaining = row.totalKnown ? fmtMoneyCurrency(row.remaining, row.currency) : t("agenda.toCalculate");
+  const date = row.date ? formatCivilDateForLang(row.date) : "";
+  return `- ${row.name}${date?` (${date})`:""} : tarif ${tariff} ; acompte ${deposit} ; encaissé ${collected} ; reste ${remaining} ; statut ${row.status}.`;
+}
+
+function dhLocalFinancialAnswer(question, user, patient, finances, ctx, crm){
+  const info = dhFinancialQuestionInfo(question);
+  if(!info) return null;
+  if(!can(user, "finances", "view") || !can(user, "patients", "view")){
+    return {text:"Je ne peux pas afficher ce statut financier avec les permissions actuelles.\n\nDonnées CRM — calcul local", medLevel:"none", suggestions:[], medExtra:null, topic:null};
+  }
+  const patients = Array.isArray(crm && crm.patients) ? crm.patients : (patient ? [patient] : []);
+  const rdvs = Array.isArray(crm && crm.rdvs) ? crm.rdvs : [];
+  const fin = dhFinancialCachedFinances((crm && crm.finances) || finances);
+  if(!patients.length){
+    return {text:"Je n'ai pas de patients autorisés à analyser pour cette question.\n\nDonnées CRM — calcul local", medLevel:"none", suggestions:[], medExtra:null, topic:null};
+  }
+  if((crm && crm.financesLoading) && !fin.length){
+    return {text:"Les finances sont en cours de chargement. Réessaie dans quelques secondes.\n\nDonnées CRM — calcul local", medLevel:"none", suggestions:[], medExtra:null, topic:null};
+  }
+  const period = dhFinancialPeriod(question);
+  let summary = dhFinancialSummaryForPeriod(patients, rdvs, fin, period);
+  let title = `Statut financier — ${summary.label || period.label || ""}`.trim();
+  if(info.closedBalance){
+    const items = patients.filter(isPatientClosed).map(p=>({patient:p, date:normalizeDate(p && (p.dateArrivee || p.dateOperation))}));
+    const rows = dhFinancialRowsFromItems(items, fin).rows.filter(r=>r.totalKnown && r.remaining>0);
+    summary = dhFinancialRowsFromItems(rows.map(r=>({patient:r.patient, date:r.date})), fin);
+    title = "Patients clôturés avec reste à encaisser";
+  } else if(info.unpaid && info.wantsDetails){
+    const rows = (summary.rows||[]).filter(r=>!r.totalKnown || Number(r.remaining)>0);
+    summary = {...dhFinancialRowsFromItems(rows.map(r=>({patient:r.patient, date:r.date})), fin), from:summary.from, to:summary.to, label:summary.label};
+  }
+  const rows = summary.rows || [];
+  const lines = [
+    title,
+    summary.from && summary.to ? `Période : ${formatCivilDateForLang(summary.from)} → ${formatCivilDateForLang(summary.to)}` : "",
+    `Patients : ${rows.length}`,
+    `Total prévu : ${fmtAgendaMoneyGroup(summary.totals, "planned")}`,
+    `Acomptes reçus : ${fmtAgendaMoneyGroup(summary.totals, "deposit", "EUR")}`,
+    `Total encaissé : ${fmtAgendaMoneyGroup(summary.totals, "collected", "EUR")}`,
+    `Reste à encaisser : ${fmtAgendaMoneyGroup(summary.totals, "remaining")}`,
+    `Actifs : ${summary.activeCount || 0} · Clôturés : ${summary.closedCount || 0} · Soldés : ${summary.paidCount || 0} · Clôturés avec reste : ${summary.closedWithBalance || 0}`,
+    (summary.closedWithBalance||0) ? `Reste des clôturés : ${fmtAgendaMoneyGroup(summary.totals, "closedRemaining")}` : "",
+    (summary.incomplete||0) ? `Tarifs à renseigner : ${summary.incomplete}` : ""
+  ].filter(Boolean);
+  if(info.wantsDetails){
+    const detailRows = rows.slice(0, 12);
+    lines.push("");
+    lines.push("Détail patient par patient :");
+    detailRows.forEach(row=>lines.push(dhFinancialRowLine(row, fin)));
+    if(rows.length>detailRows.length) lines.push(`… ${rows.length-detailRows.length} autres patients.`);
+  }
+  lines.push("");
+  lines.push("Données CRM — calcul local");
+  return {text:lines.join("\n"), medLevel:"none", suggestions:[], medExtra:null, topic:null, localFinancial:true};
+}
+
 function HomeUpcomingFinancialDetail({cell, finances, financesLoaded, user, onOpenPatient}){
   const items = cell ? (cell.items || []) : [];
   const detail = React.useMemo(()=>buildHomeUpcomingFinancialDetail(items, finances), [items, finances]);
@@ -6288,7 +6448,7 @@ function drHouseOpenAIRequestId(){
 
 function drHouseOpenAIShouldUse(question){
   const intent = aiDetectIntent(question);
-  return ["summary","payment","relance","draft","translate","agenda"].indexOf(intent) < 0;
+  return ["summary","payment","relance","draft","translate","agenda","financial_status"].indexOf(intent) < 0;
 }
 
 function drHouseOpenAIWarn(reason, requestId){
@@ -15016,6 +15176,7 @@ function aiDetectIntent(question){
   const has = (...ws)=>ws.some(w=>q.includes(w));
   if(has("bonjour","salut","coucou","hello","merhaba","hola")) return "greeting";
   if(has("merci","tesekkur","gracias","thanks")) return "thanks";
+  if(dhFinancialQuestionInfo(question)) return "financial_status";
   if(has("resume","recap","synthese")) return "summary";
   if(has("paiement","paye","solde","encaisse","montant","budget")) return "payment";
   if(has("relance","reminder","recontacter","suivi")) return "relance";
@@ -15095,7 +15256,7 @@ function aiSuggestedQuestions(topicId){
 }
 
 // Réponse locale enrichie. `ctx` = { topic } mémoire de conversation (locale).
-function aiLocalChatAnswer(question, user, patient, finances, ctx){
+function aiLocalChatAnswer(question, user, patient, finances, ctx, crm){
   if(!aiCan(user, "ai_chat")){
     return { text: t("ai.chatNotAllowed"), blocked:true };
   }
@@ -15115,6 +15276,7 @@ function aiLocalChatAnswer(question, user, patient, finances, ctx){
   if(intent==="empty"){ text = t("ai.chatAskSomething"); }
   else if(intent==="greeting"){ text = aiProfileGreeting(profile); }
   else if(intent==="thanks"){ text = t("ai.chatYoureWelcome"); }
+  else if(intent==="financial_status"){ return dhLocalFinancialAnswer(question, user, patient, finances, ctx, crm); }
   else if(intent==="summary"){ text = patient ? aiSummaryPatient(patient, user, finances) : t("ai.chatOpenPatient"); }
   else if(intent==="payment"){ text = patient ? aiSummaryPayments(patient, user, finances) : t("ai.chatOpenPatient"); }
   else if(intent==="relance"){ text = patient ? aiDraftRelance(patient, user, finances) : t("ai.chatOpenPatient"); }
@@ -15161,8 +15323,11 @@ function aiProfileGreeting(profile){
   return t("ai.greeting."+profile) || t("ai.chatGreeting");
 }
 
-async function aiChatRespond(question, user, patient, finances, ctx){
-  const r = aiLocalChatAnswer(question, user, patient, finances, ctx);
+async function aiChatRespond(question, user, patient, finances, ctx, crm){
+  if(aiDetectIntent(question)==="financial_status" && crm && typeof crm.ensureFinances==="function" && !(Array.isArray(crm.finances) && crm.finances.length)){
+    try{ await crm.ensureFinances(); }catch(e){}
+  }
+  const r = aiLocalChatAnswer(question, user, patient, finances, ctx, crm);
   try { logIA(user?user.id:"", "proposed", "chat", "ia", "", "", "", aiNormalize(question).slice(0,60)); } catch(e){}
   return r;
 }
@@ -15850,7 +16015,7 @@ function AccueilPremiumDrHouse({ user, onOpenAI, rdvs=[], taches=[], patients=[]
         setDhMsgs(m=>[...m, { role:"assistant", text:rpt, id:"a"+Date.now() }]);
         try{ logIA(user?user.id:"", "proposed", "bilan_analyse", "ia", "", "", "", ""); }catch(e){}
       } else {
-        const r = await aiChatRespond(q, user, null, [], { topic: dhTopicRef.current });
+        const r = await aiChatRespond(q, user, null, finances, { topic: dhTopicRef.current }, {patients, rdvs, finances});
         if(r && r.topic) dhTopicRef.current = r.topic;
         const docs = (r && r.medExtra && Array.isArray(r.medExtra.docs)) ? r.medExtra.docs.slice(0,4) : [];
         const sug = (r && Array.isArray(r.suggestions)) ? r.suggestions.slice(0,3) : [];
@@ -16045,7 +16210,7 @@ function AccueilPremiumDrHouse({ user, onOpenAI, rdvs=[], taches=[], patients=[]
   );
 }
 
-function AssistantIA({ user, patient, patients=[], finances, activeView, onClose, rdvs=[], taches=[], initialQuestion=null, onInitConsumed=null }){
+function AssistantIA({ user, patient, patients=[], finances, activeView, onClose, rdvs=[], taches=[], initialQuestion=null, onInitConsumed=null, ensureFinances=null, financesLoaded=false, financesLoading=false }){
   const tt = t;
   const [aiTab, setAiTab] = React.useState("assistant"); // "assistant" | "chat"
   const [action, setAction] = React.useState(null);
@@ -16122,7 +16287,7 @@ function AssistantIA({ user, patient, patients=[], finances, activeView, onClose
           drHouseOpenAIWarn(remote && remote.error, remote && remote.requestId);
         }
       }
-      if(!r) r = await aiChatRespond(q, user, hasPatient?patient:null, finances, { topic: convTopic });
+      if(!r) r = await aiChatRespond(q, user, hasPatient?patient:null, finances, { topic: convTopic }, {patients, rdvs, finances, activeView, ensureFinances, financesLoaded, financesLoading});
       if(r.topic) setConvTopic(r.topic);   // met à jour le sujet mémorisé
       setChatMsgs(m=>[...m, { role:"assistant", text:r.text, medLevel:r.medLevel||"none", suggestions:r.suggestions||[], medExtra:r.medExtra||null, feedback:null, id:uid() }]);
     } catch(e){
@@ -17470,7 +17635,7 @@ function App() {
       {user && aiCan(userFull,"ai_use") && !aiOpen && <button onClick={()=>setAiOpen(true)} aria-label="Dr House IA" title="Dr House IA" className="dh-avatar" style={{position:"fixed",bottom:78,right:16,zIndex:1000,width:56,height:56,borderRadius:"50%",border:"2px solid rgba(212,175,55,0.55)",padding:0,overflow:"hidden",cursor:"pointer",background:"rgba(10,10,18,0.30)",backdropFilter:"blur(6px) saturate(1.15)",WebkitBackdropFilter:"blur(6px) saturate(1.15)",boxShadow:"0 0 16px 3px #D4AF3733, 0 6px 20px rgba(11,31,58,0.22)"}}>
         <img src="./ia-face.jpg" alt="Dr House IA" onError={e=>{try{e.target.style.display="none";e.target.parentNode.textContent="👨‍⚕️";e.target.parentNode.style.fontSize="26px";e.target.parentNode.style.color="#fff";}catch(x){}}} style={{width:"100%",height:"100%",objectFit:"cover",display:"block",opacity:0.55}}/>
       </button>}
-      {aiOpen && <AssistantIA user={userFull} patient={activeView==="fiche"?selected:null} patients={vPatients} finances={vFinances} rdvs={vRdvs} taches={vTaches} activeView={activeView} onClose={()=>setAiOpen(false)} initialQuestion={aiInitQ} onInitConsumed={()=>setAiInitQ(null)}/>}
+      {aiOpen && <AssistantIA user={userFull} patient={activeView==="fiche"?selected:null} patients={vPatients} finances={vFinances} rdvs={vRdvs} taches={vTaches} activeView={activeView} onClose={()=>setAiOpen(false)} initialQuestion={aiInitQ} onInitConsumed={()=>setAiInitQ(null)} ensureFinances={ensureFinances} financesLoaded={finLoadedRef.current} financesLoading={finLoading}/>}
       {/* ── MODE MAINTENANCE (V1.1) : admin/PDG conservent l'accès complet ── */}
       {user && maint.on && !isFullRole(userFull.role) && maint.mode==="readonly" && (
         <div style={{position:"fixed",top:0,left:0,right:0,zIndex:2000,background:"#B45309",color:"#fff",padding:"9px 14px",fontSize:12.5,fontWeight:700,textAlign:"center",boxShadow:"0 2px 10px rgba(0,0,0,0.25)"}}>
