@@ -275,6 +275,14 @@ const I18N = {
     "dash.teamRdvsToday": "RDV équipe aujourd'hui",
     "dash.teamTasks": "Tâches équipe",
     "dash.teamOverview": "Équipe Clinic Nobel",
+    "dash.upcomingPatients": "Patients à venir",
+    "dash.thisMonth": "Ce mois-ci",
+    "dash.in1Month": "1 mois",
+    "dash.in3Months": "3 mois",
+    "dash.in6Months": "6 mois",
+    "dash.in12Months": "12 mois",
+    "dash.closedPatients": "Clôturés",
+    "dash.upcomingPatientsShort": "patients à venir",
     "patient.new": "Nouveau patient",
     "patient.edit": "Modifier le patient",
     "patient.default": "Patient",
@@ -1419,6 +1427,14 @@ const I18N = {
     "dash.teamRdvsToday": "Team appointments today",
     "dash.teamTasks": "Team tasks",
     "dash.teamOverview": "Clinic Nobel Team",
+    "dash.upcomingPatients": "Upcoming patients",
+    "dash.thisMonth": "This month",
+    "dash.in1Month": "1 month",
+    "dash.in3Months": "3 months",
+    "dash.in6Months": "6 months",
+    "dash.in12Months": "12 months",
+    "dash.closedPatients": "Closed",
+    "dash.upcomingPatientsShort": "upcoming patients",
     "patient.new": "New patient",
     "patient.edit": "Edit patient",
     "patient.default": "Patient",
@@ -2563,6 +2579,14 @@ const I18N = {
     "dash.teamRdvsToday": "Bugünkü ekip randevuları",
     "dash.teamTasks": "Ekip görevleri",
     "dash.teamOverview": "Clinic Nobel Ekibi",
+    "dash.upcomingPatients": "Gelecek hastalar",
+    "dash.thisMonth": "Bu ay",
+    "dash.in1Month": "1 ay",
+    "dash.in3Months": "3 ay",
+    "dash.in6Months": "6 ay",
+    "dash.in12Months": "12 ay",
+    "dash.closedPatients": "Kapatılanlar",
+    "dash.upcomingPatientsShort": "gelecek hastalar",
     "patient.new": "Yeni hasta",
     "patient.edit": "Hastayı düzenle",
     "patient.default": "Hasta",
@@ -3707,6 +3731,14 @@ const I18N = {
     "dash.teamRdvsToday": "Citas del equipo hoy",
     "dash.teamTasks": "Tareas del equipo",
     "dash.teamOverview": "Equipo Clinic Nobel",
+    "dash.upcomingPatients": "Pacientes próximos",
+    "dash.thisMonth": "Este mes",
+    "dash.in1Month": "1 mes",
+    "dash.in3Months": "3 meses",
+    "dash.in6Months": "6 meses",
+    "dash.in12Months": "12 meses",
+    "dash.closedPatients": "Cerrados",
+    "dash.upcomingPatientsShort": "pacientes próximos",
     "patient.new": "Nuevo paciente",
     "patient.edit": "Editar paciente",
     "patient.default": "Paciente",
@@ -5793,6 +5825,85 @@ const normalizeDate = (v) => {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 };
 
+const normalizeToken = v => String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+function isPatientClosed(patient){
+  return normalizeToken(patient && patient.stade) === normalizeToken("Clôturé ✓");
+}
+function isRealIsoDate(iso){
+  const m = String(iso||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return false;
+  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  const dt = new Date(y, mo - 1, d);
+  return dt.getFullYear()===y && dt.getMonth()===mo - 1 && dt.getDate()===d;
+}
+const dateFromParts = (y,m,d) => `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+function endOfMonthStr(iso){
+  const n = normalizeDate(iso);
+  if(!n) return "";
+  const [y,m] = n.split("-").map(Number);
+  const d = new Date(y, m, 0);
+  return dateFromParts(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function addMonthsClampedStr(iso, months){
+  const n = normalizeDate(iso);
+  if(!n) return "";
+  const [y,m,d] = n.split("-").map(Number);
+  const targetMonth = m - 1 + months;
+  const last = new Date(y, targetMonth + 1, 0).getDate();
+  const out = new Date(y, targetMonth, Math.min(d, last));
+  return dateFromParts(out.getFullYear(), out.getMonth(), out.getDate());
+}
+function isUpcomingLinkedEvent(evt){
+  const type = normalizeToken(evt && evt.type);
+  return type.includes("arrivee") || type.includes("operation") || type.includes("chirurg") || type.includes("intervent");
+}
+function getUpcomingPatientDate(patient, linkedEvents, today){
+  const start = normalizeDate(today) || todayStr();
+  const candidates = [];
+  [patient && patient.dateArrivee, patient && patient.dateOperation].forEach(v=>{
+    const d = normalizeDate(v);
+    if(d && isRealIsoDate(d) && d >= start) candidates.push(d);
+  });
+  (linkedEvents||[]).forEach(evt=>{
+    const d = normalizeDate(evt && evt.date);
+    if(d && isRealIsoDate(d) && d >= start && isUpcomingLinkedEvent(evt)) candidates.push(d);
+  });
+  return candidates.sort()[0] || null;
+}
+function buildUpcomingPatientSummary(patients, rdvs, opts){
+  const today = normalizeDate(opts && opts.today) || todayStr();
+  const limits = {
+    thisMonth: endOfMonthStr(today),
+    m1: addMonthsClampedStr(today, 1),
+    m3: addMonthsClampedStr(today, 3),
+    m6: addMonthsClampedStr(today, 6),
+    m12: addMonthsClampedStr(today, 12),
+  };
+  const byPatient = new Map();
+  (rdvs||[]).forEach(r=>{
+    const pid = String(r && r.patientId || "");
+    if(!pid) return;
+    if(!byPatient.has(pid)) byPatient.set(pid, []);
+    byPatient.get(pid).push(r);
+  });
+  const out = {thisMonth:0, m1:0, m3:0, m6:0, m12:0, closed:0};
+  const seen = new Set();
+  (patients||[]).forEach((p, i)=>{
+    const key = String((p && p.id) || `row_${i}`);
+    if(seen.has(key)) return;
+    seen.add(key);
+    if(isPatientClosed(p)){ out.closed++; return; }
+    const due = getUpcomingPatientDate(p, byPatient.get(String(p && p.id)) || [], today);
+    if(!due) return;
+    if(due <= limits.thisMonth) out.thisMonth++;
+    if(due <= limits.m1) out.m1++;
+    if(due <= limits.m3) out.m3++;
+    if(due <= limits.m6) out.m6++;
+    if(due <= limits.m12) out.m12++;
+  });
+  return out;
+}
+
 // ── isDateInRange : inclusion par intervalle, bornes INCLUSIVES ───────────────
 // Compare des dates civiles (jour) en AAAA-MM-JJ, donc insensible au fuseau :
 // une date d'opération est un jour calendaire, pas un instant. Début inclus (00:00),
@@ -6130,6 +6241,18 @@ function DashboardPersonnel({user, patients, rdvs, taches, finances}) {
 
   const getUserInfo = id => USERS.find(u=>u.id===id);
   const getPatient = id => patients.find(p=>String(p.id)===String(id));
+  const upcomingSummary = React.useMemo(
+    ()=>buildUpcomingPatientSummary(patients, rdvs),
+    [patients, rdvs]
+  );
+  const upcomingCells = [
+    {key:"thisMonth", label:t("dash.thisMonth"), value:upcomingSummary.thisMonth, sub:t("dash.upcomingPatientsShort"), color:C.blue},
+    {key:"m1", label:t("dash.in1Month"), value:upcomingSummary.m1, sub:t("dash.upcomingPatientsShort"), color:C.navy},
+    {key:"m3", label:t("dash.in3Months"), value:upcomingSummary.m3, sub:t("dash.upcomingPatientsShort"), color:C.cyan},
+    {key:"m6", label:t("dash.in6Months"), value:upcomingSummary.m6, sub:t("dash.upcomingPatientsShort"), color:C.amber},
+    {key:"m12", label:t("dash.in12Months"), value:upcomingSummary.m12, sub:t("dash.upcomingPatientsShort"), color:C.purple},
+    {key:"closed", label:t("dash.closedPatients"), value:upcomingSummary.closed, sub:"", color:C.green},
+  ];
 
   const TabBtn = ({id, label, count}) => (
     <button onClick={()=>setTab(id)} style={{flex:1,padding:"10px 8px",border:"none",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,background:tab===id?user.color:C.bg,color:tab===id?C.white:C.muted,transition:"all 0.15s"}}>
@@ -6139,6 +6262,19 @@ function DashboardPersonnel({user, patients, rdvs, taches, finances}) {
 
   return (
     <div>
+      <Card style={{padding:"14px 14px 12px"}}>
+        <SecTitle icon="📊">{t("dash.upcomingPatients")}</SecTitle>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:8}}>
+          {upcomingCells.map(c=>(
+            <div key={c.key} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:"10px 8px",minHeight:62,textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+              <div style={{fontSize:22,fontWeight:900,color:c.color,lineHeight:1}}>{c.value}</div>
+              <div style={{fontSize:11,fontWeight:800,color:C.text,marginTop:5,whiteSpace:"nowrap"}}>{c.label}</div>
+              {c.sub&&<div style={{fontSize:9.5,color:C.muted,marginTop:2,whiteSpace:"nowrap"}}>{c.sub}</div>}
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* Salutation */}
       <Card style={{background:`linear-gradient(135deg,${user.color},${user.color}cc)`,border:"none",padding:"20px 20px"}}>
         <div style={{color:"rgba(255,255,255,0.8)",fontSize:12,marginBottom:4}}>{t("dash.hello")} 👋</div>
