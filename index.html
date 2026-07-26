@@ -13256,8 +13256,6 @@ function Agenda({user, rdvs, taches, patients, finances, financesLoaded, onAddRd
         </div>
       </div>
 
-      <AgendaMonthlyFinanceSummaryCard summary={monthFinance} monthLabel={`${MOIS[month]} ${year}`} financesReady={financesReady} user={user} onSelectPatient={onSelectPatient}/>
-
       {/* ── Barre d'outils ── */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:3,background:C.bg,borderRadius:10,padding:3,flex:1}}>
@@ -13269,6 +13267,10 @@ function Agenda({user, rdvs, taches, patients, finances, financesLoaded, onAddRd
         </div>
         <button onClick={()=>setShowPlanning(true)} style={{padding:"8px 10px",border:"none",borderRadius:10,background:C.green+"18",color:C.green,cursor:"pointer",fontWeight:700,fontSize:11,flexShrink:0}}>🔬 {tt("agenda.operatingRoom")}</button>
         {!isSurgeon(user)&&onAddRdv&&<button onClick={onAddRdv} style={{padding:"8px 12px",border:"none",borderRadius:10,background:C.navy,color:C.white,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>+ {tt("agenda.event")}</button>}
+      </div>
+
+      <div style={{margin:"12px 0"}}>
+        <AgendaMonthlyFinanceSummaryCard summary={monthFinance} monthLabel={`${MOIS[month]} ${year}`} financesReady={financesReady} user={user} onSelectPatient={onSelectPatient}/>
       </div>
 
       {/* ── Filtres ── */}
