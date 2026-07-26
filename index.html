@@ -75,7 +75,19 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   .dh-scene{height:56vh;right:-6vw;bottom:0}
   .dh-card{max-width:94vw !important;margin:12px auto 0 !important}
   .dh-wrap{align-items:flex-start !important;padding-top:14px !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch;padding-bottom:calc(20px + env(safe-area-inset-bottom)) !important}
+  button.dh-avatar[aria-label="Dr House IA"]{opacity:.62 !important}
+  button.dh-avatar[aria-label="Dr House IA"]:hover,
+  button.dh-avatar[aria-label="Dr House IA"]:active{opacity:.78 !important}
 }
+
+.upcoming-patient-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+@media (max-width:900px){
+  .upcoming-patient-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .upcoming-patient-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
 /* ── Phase 18 : Dr House compagnon permanent ── */
 @keyframes dhAvatarFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes dhBlink{0%,92%,100%{filter:brightness(1)}95%,97%{filter:brightness(0.82)}}
@@ -272,6 +284,14 @@ const I18N = {
     "dash.teamRdvsToday": "RDV équipe aujourd'hui",
     "dash.teamTasks": "Tâches équipe",
     "dash.teamOverview": "Équipe Clinic Nobel",
+    "dash.upcomingPatients": "Patients à venir",
+    "dash.thisMonth": "Ce mois-ci",
+    "dash.in1Month": "1 mois",
+    "dash.in3Months": "3 mois",
+    "dash.in6Months": "6 mois",
+    "dash.in12Months": "12 mois",
+    "dash.closedPatients": "Clôturés",
+    "dash.upcomingPatientsShort": "patients à venir",
     "patient.new": "Nouveau patient",
     "patient.edit": "Modifier le patient",
     "patient.default": "Patient",
@@ -1416,6 +1436,14 @@ const I18N = {
     "dash.teamRdvsToday": "Team appointments today",
     "dash.teamTasks": "Team tasks",
     "dash.teamOverview": "Clinic Nobel Team",
+    "dash.upcomingPatients": "Upcoming patients",
+    "dash.thisMonth": "This month",
+    "dash.in1Month": "1 month",
+    "dash.in3Months": "3 months",
+    "dash.in6Months": "6 months",
+    "dash.in12Months": "12 months",
+    "dash.closedPatients": "Closed",
+    "dash.upcomingPatientsShort": "upcoming patients",
     "patient.new": "New patient",
     "patient.edit": "Edit patient",
     "patient.default": "Patient",
@@ -2560,6 +2588,14 @@ const I18N = {
     "dash.teamRdvsToday": "Bugünkü ekip randevuları",
     "dash.teamTasks": "Ekip görevleri",
     "dash.teamOverview": "Clinic Nobel Ekibi",
+    "dash.upcomingPatients": "Gelecek hastalar",
+    "dash.thisMonth": "Bu ay",
+    "dash.in1Month": "1 ay",
+    "dash.in3Months": "3 ay",
+    "dash.in6Months": "6 ay",
+    "dash.in12Months": "12 ay",
+    "dash.closedPatients": "Kapatılanlar",
+    "dash.upcomingPatientsShort": "gelecek hastalar",
     "patient.new": "Yeni hasta",
     "patient.edit": "Hastayı düzenle",
     "patient.default": "Hasta",
@@ -3704,6 +3740,14 @@ const I18N = {
     "dash.teamRdvsToday": "Citas del equipo hoy",
     "dash.teamTasks": "Tareas del equipo",
     "dash.teamOverview": "Equipo Clinic Nobel",
+    "dash.upcomingPatients": "Pacientes próximos",
+    "dash.thisMonth": "Este mes",
+    "dash.in1Month": "1 mes",
+    "dash.in3Months": "3 meses",
+    "dash.in6Months": "6 meses",
+    "dash.in12Months": "12 meses",
+    "dash.closedPatients": "Cerrados",
+    "dash.upcomingPatientsShort": "pacientes próximos",
     "patient.new": "Nuevo paciente",
     "patient.edit": "Editar paciente",
     "patient.default": "Paciente",
@@ -4928,17 +4972,17 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyrg8r0lLSkjEXHbsUTm
 // ── UTILISATEURS ──────────────────────────────────────────────────────────────
 const USERS = [
   {
-    id:"ib", email:"info.clinicnobel@gmail.com", password:"Veysjayjay34",
+    id:"ib", email:"info.clinicnobel@gmail.com",
     nom:"Turan", prenom:"Veys", sexe:"Homme", role:"admin", color:"#0B1F3A",
     access:["dashboard","patients","rdvs","analyses","finances","medecins","hopitaux","equipe","taches"]
   },
   {
-    id:"andrea", email:"andrea@clinicnobel.com", password:"Andrealoveist34",
+    id:"andrea", email:"andrea@clinicnobel.com",
     nom:"Andréa", prenom:"Andréa", sexe:"Femme", role:"commerciale", color:"#7C3AED",
     access:["dashboard","patients","rdvs","finances","taches"]
   },
   {
-    id:"ceyda", email:"ceyda@clinicnobel.com", password:"Ceydamotiv34",
+    id:"ceyda", email:"ceyda@clinicnobel.com",
     nom:"Ceyda", prenom:"Ceyda", sexe:"Femme", role:"coordinatrice", color:"#0891B2",
     access:["dashboard","rdvs","patients","taches"]
   },
@@ -5790,6 +5834,85 @@ const normalizeDate = (v) => {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 };
 
+const normalizeToken = v => String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+function isPatientClosed(patient){
+  return normalizeToken(patient && patient.stade) === normalizeToken("Clôturé ✓");
+}
+function isRealIsoDate(iso){
+  const m = String(iso||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return false;
+  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  const dt = new Date(y, mo - 1, d);
+  return dt.getFullYear()===y && dt.getMonth()===mo - 1 && dt.getDate()===d;
+}
+const dateFromParts = (y,m,d) => `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+function endOfMonthStr(iso){
+  const n = normalizeDate(iso);
+  if(!n) return "";
+  const [y,m] = n.split("-").map(Number);
+  const d = new Date(y, m, 0);
+  return dateFromParts(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function addMonthsClampedStr(iso, months){
+  const n = normalizeDate(iso);
+  if(!n) return "";
+  const [y,m,d] = n.split("-").map(Number);
+  const targetMonth = m - 1 + months;
+  const last = new Date(y, targetMonth + 1, 0).getDate();
+  const out = new Date(y, targetMonth, Math.min(d, last));
+  return dateFromParts(out.getFullYear(), out.getMonth(), out.getDate());
+}
+function isUpcomingLinkedEvent(evt){
+  const type = normalizeToken(evt && evt.type);
+  return type.includes("arrivee") || type.includes("operation") || type.includes("chirurg") || type.includes("intervent");
+}
+function getUpcomingPatientDate(patient, linkedEvents, today){
+  const start = normalizeDate(today) || todayStr();
+  const candidates = [];
+  [patient && patient.dateArrivee, patient && patient.dateOperation].forEach(v=>{
+    const d = normalizeDate(v);
+    if(d && isRealIsoDate(d) && d >= start) candidates.push(d);
+  });
+  (linkedEvents||[]).forEach(evt=>{
+    const d = normalizeDate(evt && evt.date);
+    if(d && isRealIsoDate(d) && d >= start && isUpcomingLinkedEvent(evt)) candidates.push(d);
+  });
+  return candidates.sort()[0] || null;
+}
+function buildUpcomingPatientSummary(patients, rdvs, opts){
+  const today = normalizeDate(opts && opts.today) || todayStr();
+  const limits = {
+    thisMonth: endOfMonthStr(today),
+    m1: addMonthsClampedStr(today, 1),
+    m3: addMonthsClampedStr(today, 3),
+    m6: addMonthsClampedStr(today, 6),
+    m12: addMonthsClampedStr(today, 12),
+  };
+  const byPatient = new Map();
+  (rdvs||[]).forEach(r=>{
+    const pid = String(r && r.patientId || "");
+    if(!pid) return;
+    if(!byPatient.has(pid)) byPatient.set(pid, []);
+    byPatient.get(pid).push(r);
+  });
+  const out = {thisMonth:0, m1:0, m3:0, m6:0, m12:0, closed:0};
+  const seen = new Set();
+  (patients||[]).forEach((p, i)=>{
+    const key = String((p && p.id) || `row_${i}`);
+    if(seen.has(key)) return;
+    seen.add(key);
+    if(isPatientClosed(p)){ out.closed++; return; }
+    const due = getUpcomingPatientDate(p, byPatient.get(String(p && p.id)) || [], today);
+    if(!due) return;
+    if(due <= limits.thisMonth) out.thisMonth++;
+    if(due <= limits.m1) out.m1++;
+    if(due <= limits.m3) out.m3++;
+    if(due <= limits.m6) out.m6++;
+    if(due <= limits.m12) out.m12++;
+  });
+  return out;
+}
+
 // ── isDateInRange : inclusion par intervalle, bornes INCLUSIVES ───────────────
 // Compare des dates civiles (jour) en AAAA-MM-JJ, donc insensible au fuseau :
 // une date d'opération est un jour calendaire, pas un instant. Début inclus (00:00),
@@ -6127,6 +6250,18 @@ function DashboardPersonnel({user, patients, rdvs, taches, finances}) {
 
   const getUserInfo = id => USERS.find(u=>u.id===id);
   const getPatient = id => patients.find(p=>String(p.id)===String(id));
+  const upcomingSummary = React.useMemo(
+    ()=>buildUpcomingPatientSummary(patients, rdvs),
+    [patients, rdvs]
+  );
+  const upcomingCells = [
+    {key:"thisMonth", label:t("dash.thisMonth"), value:upcomingSummary.thisMonth, sub:t("dash.upcomingPatientsShort"), color:C.blue},
+    {key:"m1", label:t("dash.in1Month"), value:upcomingSummary.m1, sub:t("dash.upcomingPatientsShort"), color:C.navy},
+    {key:"m3", label:t("dash.in3Months"), value:upcomingSummary.m3, sub:t("dash.upcomingPatientsShort"), color:C.cyan},
+    {key:"m6", label:t("dash.in6Months"), value:upcomingSummary.m6, sub:t("dash.upcomingPatientsShort"), color:C.amber},
+    {key:"m12", label:t("dash.in12Months"), value:upcomingSummary.m12, sub:t("dash.upcomingPatientsShort"), color:C.purple},
+    {key:"closed", label:t("dash.closedPatients"), value:upcomingSummary.closed, sub:"", color:C.green},
+  ];
 
   const TabBtn = ({id, label, count}) => (
     <button onClick={()=>setTab(id)} style={{flex:1,padding:"10px 8px",border:"none",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,background:tab===id?user.color:C.bg,color:tab===id?C.white:C.muted,transition:"all 0.15s"}}>
@@ -6136,6 +6271,19 @@ function DashboardPersonnel({user, patients, rdvs, taches, finances}) {
 
   return (
     <div>
+      <Card style={{padding:"14px 14px 12px"}}>
+        <SecTitle icon="📊">{t("dash.upcomingPatients")}</SecTitle>
+        <div className="upcoming-patient-grid">
+          {upcomingCells.map(c=>(
+            <div key={c.key} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:"10px 8px",minHeight:62,textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+              <div style={{fontSize:22,fontWeight:900,color:c.color,lineHeight:1}}>{c.value}</div>
+              <div style={{fontSize:11,fontWeight:800,color:C.text,marginTop:5,lineHeight:1.15,textAlign:"center"}}>{c.label}</div>
+              {c.sub&&<div style={{fontSize:9.5,color:C.muted,marginTop:2,lineHeight:1.15,textAlign:"center"}}>{c.sub}</div>}
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* Salutation */}
       <Card style={{background:`linear-gradient(135deg,${user.color},${user.color}cc)`,border:"none",padding:"20px 20px"}}>
         <div style={{color:"rgba(255,255,255,0.8)",fontSize:12,marginBottom:4}}>{t("dash.hello")} 👋</div>
@@ -12376,6 +12524,17 @@ function Agenda({user, rdvs, taches, patients, finances, onAddRdv, onSelectPatie
   });
 
   const getEventsForDay = ds => filtered.filter(e=>e.date===ds).sort((a,b)=>(a.heure||"").localeCompare(b.heure||""));
+  const normalizeEvtType = e => String(e?.type||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  const isSurgeryEvent = e => {
+    const type = normalizeEvtType(e);
+    return type.includes("chirurg") || type.includes("operat") || type.includes("intervent");
+  };
+  const getSurgeryCount = evts => evts.filter(isSurgeryEvent).length;
+  const SurgeryCountBadge = ({count, isSel}) => count > 0 ? (
+    <div title={`${count} ${tt("agenda.surgeries")}`} aria-label={`${count} ${tt("agenda.surgeries")}`} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:16,height:14,padding:"0 5px",borderRadius:99,background:isSel?"rgba(255,255,255,0.92)":C.green,color:isSel?C.navy:C.white,fontSize:8.5,fontWeight:900,lineHeight:1,border:`1px solid ${isSel?"rgba(255,255,255,0.7)":"rgba(22,163,74,0.28)"}`,boxShadow:isSel?"none":"0 2px 6px rgba(22,163,74,0.22)"}}>
+      {count}
+    </div>
+  ) : null;
 
   // ── Statistiques du jour ───────────────────────────────────────────────────
   const todayEvts = allEvents.filter(e=>e.date===today);
@@ -12647,15 +12806,17 @@ function Agenda({user, rdvs, taches, patients, finances, onAddRdv, onSelectPatie
             const evts=getEventsForDay(ds);
             const isToday=ds===today;
             const isSel=ds===selectedDay;
+            const surgeryCount=getSurgeryCount(evts);
             // Couleurs multiples
-            const colors=[...new Set(evts.map(e=>e.source==="tache"?C.muted:e.source==="finance"?C.amber:getEvtColor(e.type)))].slice(0,3);
+            const colors=[...new Set(evts.filter(e=>!isSurgeryEvent(e)).map(e=>e.source==="tache"?C.muted:e.source==="finance"?C.amber:getEvtColor(e.type)))].slice(0,3);
             return (
               <div key={i} onClick={()=>setSelectedDay(isSel&&viewMode==="mois"?null:ds)} style={{minHeight:48,borderRadius:9,padding:"4px 2px",cursor:"pointer",textAlign:"center",background:isSel?C.navy:isToday?"#EFF6FF":C.white,border:`1px solid ${isSel?C.navy:isToday?C.blue:C.border}`,transition:"all 0.15s",position:"relative"}}>
                 <div style={{fontSize:11,fontWeight:isToday||isSel?800:400,color:isSel?C.white:isToday?C.blue:C.text,marginBottom:2}}>{d}</div>
-                <div style={{display:"flex",justifyContent:"center",gap:2,flexWrap:"wrap"}}>
+                <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:3,flexWrap:"wrap",minHeight:14}}>
+                  <SurgeryCountBadge count={surgeryCount} isSel={isSel}/>
                   {colors.map((col,ci)=><div key={ci} style={{width:5,height:5,borderRadius:99,background:isSel?"rgba(255,255,255,0.8)":col}}/>)}
                 </div>
-                {evts.length>2&&<div style={{fontSize:7,color:isSel?"rgba(255,255,255,0.7)":C.muted,fontWeight:700,marginTop:1}}>{evts.length}</div>}
+                {evts.length>2&&evts.length!==surgeryCount&&<div style={{fontSize:7,color:isSel?"rgba(255,255,255,0.7)":C.muted,fontWeight:700,marginTop:1}}>{evts.length}</div>}
               </div>
             );
           })}
@@ -12678,14 +12839,17 @@ function Agenda({user, rdvs, taches, patients, finances, onAddRdv, onSelectPatie
             const evts=getEventsForDay(ds);
             const isToday=ds===today;
             const isSel=ds===selectedDay;
+            const surgeryCount=getSurgeryCount(evts);
+            const otherEvts=evts.filter(e=>!isSurgeryEvent(e));
             return (
               <div key={i} onClick={()=>setSelectedDay(ds)} style={{borderRadius:10,padding:"7px 3px",cursor:"pointer",textAlign:"center",background:isSel?C.navy:isToday?"#EFF6FF":C.white,border:`1px solid ${isSel?C.navy:isToday?C.blue:C.border}`}}>
                 <div style={{fontSize:9,fontWeight:700,color:isSel?C.white:C.muted,marginBottom:2}}>{JOURS[i]}</div>
                 <div style={{fontSize:14,fontWeight:800,color:isSel?C.white:isToday?C.blue:C.text,marginBottom:3}}>{d}</div>
-                {evts.slice(0,2).map((e,ei)=>(
+                <SurgeryCountBadge count={surgeryCount} isSel={isSel}/>
+                {otherEvts.slice(0,2).map((e,ei)=>(
                   <div key={ei} style={{width:"85%",height:3,borderRadius:99,background:isSel?"rgba(255,255,255,0.7)":getEvtColor(e.type),margin:"1px auto"}}/>
                 ))}
-                {evts.length>0&&<div style={{fontSize:8,color:isSel?"rgba(255,255,255,0.7)":C.muted,marginTop:2,fontWeight:700}}>{evts.length}</div>}
+                {evts.length>0&&evts.length!==surgeryCount&&<div style={{fontSize:8,color:isSel?"rgba(255,255,255,0.7)":C.muted,marginTop:2,fontWeight:700}}>{evts.length}</div>}
               </div>
             );
           })}
