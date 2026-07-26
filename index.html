@@ -292,6 +292,8 @@ const I18N = {
     "dash.in12Months": "12 mois",
     "dash.closedPatients": "Clôturés",
     "dash.upcomingPatientsShort": "patients à venir",
+    "dash.allDates": "Toutes dates",
+    "dash.dateRangeFromTo": "{start} → {end}",
     "patient.new": "Nouveau patient",
     "patient.edit": "Modifier le patient",
     "patient.default": "Patient",
@@ -1444,6 +1446,8 @@ const I18N = {
     "dash.in12Months": "12 months",
     "dash.closedPatients": "Closed",
     "dash.upcomingPatientsShort": "upcoming patients",
+    "dash.allDates": "All dates",
+    "dash.dateRangeFromTo": "{start} → {end}",
     "patient.new": "New patient",
     "patient.edit": "Edit patient",
     "patient.default": "Patient",
@@ -2596,6 +2600,8 @@ const I18N = {
     "dash.in12Months": "12 ay",
     "dash.closedPatients": "Kapatılanlar",
     "dash.upcomingPatientsShort": "gelecek hastalar",
+    "dash.allDates": "Tüm tarihler",
+    "dash.dateRangeFromTo": "{start} → {end}",
     "patient.new": "Yeni hasta",
     "patient.edit": "Hastayı düzenle",
     "patient.default": "Hasta",
@@ -3748,6 +3754,8 @@ const I18N = {
     "dash.in12Months": "12 meses",
     "dash.closedPatients": "Cerrados",
     "dash.upcomingPatientsShort": "pacientes próximos",
+    "dash.allDates": "Todas las fechas",
+    "dash.dateRangeFromTo": "{start} → {end}",
     "patient.new": "Nuevo paciente",
     "patient.edit": "Editar paciente",
     "patient.default": "Paciente",
@@ -5862,6 +5870,16 @@ function addMonthsClampedStr(iso, months){
   const out = new Date(y, targetMonth, Math.min(d, last));
   return dateFromParts(out.getFullYear(), out.getMonth(), out.getDate());
 }
+function formatCivilDateForLang(iso){
+  const n = normalizeDate(iso);
+  if(!n || !isRealIsoDate(n)) return "";
+  const [y,m,d] = n.split("-").map(Number);
+  return new Intl.DateTimeFormat(localeForLang(), {day:"2-digit", month:"2-digit", year:"numeric"}).format(new Date(y, m - 1, d, 12, 0, 0));
+}
+function formatDashboardDateRange(range){
+  if(!range || !range.start || !range.end) return "";
+  return t("dash.dateRangeFromTo").replace("{start}", formatCivilDateForLang(range.start)).replace("{end}", formatCivilDateForLang(range.end));
+}
 function isUpcomingLinkedEvent(evt){
   const type = normalizeToken(evt && evt.type);
   return type.includes("arrivee") || type.includes("operation") || type.includes("chirurg") || type.includes("intervent");
@@ -5881,12 +5899,12 @@ function getUpcomingPatientDate(patient, linkedEvents, today){
 }
 function buildUpcomingPatientSummary(patients, rdvs, opts){
   const today = normalizeDate(opts && opts.today) || todayStr();
-  const limits = {
-    thisMonth: endOfMonthStr(today),
-    m1: addMonthsClampedStr(today, 1),
-    m3: addMonthsClampedStr(today, 3),
-    m6: addMonthsClampedStr(today, 6),
-    m12: addMonthsClampedStr(today, 12),
+  const ranges = {
+    thisMonth: {start:today, end:endOfMonthStr(today), count:0},
+    m1: {start:today, end:addMonthsClampedStr(today, 1), count:0},
+    m3: {start:today, end:addMonthsClampedStr(today, 3), count:0},
+    m6: {start:today, end:addMonthsClampedStr(today, 6), count:0},
+    m12: {start:today, end:addMonthsClampedStr(today, 12), count:0},
   };
   const byPatient = new Map();
   (rdvs||[]).forEach(r=>{
@@ -5895,7 +5913,7 @@ function buildUpcomingPatientSummary(patients, rdvs, opts){
     if(!byPatient.has(pid)) byPatient.set(pid, []);
     byPatient.get(pid).push(r);
   });
-  const out = {thisMonth:0, m1:0, m3:0, m6:0, m12:0, closed:0};
+  const out = {today, ranges, closed:0};
   const seen = new Set();
   (patients||[]).forEach((p, i)=>{
     const key = String((p && p.id) || `row_${i}`);
@@ -5904,11 +5922,11 @@ function buildUpcomingPatientSummary(patients, rdvs, opts){
     if(isPatientClosed(p)){ out.closed++; return; }
     const due = getUpcomingPatientDate(p, byPatient.get(String(p && p.id)) || [], today);
     if(!due) return;
-    if(due <= limits.thisMonth) out.thisMonth++;
-    if(due <= limits.m1) out.m1++;
-    if(due <= limits.m3) out.m3++;
-    if(due <= limits.m6) out.m6++;
-    if(due <= limits.m12) out.m12++;
+    if(due <= ranges.thisMonth.end) ranges.thisMonth.count++;
+    if(due <= ranges.m1.end) ranges.m1.count++;
+    if(due <= ranges.m3.end) ranges.m3.count++;
+    if(due <= ranges.m6.end) ranges.m6.count++;
+    if(due <= ranges.m12.end) ranges.m12.count++;
   });
   return out;
 }
@@ -6254,13 +6272,14 @@ function DashboardPersonnel({user, patients, rdvs, taches, finances}) {
     ()=>buildUpcomingPatientSummary(patients, rdvs),
     [patients, rdvs]
   );
+  const upcomingRanges = upcomingSummary.ranges || {};
   const upcomingCells = [
-    {key:"thisMonth", label:t("dash.thisMonth"), value:upcomingSummary.thisMonth, sub:t("dash.upcomingPatientsShort"), color:C.blue},
-    {key:"m1", label:t("dash.in1Month"), value:upcomingSummary.m1, sub:t("dash.upcomingPatientsShort"), color:C.navy},
-    {key:"m3", label:t("dash.in3Months"), value:upcomingSummary.m3, sub:t("dash.upcomingPatientsShort"), color:C.cyan},
-    {key:"m6", label:t("dash.in6Months"), value:upcomingSummary.m6, sub:t("dash.upcomingPatientsShort"), color:C.amber},
-    {key:"m12", label:t("dash.in12Months"), value:upcomingSummary.m12, sub:t("dash.upcomingPatientsShort"), color:C.purple},
-    {key:"closed", label:t("dash.closedPatients"), value:upcomingSummary.closed, sub:"", color:C.green},
+    {key:"thisMonth", label:t("dash.thisMonth"), value:(upcomingRanges.thisMonth && upcomingRanges.thisMonth.count) || 0, range:formatDashboardDateRange(upcomingRanges.thisMonth), color:C.blue},
+    {key:"m1", label:t("dash.in1Month"), value:(upcomingRanges.m1 && upcomingRanges.m1.count) || 0, range:formatDashboardDateRange(upcomingRanges.m1), color:C.navy},
+    {key:"m3", label:t("dash.in3Months"), value:(upcomingRanges.m3 && upcomingRanges.m3.count) || 0, range:formatDashboardDateRange(upcomingRanges.m3), color:C.cyan},
+    {key:"m6", label:t("dash.in6Months"), value:(upcomingRanges.m6 && upcomingRanges.m6.count) || 0, range:formatDashboardDateRange(upcomingRanges.m6), color:C.amber},
+    {key:"m12", label:t("dash.in12Months"), value:(upcomingRanges.m12 && upcomingRanges.m12.count) || 0, range:formatDashboardDateRange(upcomingRanges.m12), color:C.purple},
+    {key:"closed", label:t("dash.closedPatients"), value:upcomingSummary.closed, range:t("dash.allDates"), color:C.green},
   ];
 
   const TabBtn = ({id, label, count}) => (
@@ -6278,7 +6297,7 @@ function DashboardPersonnel({user, patients, rdvs, taches, finances}) {
             <div key={c.key} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:"10px 8px",minHeight:62,textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
               <div style={{fontSize:22,fontWeight:900,color:c.color,lineHeight:1}}>{c.value}</div>
               <div style={{fontSize:11,fontWeight:800,color:C.text,marginTop:5,lineHeight:1.15,textAlign:"center"}}>{c.label}</div>
-              {c.sub&&<div style={{fontSize:9.5,color:C.muted,marginTop:2,lineHeight:1.15,textAlign:"center"}}>{c.sub}</div>}
+              {c.range&&<div style={{fontSize:9.5,color:C.muted,marginTop:2,lineHeight:1.15,textAlign:"center",overflowWrap:"anywhere"}}>{c.range}</div>}
             </div>
           ))}
         </div>
