@@ -5993,11 +5993,11 @@ function getUpcomingPatientDate(patient, linkedEvents, today){
 function buildUpcomingPatientSummary(patients, rdvs, opts){
   const today = normalizeDate(opts && opts.today) || todayStr();
   const ranges = {
-    thisMonth: {start:today, end:endOfMonthStr(today), count:0},
-    m1: {start:today, end:addMonthsClampedStr(today, 1), count:0},
-    m3: {start:today, end:addMonthsClampedStr(today, 3), count:0},
-    m6: {start:today, end:addMonthsClampedStr(today, 6), count:0},
-    m12: {start:today, end:addMonthsClampedStr(today, 12), count:0},
+    thisMonth: {start:today, end:endOfMonthStr(today), count:0, patients:[]},
+    m1: {start:today, end:addMonthsClampedStr(today, 1), count:0, patients:[]},
+    m3: {start:today, end:addMonthsClampedStr(today, 3), count:0, patients:[]},
+    m6: {start:today, end:addMonthsClampedStr(today, 6), count:0, patients:[]},
+    m12: {start:today, end:addMonthsClampedStr(today, 12), count:0, patients:[]},
   };
   const byPatient = new Map();
   (rdvs||[]).forEach(r=>{
@@ -6006,22 +6006,164 @@ function buildUpcomingPatientSummary(patients, rdvs, opts){
     if(!byPatient.has(pid)) byPatient.set(pid, []);
     byPatient.get(pid).push(r);
   });
-  const out = {today, ranges, closed:0};
+  const out = {today, ranges, closed:0, closedPatients:[]};
   const seen = new Set();
   (patients||[]).forEach((p, i)=>{
     const key = String((p && p.id) || `row_${i}`);
     if(seen.has(key)) return;
     seen.add(key);
-    if(isPatientClosed(p)){ out.closed++; return; }
+    if(isPatientClosed(p)){ out.closed++; out.closedPatients.push({patient:p, date:normalizeDate(p && (p.dateArrivee || p.dateOperation))}); return; }
     const due = getUpcomingPatientDate(p, byPatient.get(String(p && p.id)) || [], today);
     if(!due) return;
-    if(due <= ranges.thisMonth.end) ranges.thisMonth.count++;
-    if(due <= ranges.m1.end) ranges.m1.count++;
-    if(due <= ranges.m3.end) ranges.m3.count++;
-    if(due <= ranges.m6.end) ranges.m6.count++;
-    if(due <= ranges.m12.end) ranges.m12.count++;
+    if(due <= ranges.thisMonth.end){ ranges.thisMonth.count++; ranges.thisMonth.patients.push({patient:p, date:due}); }
+    if(due <= ranges.m1.end){ ranges.m1.count++; ranges.m1.patients.push({patient:p, date:due}); }
+    if(due <= ranges.m3.end){ ranges.m3.count++; ranges.m3.patients.push({patient:p, date:due}); }
+    if(due <= ranges.m6.end){ ranges.m6.count++; ranges.m6.patients.push({patient:p, date:due}); }
+    if(due <= ranges.m12.end){ ranges.m12.count++; ranges.m12.patients.push({patient:p, date:due}); }
   });
   return out;
+}
+
+function homeFinanceCurrencyCode(v){
+  const raw = String(v||"").trim().toUpperCase();
+  return raw || "EUR";
+}
+function homeFmtMoneyCurrency(v, currency){
+  return `${Math.round(Number(v)||0).toLocaleString("fr-FR")} ${homeFinanceCurrencyCode(currency)==="EUR"?"€":homeFinanceCurrencyCode(currency)}`;
+}
+function homeAddMoney(group, key, currency, amount){
+  const cur = homeFinanceCurrencyCode(currency);
+  if(!group[cur]) group[cur] = {currency:cur, planned:0, paid:0, remaining:0};
+  group[cur][key] += Number(amount)||0;
+}
+function homeFmtMoneyGroup(group, key, fallbackCurrency){
+  const rows = Object.values(group||{}).filter(g=>Math.abs(Number(g[key])||0)>0);
+  if(!rows.length) return fallbackCurrency ? homeFmtMoneyCurrency(0, fallbackCurrency) : "—";
+  return rows.map(g=>homeFmtMoneyCurrency(g[key], g.currency)).join(" + ");
+}
+function homePatientPaidByCurrency(p, finances){
+  const out = {};
+  (finances||[]).filter(f=>String(f.patientId)===String(p && p.id) && isPatientCashFlow(f)).forEach(f=>{
+    const cur = homeFinanceCurrencyCode(f.devise || (p && p.devise));
+    out[cur] = (out[cur]||0) + finSignedAmount(f);
+  });
+  return out;
+}
+function homePatientDepositByCurrency(p, finances){
+  const out = {};
+  (finances||[]).filter(f=>String(f.patientId)===String(p && p.id) && isPatientCashFlow(f) && (f.type==="Acompte" || f.type==="Remboursement")).forEach(f=>{
+    const cur = homeFinanceCurrencyCode(f.devise || (p && p.devise));
+    out[cur] = (out[cur]||0) + finSignedAmount(f);
+  });
+  Object.keys(out).forEach(cur=>{ out[cur] = Math.max(out[cur], 0); });
+  return out;
+}
+function homeMoneyMapLabel(map, mainCurrency){
+  const rows = Object.keys(map||{}).map(currency=>({currency, amount:Number(map[currency])||0})).filter(r=>Math.abs(r.amount)>0);
+  if(!rows.length) return homeFmtMoneyCurrency(0, mainCurrency);
+  return rows.map(r=>homeFmtMoneyCurrency(r.amount, r.currency)).join(" + ");
+}
+function homeFinancialStatus(row){
+  if(!row.totalKnown) return "Tarif à renseigner";
+  if(row.currencyMismatch) return "Données incomplètes";
+  if(row.paidMain > row.total) return "Trop-perçu";
+  if(row.remaining <= 0) return "Soldé";
+  if(row.depositMain > 0 && row.paidMain <= row.depositMain) return "Acompte reçu";
+  if(row.paidMain > 0) return "Paiement partiel";
+  return "Acompte manquant";
+}
+function buildHomeUpcomingFinancialDetail(items, finances){
+  const totals = {};
+  const rows = (items||[]).map((item, i)=>{
+    const p = item && item.patient;
+    const currency = homeFinanceCurrencyCode(p && p.devise);
+    const total = getPatientTotal(p);
+    const totalKnown = total > 0;
+    const paidByCurrency = homePatientPaidByCurrency(p, finances);
+    const depositByCurrency = homePatientDepositByCurrency(p, finances);
+    const paidMain = paidByCurrency[currency] || 0;
+    const depositMain = depositByCurrency[currency] || 0;
+    const otherCurrencies = Object.keys(paidByCurrency).filter(c=>c!==currency && Math.abs(paidByCurrency[c])>0);
+    const remaining = totalKnown ? Math.max(total - paidMain, 0) : null;
+    if(totalKnown){
+      homeAddMoney(totals, "planned", currency, total);
+      homeAddMoney(totals, "remaining", currency, remaining);
+    }
+    Object.keys(paidByCurrency).forEach(cur=>homeAddMoney(totals, "paid", cur, paidByCurrency[cur]));
+    const row = {
+      id:String((p && p.id) || `row_${i}`),
+      patient:p,
+      name:p ? `${p.prenom||""} ${p.nom||""}`.trim() || "Patient" : "Patient",
+      date:normalizeDate(item && item.date),
+      currency,
+      total,
+      totalKnown,
+      paidByCurrency,
+      paidMain,
+      depositMain,
+      remaining,
+      currencyMismatch:otherCurrencies.length>0
+    };
+    row.status = homeFinancialStatus(row);
+    return row;
+  });
+  return {rows, totals};
+}
+
+function HomeUpcomingFinancialDetail({cell, finances, financesLoaded, user, onOpenPatient}){
+  const items = cell ? (cell.items || []) : [];
+  const detail = React.useMemo(()=>buildHomeUpcomingFinancialDetail(items, finances), [items, finances]);
+  if(!cell) return null;
+  const canOpenPatient = !!onOpenPatient && !isSurgeon(user) && can(user, "patients", "view");
+  const metric = (label, value, color) => (
+    <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"8px 7px",textAlign:"center",minWidth:0}}>
+      <div style={{fontSize:15,fontWeight:900,color,overflowWrap:"anywhere"}}>{value}</div>
+      <div style={{fontSize:9.5,color:C.muted,fontWeight:800,marginTop:2}}>{label}</div>
+    </div>
+  );
+  const patientName = row => canOpenPatient ? (
+    <button onClick={()=>onOpenPatient(row.id)} style={{border:"none",background:"none",padding:0,cursor:"pointer",fontWeight:850,color:C.navy,textAlign:"left",fontSize:12}}>
+      {row.name}
+    </button>
+  ) : <span style={{fontWeight:850,color:C.text}}>{row.name}</span>;
+  return (
+    <div style={{marginTop:12,background:C.white,border:`1.5px solid ${cell.color}44`,borderRadius:12,padding:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",marginBottom:9}}>
+        <div>
+          <div style={{fontSize:12,fontWeight:900,color:C.navy}}>{cell.label}</div>
+          {cell.range&&<div style={{fontSize:10.5,color:C.muted,fontWeight:700,marginTop:2}}>{cell.range}</div>}
+          {cell.key==="closed"&&<div style={{fontSize:10.5,color:C.muted,fontWeight:700,marginTop:3}}>Historique — non inclus dans les prévisions à venir</div>}
+        </div>
+        <Badge text={`${items.length} patient${items.length>1?"s":""}`} color={cell.color} small/>
+      </div>
+      {!financesLoaded&&<div style={{fontSize:12,color:C.muted,fontWeight:700,padding:"6px 0 2px"}}>Chargement financier…</div>}
+      {financesLoaded&&<>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(112px,1fr))",gap:7,marginBottom:8}}>
+          {metric(cell.key==="closed"?"Patients clôturés":"Patients à venir", String(items.length), cell.color)}
+          {metric("Total prévu", homeFmtMoneyGroup(detail.totals, "planned"), C.navy)}
+          {metric("Déjà reçu", homeFmtMoneyGroup(detail.totals, "paid", "EUR"), C.green)}
+          {metric("Reste à recevoir", homeFmtMoneyGroup(detail.totals, "remaining"), C.amber)}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:7}}>
+          {detail.rows.map(row=>(
+            <div key={row.id} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:9,minWidth:0}}>
+              <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"flex-start",marginBottom:5}}>
+                <div style={{minWidth:0}}>{patientName(row)}{row.date&&<div style={{fontSize:10,color:C.muted,marginTop:2}}>{formatCivilDateForLang(row.date)}</div>}</div>
+                <span style={{borderRadius:99,padding:"3px 7px",background:(row.status==="Soldé"?C.green:row.status==="Tarif à renseigner"||row.status==="Données incomplètes"?C.red:C.amber)+"18",color:row.status==="Soldé"?C.green:row.status==="Tarif à renseigner"||row.status==="Données incomplètes"?C.red:C.amber,fontSize:10,fontWeight:900,whiteSpace:"nowrap"}}>{row.status}</span>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,fontSize:11,color:C.text}}>
+                <div><span style={{color:C.muted}}>Tarif</span><br/><b>{row.totalKnown?homeFmtMoneyCurrency(row.total,row.currency):"Tarif à renseigner"}</b></div>
+                <div><span style={{color:C.muted}}>Déjà reçu</span><br/><b>{homeMoneyMapLabel(row.paidByCurrency,row.currency)}</b></div>
+                <div><span style={{color:C.muted}}>Reste</span><br/><b>{row.totalKnown?homeFmtMoneyCurrency(row.remaining,row.currency):"À calculer"}</b></div>
+                <div><span style={{color:C.muted}}>Statut</span><br/><b>{row.status}</b></div>
+              </div>
+            </div>
+          ))}
+          {detail.rows.length===0&&<div style={{fontSize:12,color:C.muted,textAlign:"center",padding:"8px 0"}}>Aucun patient dans cette période.</div>}
+        </div>
+      </>}
+    </div>
+  );
 }
 
 // ── isDateInRange : inclusion par intervalle, bornes INCLUSIVES ───────────────
@@ -6350,8 +6492,9 @@ function LoginScreen({onLogin, lang, onLangChange}) {
 }
 
 // ── DASHBOARD PERSONNEL ───────────────────────────────────────────────────────
-function DashboardPersonnel({user, patients, rdvs, taches, finances}) {
+function DashboardPersonnel({user, patients, rdvs, taches, finances, financesLoaded, onOpenPatient}) {
   const [tab, setTab] = useState("personnel");
+  const [selectedUpcomingKey, setSelectedUpcomingKey] = useState(null);
   const today = todayStr();
 
   const mesRdvs = rdvs.filter(r=>r.assigneA===user.id && r.date===today);
@@ -6367,13 +6510,14 @@ function DashboardPersonnel({user, patients, rdvs, taches, finances}) {
   );
   const upcomingRanges = upcomingSummary.ranges || {};
   const upcomingCells = [
-    {key:"thisMonth", label:t("dash.thisMonth"), value:(upcomingRanges.thisMonth && upcomingRanges.thisMonth.count) || 0, range:formatDashboardDateRange(upcomingRanges.thisMonth), color:C.blue},
-    {key:"m1", label:t("dash.in1Month"), value:(upcomingRanges.m1 && upcomingRanges.m1.count) || 0, range:formatDashboardDateRange(upcomingRanges.m1), color:C.navy},
-    {key:"m3", label:t("dash.in3Months"), value:(upcomingRanges.m3 && upcomingRanges.m3.count) || 0, range:formatDashboardDateRange(upcomingRanges.m3), color:C.cyan},
-    {key:"m6", label:t("dash.in6Months"), value:(upcomingRanges.m6 && upcomingRanges.m6.count) || 0, range:formatDashboardDateRange(upcomingRanges.m6), color:C.amber},
-    {key:"m12", label:t("dash.in12Months"), value:(upcomingRanges.m12 && upcomingRanges.m12.count) || 0, range:formatDashboardDateRange(upcomingRanges.m12), color:C.purple},
-    {key:"closed", label:t("dash.closedPatients"), value:upcomingSummary.closed, range:t("dash.allDates"), color:C.green},
+    {key:"thisMonth", label:t("dash.thisMonth"), value:(upcomingRanges.thisMonth && upcomingRanges.thisMonth.count) || 0, items:(upcomingRanges.thisMonth && upcomingRanges.thisMonth.patients) || [], range:formatDashboardDateRange(upcomingRanges.thisMonth), color:C.blue},
+    {key:"m1", label:t("dash.in1Month"), value:(upcomingRanges.m1 && upcomingRanges.m1.count) || 0, items:(upcomingRanges.m1 && upcomingRanges.m1.patients) || [], range:formatDashboardDateRange(upcomingRanges.m1), color:C.navy},
+    {key:"m3", label:t("dash.in3Months"), value:(upcomingRanges.m3 && upcomingRanges.m3.count) || 0, items:(upcomingRanges.m3 && upcomingRanges.m3.patients) || [], range:formatDashboardDateRange(upcomingRanges.m3), color:C.cyan},
+    {key:"m6", label:t("dash.in6Months"), value:(upcomingRanges.m6 && upcomingRanges.m6.count) || 0, items:(upcomingRanges.m6 && upcomingRanges.m6.patients) || [], range:formatDashboardDateRange(upcomingRanges.m6), color:C.amber},
+    {key:"m12", label:t("dash.in12Months"), value:(upcomingRanges.m12 && upcomingRanges.m12.count) || 0, items:(upcomingRanges.m12 && upcomingRanges.m12.patients) || [], range:formatDashboardDateRange(upcomingRanges.m12), color:C.purple},
+    {key:"closed", label:t("dash.closedPatients"), value:upcomingSummary.closed, items:upcomingSummary.closedPatients || [], range:t("dash.allDates"), color:C.green},
   ];
+  const selectedUpcomingCell = upcomingCells.find(c=>c.key===selectedUpcomingKey) || null;
 
   const TabBtn = ({id, label, count}) => (
     <button onClick={()=>setTab(id)} style={{flex:1,padding:"10px 8px",border:"none",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,background:tab===id?user.color:C.bg,color:tab===id?C.white:C.muted,transition:"all 0.15s"}}>
@@ -6386,14 +6530,18 @@ function DashboardPersonnel({user, patients, rdvs, taches, finances}) {
       <Card style={{padding:"14px 14px 12px"}}>
         <SecTitle icon="📊">{t("dash.upcomingPatients")}</SecTitle>
         <div className="upcoming-patient-grid">
-          {upcomingCells.map(c=>(
-            <div key={c.key} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:"10px 8px",minHeight:62,textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+          {upcomingCells.map(c=>{
+            const selected = selectedUpcomingKey===c.key;
+            const toggle = ()=>setSelectedUpcomingKey(selected?null:c.key);
+            return (
+            <div key={c.key} role="button" tabIndex={0} aria-pressed={selected} onClick={toggle} onKeyDown={e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); } }} style={{background:selected?c.color+"12":C.bg,border:`${selected?2:1}px solid ${selected?c.color:C.border}`,borderRadius:12,padding:"10px 8px",minHeight:62,textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",outline:"none"}}>
               <div style={{fontSize:22,fontWeight:900,color:c.color,lineHeight:1}}>{c.value}</div>
               <div style={{fontSize:11,fontWeight:800,color:C.text,marginTop:5,lineHeight:1.15,textAlign:"center"}}>{c.label}</div>
               {c.range&&<div style={{fontSize:9.5,color:C.muted,marginTop:2,lineHeight:1.15,textAlign:"center",overflowWrap:"anywhere"}}>{c.range}</div>}
             </div>
-          ))}
+          )})}
         </div>
+        <HomeUpcomingFinancialDetail cell={selectedUpcomingCell} finances={finances} financesLoaded={financesLoaded} user={user} onOpenPatient={onOpenPatient}/>
       </Card>
 
       {/* Salutation */}
@@ -16740,6 +16888,7 @@ function App() {
   // Don't show loading if we have cached data
   const [loading,setLoading] = useState(()=>!(cache.load("patients")));
   const finLoadedRef = React.useRef(!!cache.load("finances")); // finances en lazy-load
+  const [finLoading,setFinLoading] = useState(false);
   const [syncing,setSyncing] = useState(false);
   const [loadError,setLoadError] = useState(null);
   const [saveStatus,setSaveStatus] = useState("saved"); // "saved" | "saving" | "unsaved"
@@ -16836,13 +16985,15 @@ function App() {
   const ensureFinances = async () => {
     if(finLoadedRef.current) return;
     finLoadedRef.current = true;
+    setFinLoading(true);
     try {
       const f = await api.get("finances");
-      if(!Array.isArray(f)){ finLoadedRef.current = false; return; } // échec → cache local conservé
+      if(!Array.isArray(f)){ finLoadedRef.current = false; setFinLoading(false); return; } // échec → cache local conservé
       const finances_data = f.filter(x=>x.type);
       setFinances(finances_data);
       cache.save("finances", finances_data);
-    } catch(e){ finLoadedRef.current = false; /* on réessaiera à la prochaine ouverture */ }
+      setFinLoading(false);
+    } catch(e){ finLoadedRef.current = false; setFinLoading(false); /* on réessaiera à la prochaine ouverture */ }
   };
 
   // loadAll(showLoad) : showLoad=true seulement pour "Synchroniser maintenant".
@@ -17124,7 +17275,7 @@ function App() {
   // Le signal BOOTED se pose aussi sur l'écran de connexion (sinon la garde
   // anti-page-blanche rechargeait la page pendant la saisie du mot de passe).
   useEffect(()=>{ try{ window.__CRM_BOOTED = true; sessionStorage.removeItem("cn_boot_retry"); }catch(e){} },[]);
-  useEffect(()=>{ if(user && (activeView==="finances"||activeView==="analyses"||activeView==="agenda")) ensureFinances(); },[activeView, user]);
+  useEffect(()=>{ if(user && (activeView==="dashboard"||activeView==="agenda"||activeView==="finances"||activeView==="analyses")) ensureFinances(); },[activeView, user]);
   const TITLES = {dashboard:t("title.dashboard"),equipe:t("title.equipe")+" — Veys Turan "+t("role.pdg"),patients:t("title.patients"),rdvs:t("title.rdvs"),taches:t("title.taches"),agenda:t("title.agenda"),analyses:t("title.analyses"),finances:t("title.finances"),hopitaux:t("title.hopitaux"),medecins:t("title.medecins"),messagerie:t("title.messagerie"),notifications:t("title.notifications"),recherche:t("title.recherche"),utilisateurs:t("title.utilisateurs")};
 
   if(!user) return <LoginScreen lang={lang} onLangChange={changeLang} onLogin={u=>{const full=isServerLoginRequired()?u:(USERS.find(x=>x.id===u.id)||u); setUser(full);}} />;
@@ -17278,7 +17429,7 @@ function App() {
           </div>
         </div>
         {loading?<Spinner text={t("common.loadingSheets")}/>:!viewAllowed?<AccessDenied/>:<ErrorBoundary key={activeView}>
-          {activeView==="dashboard"&&<DashboardPersonnel user={userFull} patients={vPatients} rdvs={vRdvs} taches={vTaches} finances={vFinances}/>}
+          {activeView==="dashboard"&&<DashboardPersonnel user={userFull} patients={vPatients} rdvs={vRdvs} taches={vTaches} finances={vFinances} financesLoaded={finLoadedRef.current&&!finLoading} onOpenPatient={openPatientById}/>}
           {activeView==="knowledge-graph"&&<KnowledgeGraphAdmin user={userFull}/>}
           {activeView==="patients"&&<Patients user={userFull} patients={vPatients} onSelect={p=>{ if(isSurgeon(userFull)) return; setSelected(p); }} onAdd={()=>setModal({type:"patient"})} onDelete={deletePatient}/>}
           {activeView==="fiche"&&selected&&<FichePatient user={userFull} patient={selected} patients={vPatients} rdvs={vRdvs} finances={vFinances} taches={vTaches} onEdit={()=>setModal({type:"patient",data:selected})} onDelete={()=>deletePatient(selected.id)} onStageChange={changeStage} onBack={goBack} onSavePatient={savePatient} onUpdateRdv={updateRdv}/>}
