@@ -13269,10 +13269,6 @@ function Agenda({user, rdvs, taches, patients, finances, financesLoaded, onAddRd
         {!isSurgeon(user)&&onAddRdv&&<button onClick={onAddRdv} style={{padding:"8px 12px",border:"none",borderRadius:10,background:C.navy,color:C.white,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>+ {tt("agenda.event")}</button>}
       </div>
 
-      <div style={{margin:"12px 0"}}>
-        <AgendaMonthlyFinanceSummaryCard summary={monthFinance} monthLabel={`${MOIS[month]} ${year}`} financesReady={financesReady} user={user} onSelectPatient={onSelectPatient}/>
-      </div>
-
       {/* ── Filtres ── */}
       <div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto",paddingBottom:2}}>
         {[
@@ -13405,6 +13401,10 @@ function Agenda({user, rdvs, taches, patients, finances, financesLoaded, onAddRd
           </div>
         ):selEvents.map(e=><EventCard key={e.id} e={e}/>)}
       </>}
+
+      <div style={{margin:"16px 0 96px"}}>
+        <AgendaMonthlyFinanceSummaryCard summary={monthFinance} monthLabel={`${MOIS[month]} ${year}`} financesReady={financesReady} user={user} onSelectPatient={onSelectPatient}/>
+      </div>
 
       {/* ── Modal événement ── */}
       {selEvent&&<ErrorBoundary key={selEvent.id} fallback={()=>(
