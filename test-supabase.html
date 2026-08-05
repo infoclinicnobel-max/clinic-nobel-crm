@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"/>
-<title>Clinic Nobel — CRM</title>
+<title>[TEST Supabase] \1</title>
 <link rel="manifest" href="./manifest.json"/>
 <meta name="theme-color" content="#0B1F3A"/>
 <meta name="mobile-web-app-capable" content="yes"/>
@@ -116,9 +116,9 @@ if("serviceWorker" in navigator){
   navigator.serviceWorker.register("./sw.js").then(function(r){ try{ r.update(); }catch(e){} }).catch(function(){});
   navigator.serviceWorker.addEventListener("controllerchange", function(){
     var done = false;
-    try{ done = sessionStorage.getItem("cn_sw_reloaded")==="1"; }catch(e){}
+    try{ done = sessionStorage.getItem("cnsb_sw_reloaded")==="1"; }catch(e){}
     if(done) return;                                  // anti-boucle : 1 reload max / session
-    try{ sessionStorage.setItem("cn_sw_reloaded","1"); }catch(e){}
+    try{ sessionStorage.setItem("cnsb_sw_reloaded","1"); }catch(e){}
     try{ location.reload(); }catch(e){}
   });
 }
@@ -147,7 +147,7 @@ if("serviceWorker" in navigator){
      jamais empêcher le boot, et on ne perd que la clé abîmée — jamais tout. */
   try{
     var KEYS = [];
-    for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k && k.indexOf("cn_")===0) KEYS.push(k); }
+    for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k && k.indexOf("cnsb_")===0) KEYS.push(k); }
     KEYS.forEach(function(k){
       var v = localStorage.getItem(k);
       if(v===null) return;
@@ -164,9 +164,9 @@ if("serviceWorker" in navigator){
   setTimeout(function(){
     if(window.__CRM_BOOTED) return;
     var retried = false;
-    try{ retried = sessionStorage.getItem("cn_boot_retry")==="1"; }catch(e){}
+    try{ retried = sessionStorage.getItem("cnsb_boot_retry")==="1"; }catch(e){}
     if(!retried){
-      try{ sessionStorage.setItem("cn_boot_retry","1"); }catch(e){}
+      try{ sessionStorage.setItem("cnsb_boot_retry","1"); }catch(e){}
       location.reload();
       return;
     }
@@ -182,10 +182,11 @@ if("serviceWorker" in navigator){
       +'</div>';
   }, 12000);
   var iv = setInterval(function(){
-    if(window.__CRM_BOOTED){ try{ sessionStorage.removeItem("cn_boot_retry"); }catch(e){} clearInterval(iv); }
+    if(window.__CRM_BOOTED){ try{ sessionStorage.removeItem("cnsb_boot_retry"); }catch(e){} clearInterval(iv); }
   }, 1000);
 })();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script type="text/babel">
 const { useState, useEffect } = React;
 
@@ -4947,12 +4948,12 @@ const I18N = {
 
 // Langue courante (persistée). Défaut = français.
 let CURRENT_LANG = (function(){
-  try { return localStorage.getItem("cn_lang") || "fr"; } catch(e){ return "fr"; }
+  try { return localStorage.getItem("cnsb_lang") || "fr"; } catch(e){ return "fr"; }
 })();
 
 function setLang(code){
   CURRENT_LANG = code;
-  try { localStorage.setItem("cn_lang", code); } catch(e){}
+  try { localStorage.setItem("cnsb_lang", code); } catch(e){}
 }
 
 // Correspondance code langue → locale BCP-47 pour Intl.DateTimeFormat.
@@ -5088,7 +5089,24 @@ class ErrorBoundary extends React.Component {
 }
 
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyrg8r0lLSkjEXHbsUTmAyLRlJCa63g-noUNGRjzoOvM957pndNP-D-UrL1257G5PA3/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyrg8r0lLSkjEXHbsUTmAyLRlJCa63g-noUNGRjzoOvM957pndNP-D-UrL1257G5PA3/exec"; // conservé pour Dr House OpenAI (M5)
+// ══ LOT M3 (COPIE DE TEST) — Branchement Supabase ══
+// Le CRM parle désormais à Postgres (RLS) via supabase-js. Interface inchangée.
+const SUPABASE_URL = "https://jvcybcpqraoxbkemmpax.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_6rfONns0i_EYhHDKjzdEMg_WAbxGL62";
+const sbClient = (typeof window!=="undefined" && window.supabase)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth:{ storageKey:"cnsb_sb_auth" } })
+  : null;
+const SB_TABLE_MAP = { users:"profiles" };
+// Nettoyage d'un enregistrement avant écriture : jamais de secrets, __CLEAR__ → "",
+// objets sérialisés, tout en texte (colonnes miroirs du Sheet).
+const sbClean = (o)=>{ const c={}; Object.keys(o||{}).forEach(k=>{
+  if(k==="password"||k==="passHash"||k==="salt"||k==="token") return;
+  let v=o[k]; if(v==="__CLEAR__") v="";
+  if(v===undefined||v===null) v="";
+  if(typeof v==="object"){ try{ v=JSON.stringify(v); }catch(e){ v=""; } }
+  c[k]=String(v);
+}); return c; };
 
 // ── UTILISATEURS ──────────────────────────────────────────────────────────────
 const USERS = [
@@ -5146,8 +5164,8 @@ const SCOPE_OPTIONS = [{v:"own",l:"Mes données"},{v:"team",l:"Mon équipe"},{v:
 
 // Stockage de configuration SANS expiration (distinct du cache 24h)
 const cfgStore = {
-  save:(k,d)=>{ try{ localStorage.setItem("cn_cfg_"+k, JSON.stringify(d)); }catch(e){} },
-  load:(k)=>{ try{ const s=localStorage.getItem("cn_cfg_"+k); return s?JSON.parse(s):null; }catch(e){ return null; } },
+  save:(k,d)=>{ try{ localStorage.setItem("cnsb_cfg_"+k, JSON.stringify(d)); }catch(e){} },
+  load:(k)=>{ try{ const s=localStorage.getItem("cnsb_cfg_"+k); return s?JSON.parse(s):null; }catch(e){ return null; } },
 };
 
 // Raccourci de capacités {view,add,edit,delete}
@@ -5216,11 +5234,13 @@ async function refreshPermissionsFromServer(){
     // Timeout 8 s : un serveur muet ne doit jamais bloquer la connexion ni le démarrage
     const ctrl = (typeof AbortController!=="undefined") ? new AbortController() : null;
     const timer = setTimeout(()=>{ try{ ctrl && ctrl.abort(); }catch(e){} }, 8000);
-    let r;
+    let d = null;
     try{
-      r = await fetch(`${SCRIPT_URL}?type=permissions&token=${encodeURIComponent(AUTH_TOKEN)}&t=${Date.now()}`, {method:"GET", redirect:"follow", signal: ctrl?ctrl.signal:undefined});
+      if(!sbClient) throw new Error("supabase indisponible");
+      const { data:permRows, error:permErr } = await sbClient.from("permissions").select("*").abortSignal(ctrl?ctrl.signal:undefined);
+      if(permErr) throw permErr;
+      d = {}; (permRows||[]).forEach(row=>{ let v=row.json; if(typeof v==="string"){ try{ v=JSON.parse(v); }catch(e){} } d[row.key]=v; });
     } finally { clearTimeout(timer); }
-    const d = JSON.parse(await r.text());
     if(!d || Array.isArray(d) || typeof d!=="object") return false;
     let changed = false;
     if(d.roles && typeof d.roles==="object" && Object.keys(d.roles).length){
@@ -5231,7 +5251,7 @@ async function refreshPermissionsFromServer(){
       cfgStore.save("overrides", d.overrides); changed = true;
     }
     if(changed) loadRBAC();
-    try{ localStorage.setItem("cn_perm_sync", String(Date.now())); }catch(e){}
+    try{ localStorage.setItem("cnsb_perm_sync", String(Date.now())); }catch(e){}
     return changed;
   }catch(e){ return false; }
 }
@@ -6379,8 +6399,8 @@ const fmtJourHeure = (v,h) => { const j=fmtJour(v); const hh=fmtHeure(h); return
 const isCRMDateValid = (v) => { const d=normalizeDate(v); if(!d) return false; const y=+d.slice(0,4); return y>=2025 && y<=2035; };
 
 // ── API ───────────────────────────────────────────────────────────────────────
-let AUTH_TOKEN = (()=>{ try{ return localStorage.getItem("cn_token")||""; }catch(e){ return ""; } })();
-const setAuthToken = (t)=>{ AUTH_TOKEN = t||""; try{ if(t) localStorage.setItem("cn_token",t); else localStorage.removeItem("cn_token"); }catch(e){} };
+let AUTH_TOKEN = (()=>{ try{ return localStorage.getItem("cnsb_token")||""; }catch(e){ return ""; } })();
+const setAuthToken = (t)=>{ AUTH_TOKEN = t||""; try{ if(t) localStorage.setItem("cnsb_token",t); else localStorage.removeItem("cnsb_token"); }catch(e){} };
 const isLocalAuthAllowed = () => {
   try {
     const h = String(location.hostname||"").toLowerCase();
@@ -6406,7 +6426,16 @@ const tokenClaimsUnsafe = (token) => {
   } catch(e) { return null; }
 };
 const sessionTokenLooksUsable = (token, user) => {
-  const claims = tokenClaimsUnsafe(token);
+  const parts = String(token||"").split(".");
+  if(parts.length===3){                                   // JWT Supabase (LOT M3)
+    try{
+      const base64 = parts[1].replace(/-/g,"+").replace(/_/g,"/");
+      const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
+      const claims = JSON.parse(decodeURIComponent(Array.prototype.map.call(atob(padded), c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("")));
+      return !!claims && Number(claims.exp||0)*1000 > Date.now();
+    }catch(e){ return false; }
+  }
+  const claims = tokenClaimsUnsafe(token);                // héritage HMAC (hors test)
   if(!claims || !claims.u || !claims.e) return false;
   if(Number(claims.e) <= Date.now()) return false;
   if(user && user.id && String(claims.u)!==String(user.id)) return false;
@@ -6414,53 +6443,87 @@ const sessionTokenLooksUsable = (token, user) => {
 };
 
 const api = {
-  // Retourne un TABLEAU en cas de succès, NULL en cas d'échec (réseau, timeout,
-  // réponse invalide). Les appelants ne doivent JAMAIS écraser l'état ou le cache
-  // local quand la valeur est null — c'est la protection anti "données vides".
+  // Retourne un TABLEAU en cas de succès, NULL en cas d'échec — contrat INCHANGÉ
+  // (les appelants n'écrasent jamais l'état local sur null : garde anti "données vides").
   get: async (type) => {
-    const ctrl = (typeof AbortController!=="undefined") ? new AbortController() : null;
-    const timer = setTimeout(()=>{ try{ ctrl && ctrl.abort(); }catch(e){} }, 15000);
     try {
-      const r = await fetch(`${SCRIPT_URL}?type=${type}&token=${encodeURIComponent(AUTH_TOKEN)}&t=${Date.now()}`, {
-        method:"GET", redirect:"follow", signal: ctrl?ctrl.signal:undefined
-      });
-      const text = await r.text();
-      const d = JSON.parse(text);
-      if(!Array.isArray(d)) throw new Error("réponse non tabulaire");
-      return d;
+      if(!sbClient) throw new Error("supabase indisponible");
+      let t = SB_TABLE_MAP[type] || type;
+      try{
+        const u = JSON.parse(localStorage.getItem("cnsb_user")||"null");
+        if(u && u.role==="chirurgien"){
+          if(type==="patients") t = "v_patients_chirurgien";   // colonnes réduites (RLS + vue)
+          if(type==="rdvs")     t = "v_rdvs_chirurgien";
+        }
+      }catch(e){}
+      const { data, error } = await sbClient.from(t).select("*").limit(10000);
+      if(error) throw new Error(error.message||"supabase");
+      return Array.isArray(data) ? data : [];
     } catch(e) {
       console.error("GET error:", type, e);
-      try{ // journal d'échecs visible admin (20 derniers)
-        const log = JSON.parse(localStorage.getItem("cn_sync_errors")||"[]");
-        log.push({ t:new Date().toISOString().slice(0,19).replace("T"," "), type, err:String(e&&e.name==="AbortError"?"timeout 15s":(e&&e.message||e)).slice(0,80) });
-        localStorage.setItem("cn_sync_errors", JSON.stringify(log.slice(-20)));
+      try{
+        const log = JSON.parse(localStorage.getItem("cnsb_sync_errors")||"[]");
+        log.push({ t:new Date().toISOString().slice(0,19).replace("T"," "), type, err:String(e&&e.message||e).slice(0,80) });
+        localStorage.setItem("cnsb_sync_errors", JSON.stringify(log.slice(-20)));
       }catch(x){}
       return null;
-    } finally { clearTimeout(timer); }
+    }
   },
-  // Connexion sécurisée côté serveur (mot de passe vérifié, jeton renvoyé) — lisible (GET)
+  // Connexion Supabase Auth + profil (forme de retour STRICTEMENT identique à l'ancien serveur)
   login: async (email, password) => {
     try {
-      const r = await fetch(`${SCRIPT_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&t=${Date.now()}`, {
-        method:"GET", redirect:"follow"
-      });
-      return JSON.parse(await r.text());
+      if(!sbClient) return { ok:false, error:"service indisponible" };
+      const { data, error } = await sbClient.auth.signInWithPassword({ email:String(email||"").trim().toLowerCase(), password });
+      if(error || !data || !data.session) return { ok:false, error:"mot de passe incorrect" };
+      const { data:prof } = await sbClient.from("profiles").select("*").eq("email", String(email||"").trim().toLowerCase()).maybeSingle();
+      if(!prof){ try{ await sbClient.auth.signOut(); }catch(e){} return { ok:false, error:"compte introuvable" }; }
+      if(String(prof.statut||"Actif")==="Inactif"){ try{ await sbClient.auth.signOut(); }catch(e){} return { ok:false, error:"compte désactivé" }; }
+      const u = { id:prof.id, prenom:prof.prenom, nom:prof.nom, email:prof.email, telephone:prof.telephone,
+        fonction:prof.fonction, role:prof.role, statut:prof.statut||"Actif", color:prof.color, photo:prof.photo,
+        creePar:prof.creePar, cree:prof.cree, perms:prof.perms, scopes:prof.scopes, editOwn:prof.editOwn };
+      return { ok:true, token:data.session.access_token, user:u };
     } catch(e) { return { ok:false }; }
   },
+  // Écritures : lisibles désormais (fini le no-cors) — sémantique Apps Script conservée
+  // (update : champ vide = conservé, __CLEAR__ = effacé, id introuvable = ajout).
   post: async (type, action, record) => {
-    // Écriture best-effort (no-cors), jeton inclus pour l'enforcement serveur éventuel
-    const body = JSON.stringify({type, action, record, token:AUTH_TOKEN});
-    const promises = [
-      fetch(SCRIPT_URL, {
-        method:"POST", mode:"no-cors", cache:"no-cache",
-        headers:{"Content-Type":"text/plain"},
-        body
-      }).catch(()=>{}),
-    ];
-    await Promise.allSettled(promises);
-    await new Promise(r=>setTimeout(r,800));
+    try {
+      if(!sbClient) throw new Error("supabase indisponible");
+      const rec = record || {};
+      if(type==="system") return;                        // sauvegardes/maintenance : Supabase (LOT M5)
+      if(type==="permissions"){
+        if(action==="log"){ await sbClient.from("perm_log").insert(sbClean(rec)); return; }
+        if(rec.roles)     await sbClient.from("permissions").upsert({ key:"roles",     json:rec.roles,     maj:new Date().toISOString() });
+        if(rec.overrides) await sbClient.from("permissions").upsert({ key:"overrides", json:rec.overrides, maj:new Date().toISOString() });
+        return;
+      }
+      const t = SB_TABLE_MAP[type] || type;
+      if(action==="add"){ await sbClient.from(t).upsert(sbClean(rec)); return; }
+      if(action==="update"){
+        const patch = {};
+        Object.keys(rec).forEach(k=>{
+          if(k==="id"||k==="password"||k==="passHash"||k==="salt"||k==="token") return;
+          const v = rec[k];
+          if(v==="__CLEAR__"){ patch[k]=""; return; }
+          if(v!==undefined && v!==null && v!==""){ patch[k] = (typeof v==="object") ? JSON.stringify(v) : String(v); }
+        });
+        const { data } = await sbClient.from(t).update(patch).eq("id", rec.id).select("id");
+        if(!data || !data.length){ await sbClient.from(t).upsert(sbClean(rec)); }
+        return;
+      }
+      if(action==="delete"){ await sbClient.from(t).delete().eq("id", rec.id); return; }
+      if(action==="bulk"){
+        const items = (rec && rec.items) || [];
+        await sbClient.from(t).delete().neq("id","");
+        if(items.length){ await sbClient.from(t).insert(items.map(sbClean)); }
+        return;
+      }
+    } catch(e) { console.error("POST error:", type, action, e); }
   }
 };
+
+// Jeton applicatif maintenu en phase avec la session Supabase (rafraîchie automatiquement)
+if(sbClient){ try{ sbClient.auth.onAuthStateChange((_ev, session)=>{ try{ setAuthToken(session ? session.access_token : ""); }catch(e){} }); }catch(e){} }
 
 function drHouseOpenAIRequestId(){
   return "dh_ui_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
@@ -6523,11 +6586,11 @@ async function drHouseOpenAIChatAnswer(question){
 // Local cache to persist data across reloads
 const cache = {
   save: (key, data) => {
-    try { localStorage.setItem("cn_cache_"+key, JSON.stringify({data, ts:Date.now()})); } catch(e){}
+    try { localStorage.setItem("cnsb_cache_"+key, JSON.stringify({data, ts:Date.now()})); } catch(e){}
   },
   load: (key) => {
     try { 
-      const s = localStorage.getItem("cn_cache_"+key);
+      const s = localStorage.getItem("cnsb_cache_"+key);
       if(!s) return null;
       const {data, ts} = JSON.parse(s);
       // Cache valid for 24h
@@ -6603,7 +6666,7 @@ function LoginScreen({onLogin, lang, onLangChange}) {
     }
     if(serverRequired && !user){
       setAuthToken("");
-      try{ localStorage.removeItem("cn_user"); localStorage.removeItem("cn2_user"); }catch(e){}
+      try{ localStorage.removeItem("cnsb_user"); localStorage.removeItem("cnsb2_user"); }catch(e){}
       setError("Connexion serveur refusee. Verifiez l'email et le mot de passe.");
       return;
     }
@@ -6614,19 +6677,19 @@ function LoginScreen({onLogin, lang, onLangChange}) {
     // reconnectés localement gardaient leurs permissions en cache à vie).
     if(serverRequired && !sessionTokenLooksUsable(AUTH_TOKEN, user)){
       setAuthToken("");
-      try{ localStorage.removeItem("cn_user"); localStorage.removeItem("cn2_user"); }catch(e){}
+      try{ localStorage.removeItem("cnsb_user"); localStorage.removeItem("cnsb2_user"); }catch(e){}
       setError("Session serveur invalide. Reconnectez-vous.");
       return;
     }
     try{ await refreshPermissionsFromServer(); }catch(e){}
     if(serverRequired && !sessionTokenLooksUsable(AUTH_TOKEN, user)){
       setAuthToken("");
-      try{ localStorage.removeItem("cn_user"); localStorage.removeItem("cn2_user"); }catch(e){}
+      try{ localStorage.removeItem("cnsb_user"); localStorage.removeItem("cnsb2_user"); }catch(e){}
       setError("Session serveur invalide. Reconnectez-vous.");
       return;
     }
     const storedUser = serverRequired ? serverUserForStorage(user) : user;
-    localStorage.setItem("cn_user",JSON.stringify(storedUser));
+    localStorage.setItem("cnsb_user",JSON.stringify(storedUser));
     onLogin(storedUser);
   };
   const inp = {width:"100%",padding:"12px 14px",border:"1px solid #E8ECF2",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box",background:"#F4F6FA"};
@@ -9445,9 +9508,9 @@ function paymentBadge(p, finances){
 // LECTURE SEULE : aucune écriture, aucun envoi externe, aucun appel réseau.
 // Reproduit à l'identique le moteur de filtrage du module Finances
 // (cutoff → inPeriod → finBase → fin → done) sur les données RÉELLES chargées.
-// Désactivable par l'admin (bouton) : drapeau local "cn_diag_off".
+// Désactivable par l'admin (bouton) : drapeau local "cnsb_diag_off".
 // ════════════════════════════════════════════════════════════════════════════
-const DIAG_OFF_KEY = "cn_diag_off";
+const DIAG_OFF_KEY = "cnsb_diag_off";
 function diagIsEnabled(){ try{ return localStorage.getItem(DIAG_OFF_KEY)!=="1"; }catch(e){ return true; } }
 
 function FinDiagnostic({ finances, patients, rdvs, user, tt }){
@@ -13788,7 +13851,7 @@ function Messagerie({user,patients}){
   const tt = t; // alias sûr : évite toute collision avec variables locales "t"
   const [selUser,setSelUser]=useState(null);
   const [msg,setMsg]=useState("");
-  const [messages,setMessages]=useState(()=>{try{return JSON.parse(localStorage.getItem("cn_messages")||"{}");}catch(e){return{};}});
+  const [messages,setMessages]=useState(()=>{try{return JSON.parse(localStorage.getItem("cnsb_messages")||"{}");}catch(e){return{};}});
   const autres=USERS.filter(u=>u.id!==user.id);
   const getThread=(uid)=>messages[`${[user.id,uid].sort().join("_")}`]||[];
   const sendMsg=()=>{
@@ -13797,7 +13860,7 @@ function Messagerie({user,patients}){
     const newMsg={id:uid(),from:user.id,text:msg.trim(),ts:Date.now()};
     const updated={...messages,[key]:[...getThread(selUser.id),newMsg]};
     setMessages(updated);
-    localStorage.setItem("cn_messages",JSON.stringify(updated));
+    localStorage.setItem("cnsb_messages",JSON.stringify(updated));
     setMsg("");
   };
   const thread=selUser?getThread(selUser.id):[];
@@ -14242,7 +14305,7 @@ function GestionUtilisateurs({user, onApplied, permVer}) {
           <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
             <button onClick={()=>setCmpOpen(!cmpOpen)} style={{border:"none",background:"none",cursor:"pointer",fontWeight:800,fontSize:13,color:C.navy,padding:0,flex:1,textAlign:"left",minWidth:180}}>🔬 {tt("team.compareTool")} {cmpOpen?"▾":"▸"}</button>
             <button onClick={async()=>{
-                try{ localStorage.removeItem("cn_cfg_overrides"); localStorage.removeItem("cn_cfg_roles"); localStorage.removeItem("cn_perm_sync"); }catch(e){}
+                try{ localStorage.removeItem("cnsb_cfg_overrides"); localStorage.removeItem("cnsb_cfg_roles"); localStorage.removeItem("cnsb_perm_sync"); }catch(e){}
                 loadRBAC();
                 const ok = await refreshPermissionsFromServer();
                 onApplied&&onApplied();
@@ -14275,7 +14338,7 @@ function GestionUtilisateurs({user, onApplied, permVer}) {
                   <Row l="ID" v={uA.id}/>
                   <Row l={tt("team.diagCustom")} v={custom?"✅ "+tt("common.yes"):"— "+tt("common.no")+" ("+tt("team.diagFromRole")+")"}/>
                   <Row l={tt("team.diagUpdatedAt")} v={ovA.permsUpdatedAt?new Date(ovA.permsUpdatedAt).toLocaleString("fr-FR"):"—"}/>
-                  <Row l={tt("team.diagLastSync")} v={(()=>{try{const t2=localStorage.getItem("cn_perm_sync");return t2?new Date(Number(t2)).toLocaleString("fr-FR"):"—";}catch(e){return "—";}})()}/>
+                  <Row l={tt("team.diagLastSync")} v={(()=>{try{const t2=localStorage.getItem("cnsb_perm_sync");return t2?new Date(Number(t2)).toLocaleString("fr-FR"):"—";}catch(e){return "—";}})()}/>
                   <Row l={tt("team.diagVisible")+` (${visibles.length})`} v={visibles.join(" · ")||"—"}/>
                 </div>);
               })()}
@@ -14955,6 +15018,7 @@ function kgVersionSnapshot(kind, obj, user){
 // ── Mode maintenance : lecture du statut serveur (best-effort + cache local) ──
 // {on:boolean, mode:"readonly"|"block"} — piloté par l'admin (routes system).
 async function sysMaintenanceStatus(){
+  return { on:false, mode:"readonly" };                   // LOT M3 TEST — maintenance pilotée au M4
   try{
     const r = await fetch(`${SCRIPT_URL}?action=maintenance&t=${Date.now()}`, { method:"GET", redirect:"follow" });
     const d = JSON.parse(await r.text());
@@ -16834,8 +16898,8 @@ function KnowledgeGraphAdmin({ user }){
         <div style={{fontSize:10.5,color:C.muted,marginTop:7}}>{tt("sys.hint")}</div>
         {/* Journal de synchronisation (correctif démarrage) : dernière synchro OK + derniers échecs */}
         {(()=>{ let lastOk="—", errs=[];
-          try{ const ts=parseInt(localStorage.getItem("cn_lastSync")||"0"); if(ts) lastOk=new Date(ts).toLocaleString(); }catch(e){}
-          try{ errs=JSON.parse(localStorage.getItem("cn_sync_errors")||"[]").slice(-5).reverse(); }catch(e){}
+          try{ const ts=parseInt(localStorage.getItem("cnsb_lastSync")||"0"); if(ts) lastOk=new Date(ts).toLocaleString(); }catch(e){}
+          try{ errs=JSON.parse(localStorage.getItem("cnsb_sync_errors")||"[]").slice(-5).reverse(); }catch(e){}
           return <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
             <div style={{fontSize:10.5,color:C.muted}}>🧩 {tt("sys.diagVersion")} : <b style={{color:C.text}}>{(typeof window!=="undefined"&&window.__CRM_VERSION)||"—"}</b></div>
             <div style={{fontSize:10.5,color:C.muted}}>⚙️ Service Worker : <b style={{color:C.text}}>{swDiag.sw}</b> · {tt("sys.diagCtrl")} : <b style={{color:C.text}}>{swDiag.ctrl}</b></div>
@@ -17063,14 +17127,14 @@ function KnowledgeGraphAdmin({ user }){
 function App() {
   const [user,setUser] = useState(()=>{
     try{
-      const s=localStorage.getItem("cn_user");
+      const s=localStorage.getItem("cnsb_user");
       if(!s) return null;
       const stored = JSON.parse(s);
       if(isServerLoginRequired()){
-        const token = localStorage.getItem("cn_token")||"";
+        const token = localStorage.getItem("cnsb_token")||"";
         if(!sessionTokenLooksUsable(token, stored)){
-          localStorage.removeItem("cn_user");
-          localStorage.removeItem("cn2_user");
+          localStorage.removeItem("cnsb_user");
+          localStorage.removeItem("cnsb2_user");
           setAuthToken("");
           return null;
         }
@@ -17095,7 +17159,7 @@ function App() {
     const NOUVEAUX = ["Avrasya Hospital","Scala Clinic","VSC Fişekhane Dental"];
     if(cached && cached.some(h=>ANCIENS.includes(h.nom))){
       // Réinitialiser avec les nouveaux hôpitaux
-      localStorage.removeItem("cn2_hopitaux");
+      localStorage.removeItem("cnsb2_hopitaux");
       return [];
     }
     return cached||[];
@@ -17236,7 +17300,7 @@ function App() {
       await refreshPermissionsFromServer();   // rôles + overrides : serveur = source de vérité
       setPermVer(v=>v+1);
       if(failed===0){
-        try{ localStorage.setItem("cn_lastSync", String(Date.now())); }catch(_){}
+        try{ localStorage.setItem("cnsb_lastSync", String(Date.now())); }catch(_){}
         setLoadError(null);
       } else {
         const hasCache = cache.load("rdvs") || cache.load("patients");
@@ -17284,7 +17348,7 @@ function App() {
   const forceSync = async () => {
     if(!window.confirm("Vider le cache local et recharger toutes les données depuis Google Sheets ?")) return;
     ["patients","rdvs","finances","taches"].forEach(k => {
-      try { localStorage.removeItem("cn_cache_"+k); } catch(e){}
+      try { localStorage.removeItem("cnsb_cache_"+k); } catch(e){}
     });
     // PROTECTION : on ne vide plus l'écran avant le fetch — l'état actuel reste
     // affiché tant que le serveur n'a pas répondu avec de vraies données.
@@ -17467,13 +17531,13 @@ function App() {
     if(!window.confirm("Êtes-vous sûr de vouloir vous déconnecter ?")) return;
     // Fermer la session et nettoyer
     try {
-      localStorage.removeItem("cn_user");
-      localStorage.removeItem("cn2_user");
+      localStorage.removeItem("cnsb_user");
+      localStorage.removeItem("cnsb2_user");
       // Nettoyage du cache de permissions : plus aucun droit obsolète ne peut
       // survivre à une déconnexion (re-lecture serveur à la prochaine connexion).
-      localStorage.removeItem("cn_cfg_overrides");
-      localStorage.removeItem("cn_cfg_roles");
-      localStorage.removeItem("cn_perm_sync");
+      localStorage.removeItem("cnsb_cfg_overrides");
+      localStorage.removeItem("cnsb_cfg_roles");
+      localStorage.removeItem("cnsb_perm_sync");
       loadRBAC(); // retombe sur les rôles par défaut jusqu'à la prochaine synchro
       setAuthToken("");
     } catch(e){}
@@ -17489,7 +17553,7 @@ function App() {
   // Ils vivent désormais AVANT tout return, comme l'exigent les règles de React.
   // Le signal BOOTED se pose aussi sur l'écran de connexion (sinon la garde
   // anti-page-blanche rechargeait la page pendant la saisie du mot de passe).
-  useEffect(()=>{ try{ window.__CRM_BOOTED = true; sessionStorage.removeItem("cn_boot_retry"); }catch(e){} },[]);
+  useEffect(()=>{ try{ window.__CRM_BOOTED = true; sessionStorage.removeItem("cnsb_boot_retry"); }catch(e){} },[]);
   useEffect(()=>{ if(user && (activeView==="dashboard"||activeView==="agenda"||activeView==="finances"||activeView==="analyses")) ensureFinances(); },[activeView, user]);
   const TITLES = {dashboard:t("title.dashboard"),equipe:t("title.equipe")+" — Veys Turan "+t("role.pdg"),patients:t("title.patients"),rdvs:t("title.rdvs"),taches:t("title.taches"),agenda:t("title.agenda"),analyses:t("title.analyses"),finances:t("title.finances"),hopitaux:t("title.hopitaux"),medecins:t("title.medecins"),messagerie:t("title.messagerie"),notifications:t("title.notifications"),recherche:t("title.recherche"),utilisateurs:t("title.utilisateurs")};
 
@@ -17614,7 +17678,7 @@ function App() {
       {/* CONTENU — se décale quand le dock Dr House est ouvert (desktop), jamais masqué */}
       <div className={aiOpen?"dh-shift":""} style={{maxWidth:600,margin:"0 auto",padding:"16px 14px 100px",width:"100%",boxSizing:"border-box",overflowX:"hidden"}}>
         {loadError&&(()=>{ const soft = loadError===t("sync.partialCache");
-          let lastOk=""; try{ const ts=parseInt(localStorage.getItem("cn_lastSync")||"0"); if(ts) lastOk=new Date(ts).toLocaleString(); }catch(e){}
+          let lastOk=""; try{ const ts=parseInt(localStorage.getItem("cnsb_lastSync")||"0"); if(ts) lastOk=new Date(ts).toLocaleString(); }catch(e){}
           return <div style={{background:soft?"#FFFBEB":"#FEF2F2",border:`1px solid ${soft?"#FDE68A":"#FECACA"}`,borderRadius:12,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:18,flexShrink:0}}>{soft?"📶":"⚠️"}</span>
           <div style={{flex:1,fontSize:13,color:soft?"#92400E":"#B91C1C",fontWeight:600}}>{loadError}{lastOk&&<div style={{fontSize:11,fontWeight:500,opacity:0.8,marginTop:2}}>{t("sync.lastOk")} : {lastOk}</div>}</div>
@@ -17627,7 +17691,7 @@ function App() {
                  locales cn_cache_*. On PRÉSERVE session, préférences, journaux. */
               try{ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }catch(e){}
               try{
-                const del=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf("cn_cache_")===0) del.push(k); }
+                const del=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf("cnsb_cache_")===0) del.push(k); }
                 del.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
               }catch(e){}
               try{ location.reload(); }catch(e){}
@@ -17747,9 +17811,9 @@ class RootBoundary extends React.Component{
           <div style={{fontSize:16,fontWeight:800,color:"#0B1F3A"}}>Le CRM a rencontré une erreur au démarrage</div>
           <div style={{fontSize:13,color:"#64748B",maxWidth:420}}>Réessaie. Si le problème persiste, utilise le second bouton pour repartir d'un cache propre (tu devras te reconnecter).</div>
           {msg&&<div style={{fontSize:11,color:"#94A3B8",maxWidth:420,wordBreak:"break-word"}}>Détail : {msg}</div>}
-          <button onClick={()=>{ try{sessionStorage.removeItem("cn_boot_retry");}catch(e){} location.reload(); }}
+          <button onClick={()=>{ try{sessionStorage.removeItem("cnsb_boot_retry");}catch(e){} location.reload(); }}
             style={{padding:"12px 26px",border:"none",borderRadius:12,background:"#0B1F3A",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}}>🔄 Réessayer</button>
-          <button onClick={()=>{ try{ ["cn_user","cn2_user","cn_cfg_overrides","cn_cfg_roles","cn_perm_sync","cn_boot_retry"].forEach(k=>{try{localStorage.removeItem(k);}catch(e){} try{sessionStorage.removeItem(k);}catch(e){}}); }catch(e){} location.reload(); }}
+          <button onClick={()=>{ try{ ["cnsb_user","cnsb2_user","cnsb_cfg_overrides","cnsb_cfg_roles","cnsb_perm_sync","cnsb_boot_retry"].forEach(k=>{try{localStorage.removeItem(k);}catch(e){} try{sessionStorage.removeItem(k);}catch(e){}}); }catch(e){} location.reload(); }}
             style={{padding:"10px 20px",border:"1.5px solid #D9E2EC",borderRadius:12,background:"#fff",color:"#64748B",fontWeight:700,fontSize:12,cursor:"pointer"}}>🧹 Vider le cache local et recharger</button>
           <div style={{fontSize:10,color:"#B6C2D2"}}>{window.__CRM_VERSION||""}</div>
         </div>
