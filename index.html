@@ -260,6 +260,8 @@ const I18N = {
     "devis.needLines": "Ajoutez au moins une prestation.",
     "devis.saved": "Devis enregistré.",
     "devis.error": "Le devis n'a pas pu être enregistré.",
+    "ai.srcLocal": "base interne",
+    "ai.srcCrm": "vos données CRM",
     "devis.version": "Version",
     "nav.dashboard": "Mon espace",
     "nav.equipe": "Mon équipe",
@@ -1489,6 +1491,8 @@ const I18N = {
     "devis.needLines": "Add at least one service.",
     "devis.saved": "Quote saved.",
     "devis.error": "The quote could not be saved.",
+    "ai.srcLocal": "internal library",
+    "ai.srcCrm": "your CRM data",
     "devis.version": "Version",
     "nav.dashboard": "My space",
     "nav.equipe": "My team",
@@ -2718,6 +2722,8 @@ const I18N = {
     "devis.needLines": "En az bir hizmet ekleyin.",
     "devis.saved": "Teklif kaydedildi.",
     "devis.error": "Teklif kaydedilemedi.",
+    "ai.srcLocal": "iç veri tabanı",
+    "ai.srcCrm": "CRM verileriniz",
     "devis.version": "Sürüm",
     "nav.dashboard": "Alanım",
     "nav.equipe": "Ekibim",
@@ -3947,6 +3953,8 @@ const I18N = {
     "devis.needLines": "Añada al menos un servicio.",
     "devis.saved": "Presupuesto guardado.",
     "devis.error": "No se pudo guardar el presupuesto.",
+    "ai.srcLocal": "base interna",
+    "ai.srcCrm": "sus datos del CRM",
     "devis.version": "Versión",
     "nav.dashboard": "Mi espacio",
     "nav.equipe": "Mi equipo",
@@ -6838,12 +6846,17 @@ function drHouseOpenAIShouldUse(question){
   return ["summary","payment","relance","draft","translate","agenda","financial_status"].indexOf(intent) < 0;
 }
 
-function drHouseOpenAIWarn(reason, requestId){
+// Le repli vers le moteur local ne doit plus etre invisible. Jusqu'ici cet echec
+// n'ecrivait que dans la console du navigateur : une panne d'OpenAI passait donc
+// totalement inapercue, l'application repondant localement sans aucun signal.
+// Constate en production le 6 aout 2026 (deux appels perdus avant diagnostic).
+function drHouseOpenAIWarn(reason, requestId, userId){
+  const code = String(reason||"UNKNOWN").slice(0,80);
   try {
-    console.warn("Dr House OpenAI fallback:", {
-      reason:String(reason||"UNKNOWN").slice(0,80),
-      requestId:String(requestId||"").slice(0,80)
-    });
+    console.warn("Dr House OpenAI fallback:", { reason:code, requestId:String(requestId||"").slice(0,80) });
+  } catch(e){}
+  try {
+    logIA(userId||"", "rejected", "chat_openai_fallback", "ia", "", "", "", code, "openai_responses_edge");
   } catch(e){}
 }
 
@@ -15203,7 +15216,10 @@ function aiCan(user, cap){
 
 // Journalisation IA (append-only côté serveur). Best-effort : ne bloque jamais l'UI.
 // Ne journalise JAMAIS de données patient sensibles en clair (on tronque/normalise).
-function logIA(userId, decision, action, cible, champ, avant, apres, extra){
+// `engine` est facultatif : sans lui, on retombe sur AI_CONFIG.engine, ce qui
+// preserve tous les appels existants. Il devient obligatoire de le passer quand
+// ce n'est PAS le moteur local qui a repondu, sinon le journal se lit a contresens.
+function logIA(userId, decision, action, cible, champ, avant, apres, extra, engine){
   try {
     const np = nowParts();
     const entry = {
@@ -15217,7 +15233,7 @@ function logIA(userId, decision, action, cible, champ, avant, apres, extra){
       avant: String(avant||"").slice(0,120),
       apres: String(apres||"").slice(0,120),
       extra: String(extra||"").slice(0,80),
-      engine: AI_CONFIG.engine
+      engine: engine || AI_CONFIG.engine
     };
     // Mémoire de session locale (pour affichage immédiat éventuel)
     try { const buf = cfgStore.load("ia_log_buffer")||[]; buf.push(entry); cfgStore.save("ia_log_buffer", buf.slice(-200)); } catch(e){}
@@ -17081,7 +17097,7 @@ function AssistantIA({ user, patient, patients=[], finances, activeView, onClose
       // Contexte CRM (lecture seule) : agenda et tâches — Dr House répond localement.
       const crm = dhCrmAnswer(q);
       if(crm){
-        setChatMsgs(m=>[...m, { role:"assistant", text:crm, medLevel:"none", suggestions:[], medExtra:null, feedback:null, id:uid() }]);
+        setChatMsgs(m=>[...m, { role:"assistant", text:crm, medLevel:"none", suggestions:[], medExtra:null, feedback:null, id:uid(), source:"crm" }]);
         try{ logIA(user?user.id:"", "proposed", "crm_context", "ia", "", "", "", "" ); }catch(e){}
         setChatBusy(false); return;
       }
@@ -17091,14 +17107,14 @@ function AssistantIA({ user, patient, patients=[], finances, activeView, onClose
         const remote = await drHouseOpenAIChatAnswer(q);
         if(remote && remote.ok && remote.text && remote.patientDataUsed !== true){
           r = { text:remote.text, medLevel:aiMedicalLevel(remote.text), suggestions:[], medExtra:null, topic:null, provider:remote.provider||"openai" };
-          try{ logIA(user?user.id:"", "proposed", "chat_openai", "ia", "", "", "", remote.requestId||"" ); }catch(e){}
+          try{ logIA(user?user.id:"", "proposed", "chat_openai", "ia", "", "", "", remote.requestId||"", "openai_responses_edge" ); }catch(e){}
         } else {
-          drHouseOpenAIWarn(remote && remote.error, remote && remote.requestId);
+          drHouseOpenAIWarn(remote && remote.error, remote && remote.requestId, user?user.id:"");
         }
       }
       if(!r) r = await aiChatRespond(q, user, hasPatient?patient:null, finances, { topic: convTopic }, {patients, rdvs, finances, activeView, ensureFinances, financesLoaded, financesLoading});
       if(r.topic) setConvTopic(r.topic);   // met à jour le sujet mémorisé
-      setChatMsgs(m=>[...m, { role:"assistant", text:r.text, medLevel:r.medLevel||"none", suggestions:r.suggestions||[], medExtra:r.medExtra||null, feedback:null, id:uid() }]);
+      setChatMsgs(m=>[...m, { role:"assistant", text:r.text, medLevel:r.medLevel||"none", suggestions:r.suggestions||[], medExtra:r.medExtra||null, feedback:null, id:uid(), source: r.provider==="openai" ? "openai" : "local" }]);
     } catch(e){
       setChatMsgs(m=>[...m, { role:"assistant", text:tt("ai.chatError"), medLevel:"none", id:uid() }]);
     }
@@ -17307,6 +17323,10 @@ function AssistantIA({ user, patient, patients=[], finances, activeView, onClose
                             {dhImgOk ? <img src="./ia-face.jpg" alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/> : <span style={{fontSize:12,lineHeight:"18px",display:"block",textAlign:"center"}}>👨‍⚕️</span>}
                           </span>
                           <span style={{fontSize:10.5,fontWeight:800,color:"#8B6F1F"}}>{tt("ai.dhSig")}</span>
+                          {/* Chapitre 10, regle 12 : une reponse distingue sa source. */}
+                          {m.source && <span style={{fontSize:9.5,fontWeight:700,color:C.muted,border:`1px solid ${C.border}`,borderRadius:6,padding:"1px 5px",whiteSpace:"nowrap"}}>
+                            {m.source==="openai" ? "OpenAI" : m.source==="crm" ? tt("ai.srcCrm") : tt("ai.srcLocal")}
+                          </span>}
                         </div>
                       )}
                       {m.role==="assistant" && m.medLevel==="urgent" && <div style={{fontSize:11,fontWeight:800,color:C.red,marginBottom:6}}>🚨 {tt("ai.urgentWarning")}</div>}
