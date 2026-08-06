@@ -1,0 +1,25 @@
+# Ce qui ne doit JAMAIS être servi publiquement — chapitre 12 du cahier des charges.
+#
+# Un dépôt privé protège la lecture du code source, pas les fichiers servis :
+# Vercel déploie le contenu du dépôt, et tout fichier déployé reste accessible
+# à son adresse publique sur crm.clinicnobel.com. Cette liste est donc une
+# condition de la migration, pas une option.
+#
+# Principe : on exclut par famille, pour que le garde-fou tienne aussi pour les
+# fichiers qui n'existent pas encore (cahier des charges, rapports, SQL).
+
+# Documentation interne, rapports, cahier des charges
+*.md
+*.txt
+docs/
+rapports/
+
+# Schéma et migrations SQL — empreinte de la base, jamais servie
+sql/
+*.sql
+
+# Fichiers de travail et sauvegardes
+*.bak
+*.old
+*.log
+.DS_Store
