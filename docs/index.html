@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clinic Nobel CRM — nouvelle adresse</title>
+<meta name="robots" content="noindex">
+<!--
+  ══ PAGE DE BASCULE — ancien hébergement GitHub Pages ══
+
+  Ce dossier "docs" n'est PAS un dossier de documentation : son nom est imposé
+  par GitHub Pages, qui n'accepte que "/(root)" ou "/docs" comme source. Le
+  chapitre 12 du cahier des charges interdit tout document interne dans ce
+  dépôt tant qu'il est public — cette règle reste entière.
+
+  Ce dossier existe pour dissocier les sources : Vercel déploie la racine de
+  "main" (et ignore "docs/" via .vercelignore), tandis que GitHub Pages basculera
+  sur "docs/" le jour J. Les deux hébergements lisent la même branche sans
+  jamais servir le même fichier.
+
+  La bascule se fait alors par un seul réglage (Settings → Pages → dossier
+  /docs), sans toucher à l'application. Le retour arrière est le même réglage
+  en sens inverse.
+-->
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:#0B1F3A;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px}
+  .card{background:#fff;color:#0B1F3A;border-radius:20px;padding:32px;max-width:420px;width:100%;
+        text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+  h1{font-size:19px;margin:0 0 10px}
+  p{font-size:14px;color:#5A6B85;margin:0 0 20px;line-height:1.5}
+  a{display:block;padding:15px;border-radius:12px;background:linear-gradient(135deg,#0B1F3A,#1D73C9);
+    color:#fff;text-decoration:none;font-weight:800;font-size:15px}
+  .small{font-size:12px;color:#7B8BA5;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div style="font-size:40px;margin-bottom:10px">🔁</div>
+  <h1>Le CRM a déménagé</h1>
+  <p>La nouvelle adresse est <b>crm.clinicnobel.com</b>. Vous y êtes redirigé automatiquement.</p>
+  <a id="go" href="https://crm.clinicnobel.com/">Ouvrir le CRM →</a>
+  <p class="small">Si l'application était installée sur cet appareil, réinstallez-la depuis la nouvelle adresse.</p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var CIBLE = "https://crm.clinicnobel.com/";
+
+  // 1) Retrait complet de l'ancien service worker et de ses caches.
+  //    Sans cela, un poste qui avait installé l'application continuerait à
+  //    servir l'ancienne version depuis son cache, indéfiniment.
+  function nettoyer(){
+    var taches = [];
+    try{
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+        taches.push(
+          navigator.serviceWorker.getRegistrations()
+            .then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })
+            .catch(function(){})
+        );
+      }
+    }catch(e){}
+    try{
+      if (window.caches && caches.keys){
+        taches.push(
+          caches.keys()
+            .then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })
+            .catch(function(){})
+        );
+      }
+    }catch(e){}
+    return Promise.all(taches).catch(function(){});
+  }
+
+  // 2) Redirection, que le nettoyage aboutisse ou non — il ne doit jamais
+  //    bloquer l'accès au CRM. Plafond de sécurité à 2 secondes.
+  var parti = false;
+  function partir(){
+    if (parti) return;
+    parti = true;
+    try{ window.location.replace(CIBLE); }catch(e){ window.location.href = CIBLE; }
+  }
+  setTimeout(partir, 2000);
+  nettoyer().then(partir);
+})();
+</script>
+<noscript><meta http-equiv="refresh" content="0; url=https://crm.clinicnobel.com/"></noscript>
+</body>
+</html>
