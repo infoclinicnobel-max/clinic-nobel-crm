@@ -5089,7 +5089,6 @@ class ErrorBoundary extends React.Component {
 }
 
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyrg8r0lLSkjEXHbsUTmAyLRlJCa63g-noUNGRjzoOvM957pndNP-D-UrL1257G5PA3/exec"; // conservé pour Dr House OpenAI (M5)
 // ══ LOT M3 (COPIE DE TEST) — Branchement Supabase ══
 // Le CRM parle désormais à Postgres (RLS) via supabase-js. Interface inchangée.
 const SUPABASE_URL = "https://jvcybcpqraoxbkemmpax.supabase.co";
@@ -15014,20 +15013,9 @@ function kgVersionSnapshot(kind, obj, user){
 }
 
 // Proposition d'un nœud (aiCan ai_use requis ; toujours En attente)
-// ── Mode maintenance : lecture du statut serveur (best-effort + cache local) ──
-// {on:boolean, mode:"readonly"|"block"} — piloté par l'admin (routes system).
+// ── Mode maintenance : neutralisé (aucun pilotage serveur à ce jour) ──
+// Contrat conservé pour les appelants : {on:boolean, mode:"readonly"|"block"}.
 async function sysMaintenanceStatus(){
-  return { on:false, mode:"readonly" };                   // LOT M3 TEST — maintenance pilotée au M4
-  try{
-    const r = await fetch(`${SCRIPT_URL}?action=maintenance&t=${Date.now()}`, { method:"GET", redirect:"follow" });
-    const d = JSON.parse(await r.text());
-    if(d && typeof d.on!=="undefined"){
-      const st = { on:!!d.on, mode:(d.mode==="block"?"block":"readonly") };
-      try{ cfgStore.save("sys_maintenance", st); }catch(e){}
-      return st;
-    }
-  }catch(e){}
-  try{ const c = cfgStore.load("sys_maintenance"); if(c && typeof c.on!=="undefined") return c; }catch(e){}
   return { on:false, mode:"readonly" };
 }
 
