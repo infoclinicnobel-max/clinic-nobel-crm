@@ -228,6 +228,13 @@ const I18N = {
     "pwd.saved": "Mot de passe modifié. Reconnectez-vous.",
     "pwd.expired": "Ce lien a expiré. Demandez-en un nouveau.",
     "pwd.error": "Le mot de passe n'a pas pu être modifié.",
+    "pwd.adminTitle": "Mot de passe du compte",
+    "pwd.adminSet": "Définir le mot de passe",
+    "pwd.adminLink": "Émettre un lien de récupération",
+    "pwd.adminHint": "Le lien est préférable : le collaborateur choisit lui-même son mot de passe.",
+    "pwd.adminDone": "Mot de passe modifié.",
+    "pwd.adminLinkDone": "Lien émis, à usage unique.",
+    "pwd.adminTransmit": "À transmettre de vive voix ou par un canal sûr — jamais par email en clair.",
     "nav.dashboard": "Mon espace",
     "nav.equipe": "Mon équipe",
     "nav.patients": "Les patients",
@@ -1424,6 +1431,13 @@ const I18N = {
     "pwd.saved": "Password changed. Please sign in again.",
     "pwd.expired": "This link has expired. Request a new one.",
     "pwd.error": "The password could not be changed.",
+    "pwd.adminTitle": "Account password",
+    "pwd.adminSet": "Set the password",
+    "pwd.adminLink": "Issue a recovery link",
+    "pwd.adminHint": "The link is preferable: the colleague chooses their own password.",
+    "pwd.adminDone": "Password changed.",
+    "pwd.adminLinkDone": "Link issued, single use.",
+    "pwd.adminTransmit": "Share it in person or through a secure channel — never by plain email.",
     "nav.dashboard": "My space",
     "nav.equipe": "My team",
     "nav.patients": "Patients",
@@ -2620,6 +2634,13 @@ const I18N = {
     "pwd.saved": "Şifre değiştirildi. Lütfen tekrar giriş yapın.",
     "pwd.expired": "Bu bağlantının süresi doldu. Yenisini isteyin.",
     "pwd.error": "Şifre değiştirilemedi.",
+    "pwd.adminTitle": "Hesap şifresi",
+    "pwd.adminSet": "Şifreyi belirle",
+    "pwd.adminLink": "Kurtarma bağlantısı oluştur",
+    "pwd.adminHint": "Bağlantı tercih edilir: çalışan kendi şifresini kendisi seçer.",
+    "pwd.adminDone": "Şifre değiştirildi.",
+    "pwd.adminLinkDone": "Bağlantı oluşturuldu, tek kullanımlık.",
+    "pwd.adminTransmit": "Yüz yüze veya güvenli bir kanaldan iletin — asla düz e-posta ile değil.",
     "nav.dashboard": "Alanım",
     "nav.equipe": "Ekibim",
     "nav.patients": "Hastalar",
@@ -3816,6 +3837,13 @@ const I18N = {
     "pwd.saved": "Contraseña modificada. Vuelva a iniciar sesión.",
     "pwd.expired": "Este enlace ha caducado. Solicite uno nuevo.",
     "pwd.error": "No se pudo cambiar la contraseña.",
+    "pwd.adminTitle": "Contraseña de la cuenta",
+    "pwd.adminSet": "Definir la contraseña",
+    "pwd.adminLink": "Emitir un enlace de recuperación",
+    "pwd.adminHint": "El enlace es preferible: el colaborador elige su propia contraseña.",
+    "pwd.adminDone": "Contraseña modificada.",
+    "pwd.adminLinkDone": "Enlace emitido, de un solo uso.",
+    "pwd.adminTransmit": "Transmítalo en persona o por un canal seguro — nunca por correo sin cifrar.",
     "nav.dashboard": "Mi espacio",
     "nav.equipe": "Mi equipo",
     "nav.patients": "Pacientes",
@@ -14320,6 +14348,45 @@ function ModalUser({admin, target, onClose, onApplied}) {
   const lbl = {fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:5};
   const isSelf = !isNew && target.id===admin.id;
   const lockedRole = !isNew && (target.id===admin.id);
+  // ── Mot de passe du compte (fonction Edge admin-set-password) ──
+  // Le mot de passe saisi ne quitte ce composant que vers la fonction Edge :
+  // jamais journalisé, jamais stocké, et vidé dès l'appel terminé quel qu'en soit
+  // le résultat. La visibilité de ce bloc est un confort : la barrière réelle est
+  // la vérification du rôle côté serveur.
+  const canManagePwd = !isNew && isFullRole(admin.role);
+  const [pwdOpen,setPwdOpen] = useState(false);
+  const [pwdVal,setPwdVal] = useState("");
+  const [pwdVal2,setPwdVal2] = useState("");
+  const [pwdMsg,setPwdMsg] = useState("");
+  const [pwdErr,setPwdErr] = useState("");
+  const [pwdLink,setPwdLink] = useState("");
+  const [pwdBusy,setPwdBusy] = useState(false);
+  const callPwdFn = async (mode) => {
+    setPwdErr(""); setPwdMsg(""); setPwdLink("");
+    if(mode==="set"){
+      if(pwdVal.length < PWD_MIN_LENGTH){ setPwdErr(tt("pwd.tooShort")); return; }
+      if(pwdVal !== pwdVal2){ setPwdErr(tt("pwd.mismatch")); return; }
+    }
+    setPwdBusy(true);
+    try{
+      const r = await fetch(SUPABASE_URL + "/functions/v1/admin-set-password", {
+        method:"POST", cache:"no-cache",
+        headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+AUTH_TOKEN, "apikey":SUPABASE_ANON_KEY },
+        body: JSON.stringify(mode==="set"
+          ? { targetProfileId:target.id, mode:"set", password:pwdVal }
+          : { targetProfileId:target.id, mode:"link" })
+      });
+      const d = await r.json().catch(()=>null);
+      if(!r.ok || !d || d.ok!==true){
+        setPwdErr((d && d.error && d.error.message) || tt("pwd.error"));
+      } else if(mode==="link"){
+        setPwdLink(String(d.actionLink||"")); setPwdMsg(tt("pwd.adminLinkDone"));
+      } else {
+        setPwdMsg(tt("pwd.adminDone"));
+      }
+    }catch(e){ setPwdErr(tt("pwd.error")); }
+    setPwdVal(""); setPwdVal2(""); setPwdBusy(false);
+  };
 
   const save = () => {
     if(!f.prenom.trim()||!f.email.trim()){ alert(tt("team.nameEmailRequired")); return; }
@@ -14368,6 +14435,26 @@ function ModalUser({admin, target, onClose, onApplied}) {
           <div style={{marginBottom:10}}><label style={lbl}>{tt("team.photoUrl")}</label><input style={inp} value={f.photo||""} onChange={e=>ch("photo",e.target.value)} placeholder="https://…"/></div>
           {isNew&&<div><label style={lbl}>{tt("login.password")} *</label><input style={inp} value={f.password||""} onChange={e=>ch("password",e.target.value)} placeholder={tt("team.loginPasswordPlaceholder")}/></div>}
         </div>
+
+        {/* Mot de passe du compte — administrateurs uniquement */}
+        {canManagePwd&&<div style={{background:C.white,borderRadius:14,padding:14,marginBottom:10}}>
+          <label style={lbl}>🔑 {tt("pwd.adminTitle")}</label>
+          <div style={{fontSize:11,color:C.muted,marginBottom:10}}>{tt("pwd.adminHint")}</div>
+          <button onClick={()=>callPwdFn("link")} disabled={pwdBusy} style={{width:"100%",padding:"10px",border:`1.5px solid ${C.border}`,borderRadius:10,background:"#F8FAFC",cursor:pwdBusy?"default":"pointer",fontWeight:700,fontSize:13,color:C.text,marginBottom:10}}>
+            ✉️ {tt("pwd.adminLink")}
+          </button>
+          {!pwdOpen
+            ? <button onClick={()=>setPwdOpen(true)} style={{width:"100%",padding:"10px",border:"none",borderRadius:10,background:"#F1F5F9",cursor:"pointer",fontWeight:700,fontSize:13,color:C.muted}}>{tt("pwd.adminSet")}</button>
+            : <div>
+                <input style={{...inp,marginBottom:8}} type="password" value={pwdVal} onChange={e=>setPwdVal(e.target.value)} placeholder={tt("pwd.new")}/>
+                <input style={{...inp,marginBottom:8}} type="password" value={pwdVal2} onChange={e=>setPwdVal2(e.target.value)} placeholder={tt("pwd.confirm")}/>
+                <div style={{fontSize:11,color:C.muted,marginBottom:8}}>{tt("pwd.rule")}</div>
+                <button onClick={()=>callPwdFn("set")} disabled={pwdBusy} style={{width:"100%",padding:"10px",border:"none",borderRadius:10,background:pwdBusy?"#94a3b8":"#0B1F3A",color:"#fff",cursor:pwdBusy?"default":"pointer",fontWeight:700,fontSize:13}}>{tt("pwd.adminSet")}</button>
+              </div>}
+          {pwdErr&&<div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"8px 10px",fontSize:12,color:"#dc2626",marginTop:10}}>{pwdErr}</div>}
+          {pwdMsg&&<div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"8px 10px",fontSize:12,color:"#15803d",marginTop:10}}>✅ {pwdMsg}<div style={{color:C.muted,marginTop:4}}>{tt("pwd.adminTransmit")}</div></div>}
+          {pwdLink&&<textarea readOnly value={pwdLink} onFocus={e=>e.target.select()} style={{...inp,marginTop:8,height:64,fontSize:11,fontFamily:"monospace"}}/>}
+        </div>}
 
         {/* Rôle + Statut */}
         <div style={{background:C.white,borderRadius:14,padding:14,marginBottom:10}}>
