@@ -213,6 +213,21 @@ const I18N = {
     "login.disabled": "Ce compte est désactivé. Contactez l'administrateur.",
     "login.lang": "Langue",
     "login.teamAccounts": "COMPTES ÉQUIPE",
+    "pwd.forgot": "Mot de passe oublié ?",
+    "pwd.sendLink": "Recevoir un lien",
+    "pwd.emailFirst": "Saisissez d'abord votre email.",
+    "pwd.linkSent": "Si un compte existe pour cet email, un lien vient d'être envoyé.",
+    "pwd.title": "Nouveau mot de passe",
+    "pwd.subtitle": "Choisissez un nouveau mot de passe pour votre compte.",
+    "pwd.new": "Nouveau mot de passe",
+    "pwd.confirm": "Confirmer le mot de passe",
+    "pwd.rule": "12 caractères minimum.",
+    "pwd.mismatch": "Les deux mots de passe ne sont pas identiques.",
+    "pwd.tooShort": "Le mot de passe doit contenir au moins 12 caractères.",
+    "pwd.save": "Enregistrer",
+    "pwd.saved": "Mot de passe modifié. Reconnectez-vous.",
+    "pwd.expired": "Ce lien a expiré. Demandez-en un nouveau.",
+    "pwd.error": "Le mot de passe n'a pas pu être modifié.",
     "nav.dashboard": "Mon espace",
     "nav.equipe": "Mon équipe",
     "nav.patients": "Les patients",
@@ -1394,6 +1409,21 @@ const I18N = {
     "login.disabled": "This account is disabled. Contact the administrator.",
     "login.lang": "Language",
     "login.teamAccounts": "TEAM ACCOUNTS",
+    "pwd.forgot": "Forgot your password?",
+    "pwd.sendLink": "Send me a link",
+    "pwd.emailFirst": "Enter your email first.",
+    "pwd.linkSent": "If an account exists for this email, a link has just been sent.",
+    "pwd.title": "New password",
+    "pwd.subtitle": "Choose a new password for your account.",
+    "pwd.new": "New password",
+    "pwd.confirm": "Confirm password",
+    "pwd.rule": "12 characters minimum.",
+    "pwd.mismatch": "The two passwords do not match.",
+    "pwd.tooShort": "The password must be at least 12 characters long.",
+    "pwd.save": "Save",
+    "pwd.saved": "Password changed. Please sign in again.",
+    "pwd.expired": "This link has expired. Request a new one.",
+    "pwd.error": "The password could not be changed.",
     "nav.dashboard": "My space",
     "nav.equipe": "My team",
     "nav.patients": "Patients",
@@ -2575,6 +2605,21 @@ const I18N = {
     "login.disabled": "Bu hesap devre dışı. Yöneticiyle iletişime geçin.",
     "login.lang": "Dil",
     "login.teamAccounts": "EKİP HESAPLARI",
+    "pwd.forgot": "Şifrenizi mi unuttunuz?",
+    "pwd.sendLink": "Bağlantı gönder",
+    "pwd.emailFirst": "Önce e-posta adresinizi girin.",
+    "pwd.linkSent": "Bu e-posta için bir hesap varsa, az önce bir bağlantı gönderildi.",
+    "pwd.title": "Yeni şifre",
+    "pwd.subtitle": "Hesabınız için yeni bir şifre belirleyin.",
+    "pwd.new": "Yeni şifre",
+    "pwd.confirm": "Şifreyi onaylayın",
+    "pwd.rule": "En az 12 karakter.",
+    "pwd.mismatch": "İki şifre birbiriyle eşleşmiyor.",
+    "pwd.tooShort": "Şifre en az 12 karakter olmalıdır.",
+    "pwd.save": "Kaydet",
+    "pwd.saved": "Şifre değiştirildi. Lütfen tekrar giriş yapın.",
+    "pwd.expired": "Bu bağlantının süresi doldu. Yenisini isteyin.",
+    "pwd.error": "Şifre değiştirilemedi.",
     "nav.dashboard": "Alanım",
     "nav.equipe": "Ekibim",
     "nav.patients": "Hastalar",
@@ -3756,6 +3801,21 @@ const I18N = {
     "login.disabled": "Esta cuenta está desactivada. Contacte al administrador.",
     "login.lang": "Idioma",
     "login.teamAccounts": "CUENTAS DEL EQUIPO",
+    "pwd.forgot": "¿Olvidó su contraseña?",
+    "pwd.sendLink": "Enviar un enlace",
+    "pwd.emailFirst": "Introduzca primero su correo.",
+    "pwd.linkSent": "Si existe una cuenta para este correo, se acaba de enviar un enlace.",
+    "pwd.title": "Nueva contraseña",
+    "pwd.subtitle": "Elija una nueva contraseña para su cuenta.",
+    "pwd.new": "Nueva contraseña",
+    "pwd.confirm": "Confirmar contraseña",
+    "pwd.rule": "12 caracteres como mínimo.",
+    "pwd.mismatch": "Las dos contraseñas no coinciden.",
+    "pwd.tooShort": "La contraseña debe tener al menos 12 caracteres.",
+    "pwd.save": "Guardar",
+    "pwd.saved": "Contraseña modificada. Vuelva a iniciar sesión.",
+    "pwd.expired": "Este enlace ha caducado. Solicite uno nuevo.",
+    "pwd.error": "No se pudo cambiar la contraseña.",
     "nav.dashboard": "Mi espacio",
     "nav.equipe": "Mi equipo",
     "nav.patients": "Pacientes",
@@ -5093,6 +5153,31 @@ class ErrorBoundary extends React.Component {
 // Le CRM parle désormais à Postgres (RLS) via supabase-js. Interface inchangée.
 const SUPABASE_URL = "https://jvcybcpqraoxbkemmpax.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_6rfONns0i_EYhHDKjzdEMg_WAbxGL62";
+// ── Récupération de mot de passe : détection AVANT createClient ──
+// detectSessionInUrl (actif par défaut) consomme le fragment "#...type=recovery"
+// et émet PASSWORD_RECOVERY parfois AVANT que React n'ait posé son écouteur.
+// Le drapeau est donc mémorisé dès le chargement du script : c'est le filet qui
+// évite l'écran de nouveau mot de passe qui ne s'affiche jamais.
+const PWD_MIN_LENGTH = 12;
+let PWD_RECOVERY = (function(){
+  try{ return /(^|[#&])type=recovery(&|$)/.test(String(window.location.hash||"")); }catch(e){ return false; }
+})();
+const PWD_RECOVERY_SUBS = [];
+const pwdRecoveryIs = () => PWD_RECOVERY;
+function pwdRecoverySet(v){
+  PWD_RECOVERY = !!v;
+  PWD_RECOVERY_SUBS.slice().forEach(f=>{ try{ f(PWD_RECOVERY); }catch(e){} });
+}
+function pwdRecoverySubscribe(fn){
+  PWD_RECOVERY_SUBS.push(fn);
+  return ()=>{ const i = PWD_RECOVERY_SUBS.indexOf(fn); if(i>=0) PWD_RECOVERY_SUBS.splice(i,1); };
+}
+// Retire le fragment de l'URL : le jeton ne reste pas dans l'historique et
+// l'écran ne réapparaît pas au rechargement.
+function pwdRecoveryCleanUrl(){
+  try{ window.history.replaceState(null, "", window.location.pathname + window.location.search); }catch(e){}
+}
+
 const sbClient = (typeof window!=="undefined" && window.supabase)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth:{ storageKey:"cnsb_sb_auth" } })
   : null;
@@ -6522,7 +6607,11 @@ const api = {
 };
 
 // Jeton applicatif maintenu en phase avec la session Supabase (rafraîchie automatiquement)
-if(sbClient){ try{ sbClient.auth.onAuthStateChange((_ev, session)=>{ try{ setAuthToken(session ? session.access_token : ""); }catch(e){} }); }catch(e){} }
+if(sbClient){ try{ sbClient.auth.onAuthStateChange((ev, session)=>{
+  try{ setAuthToken(session ? session.access_token : ""); }catch(e){}
+  // Second chemin de détection : l'événement lui-même, si l'écouteur est en place à temps.
+  try{ if(ev==="PASSWORD_RECOVERY") pwdRecoverySet(true); }catch(e){}
+}); }catch(e){} }
 
 function drHouseOpenAIRequestId(){
   return "dh_ui_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
@@ -6644,6 +6733,19 @@ function LoginScreen({onLogin, lang, onLangChange}) {
   const [pass,setPass] = useState("");
   const [error,setError] = useState("");
   const [showPass,setShowPass] = useState(false);
+  const [info,setInfo] = useState("");
+  // Lien « mot de passe oublié » : Supabase envoie le courriel de récupération.
+  // Le message affiché est le MÊME que le compte existe ou non — aucune
+  // énumération de comptes possible depuis l'écran de connexion.
+  const handleForgot = async () => {
+    setError(""); setInfo("");
+    const mail = email.trim().toLowerCase();
+    if(!mail){ setError(t("pwd.emailFirst")); return; }
+    try{
+      if(sbClient) await sbClient.auth.resetPasswordForEmail(mail, { redirectTo: window.location.origin + window.location.pathname });
+    }catch(e){}
+    setInfo(t("pwd.linkSent"));
+  };
   const handleLogin = async () => {
     const mail = email.trim().toLowerCase();
     const serverRequired = isServerLoginRequired();
@@ -6717,6 +6819,10 @@ function LoginScreen({onLogin, lang, onLangChange}) {
         <button onClick={handleLogin} style={{width:"100%",padding:"16px",border:"none",borderRadius:14,background:"linear-gradient(135deg,#0B1F3A,#1D73C9)",color:"#fff",cursor:"pointer",fontWeight:800,fontSize:16,boxShadow:"0 8px 24px rgba(11,31,58,0.3)",letterSpacing:"0.02em"}}>
           {t("login.submit")} →
         </button>
+        <div style={{textAlign:"center",marginTop:14}}>
+          <button onClick={handleForgot} style={{border:"none",background:"none",cursor:"pointer",fontSize:12,color:"#1D73C9",fontWeight:700,textDecoration:"underline",padding:0}}>{t("pwd.forgot")}</button>
+        </div>
+        {info&&<div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"10px 12px",fontSize:13,color:"#15803d",marginTop:12,textAlign:"center"}}>{info}</div>}
         <div style={{textAlign:"center",marginTop:20,padding:"12px",background:"#f8fafc",borderRadius:10}}>
           <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:8}}>COMPTES ÉQUIPE</div>
           {USERS.map(u=>(
@@ -6727,6 +6833,78 @@ function LoginScreen({onLogin, lang, onLangChange}) {
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ÉCRAN « NOUVEAU MOT DE PASSE » (arrivée par lien de récupération) ────────
+// Affiché lorsque Supabase a ouvert une session de type recovery. Le mot de passe
+// ne vit que dans l'état local du composant : il est vidé dès l'appel effectué,
+// n'est jamais journalisé, jamais stocké, jamais renvoyé.
+function NewPasswordScreen({onLangChange, onDone}) {
+  const [pass,setPass] = useState("");
+  const [pass2,setPass2] = useState("");
+  const [showPass,setShowPass] = useState(false);
+  const [error,setError] = useState("");
+  const [done,setDone] = useState(false);
+  const [busy,setBusy] = useState(false);
+  const submit = async () => {
+    setError("");
+    if(pass.length < PWD_MIN_LENGTH){ setError(t("pwd.tooShort")); return; }
+    if(pass !== pass2){ setError(t("pwd.mismatch")); return; }
+    if(!sbClient){ setError(t("pwd.error")); return; }
+    setBusy(true);
+    try{
+      const { data:sess } = await sbClient.auth.getSession();
+      if(!sess || !sess.session){ setBusy(false); setError(t("pwd.expired")); return; }
+      const { error:upErr } = await sbClient.auth.updateUser({ password: pass });
+      if(upErr){ setBusy(false); setError(t("pwd.error")); return; }
+    }catch(ex){ setBusy(false); setError(t("pwd.error")); return; }
+    setPass(""); setPass2(""); setBusy(false); setDone(true);
+    pwdRecoveryCleanUrl();
+    // Déconnexion volontaire : le nouveau mot de passe est éprouvé immédiatement.
+    try{ await sbClient.auth.signOut(); }catch(e){}
+    try{ localStorage.removeItem("cnsb_user"); localStorage.removeItem("cnsb2_user"); }catch(e){}
+    setTimeout(()=>{ try{ onDone && onDone(); }catch(e){} }, 1800);
+  };
+  const inp = {width:"100%",padding:"12px 14px",border:"1px solid #E8ECF2",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box",background:"#F4F6FA"};
+  const lb = {fontSize:11,fontWeight:700,color:"#7B8BA5",textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:6};
+  return (
+    <div style={{minHeight:"100vh",background:"#0B1F3A",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:"#fff",borderRadius:24,padding:32,width:"100%",maxWidth:380,boxShadow:"0 24px 80px rgba(0,0,0,0.3)"}}>
+        <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+          <LanguageSelector compact onChange={onLangChange}/>
+        </div>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{fontSize:34,marginBottom:8}}>🔑</div>
+          <div style={{fontWeight:800,fontSize:19,color:"#0B1F3A"}}>{t("pwd.title")}</div>
+          <div style={{fontSize:12,color:"#7B8BA5",marginTop:6}}>{t("pwd.subtitle")}</div>
+        </div>
+        {done ? (
+          <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:"14px 12px",fontSize:14,color:"#15803d",textAlign:"center",fontWeight:700}}>
+            ✅ {t("pwd.saved")}
+          </div>
+        ) : (
+          <div>
+            <div style={{marginBottom:14}}>
+              <label style={lb}>{t("pwd.new")}</label>
+              <div style={{position:"relative"}}>
+                <input style={{...inp,paddingRight:44}} type={showPass?"text":"password"} value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••••••" onKeyDown={e=>e.key==="Enter"&&submit()}/>
+                <button onClick={()=>setShowPass(x=>!x)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",border:"none",background:"none",cursor:"pointer",fontSize:16,color:"#7B8BA5"}}>{showPass?"🙈":"👁️"}</button>
+              </div>
+              <div style={{fontSize:11,color:"#7B8BA5",marginTop:6}}>{t("pwd.rule")}</div>
+            </div>
+            <div style={{marginBottom:18}}>
+              <label style={lb}>{t("pwd.confirm")}</label>
+              <input style={inp} type={showPass?"text":"password"} value={pass2} onChange={e=>setPass2(e.target.value)} placeholder="••••••••••••" onKeyDown={e=>e.key==="Enter"&&submit()}/>
+            </div>
+            {error&&<div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"10px 12px",fontSize:13,color:"#dc2626",marginBottom:16,textAlign:"center"}}>{error}</div>}
+            <button onClick={submit} disabled={busy} style={{width:"100%",padding:"16px",border:"none",borderRadius:14,background:busy?"#94a3b8":"linear-gradient(135deg,#0B1F3A,#1D73C9)",color:"#fff",cursor:busy?"default":"pointer",fontWeight:800,fontSize:16,boxShadow:"0 8px 24px rgba(11,31,58,0.3)",letterSpacing:"0.02em"}}>
+              {t("pwd.save")}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -17541,8 +17719,18 @@ function App() {
   // Le signal BOOTED se pose aussi sur l'écran de connexion (sinon la garde
   // anti-page-blanche rechargeait la page pendant la saisie du mot de passe).
   useEffect(()=>{ try{ window.__CRM_BOOTED = true; sessionStorage.removeItem("cnsb_boot_retry"); }catch(e){} },[]);
+  // Écran de nouveau mot de passe. Le drapeau peut être posé AVANT le montage
+  // (capture du fragment d'URL) ou APRÈS (événement PASSWORD_RECOVERY) : l'état
+  // initial couvre le premier cas, l'abonnement couvre le second.
+  // Déclarés ici, avant tout return conditionnel, comme l'exige la règle des hooks.
+  const [pwdRecovery, setPwdRecovery] = useState(()=>pwdRecoveryIs());
+  useEffect(()=>pwdRecoverySubscribe(setPwdRecovery),[]);
   useEffect(()=>{ if(user && (activeView==="dashboard"||activeView==="agenda"||activeView==="finances"||activeView==="analyses")) ensureFinances(); },[activeView, user]);
   const TITLES = {dashboard:t("title.dashboard"),equipe:t("title.equipe")+" — Veys Turan "+t("role.pdg"),patients:t("title.patients"),rdvs:t("title.rdvs"),taches:t("title.taches"),agenda:t("title.agenda"),analyses:t("title.analyses"),finances:t("title.finances"),hopitaux:t("title.hopitaux"),medecins:t("title.medecins"),messagerie:t("title.messagerie"),notifications:t("title.notifications"),recherche:t("title.recherche"),utilisateurs:t("title.utilisateurs")};
+
+  // Prioritaire sur l'écran de connexion : on arrive ici avec une session ouverte
+  // par le lien de récupération, mais l'ancien mot de passe est encore actif.
+  if(pwdRecovery) return <NewPasswordScreen onLangChange={changeLang} onDone={()=>{ pwdRecoverySet(false); setUser(null); }} />;
 
   if(!user) return <LoginScreen lang={lang} onLangChange={changeLang} onLogin={u=>{const full=isServerLoginRequired()?u:(USERS.find(x=>x.id===u.id)||u); setUser(full);}} />;
 
