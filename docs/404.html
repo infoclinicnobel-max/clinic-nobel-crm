@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clinic Nobel CRM — nouvelle adresse</title>
+<meta name="robots" content="noindex">
+<!--
+  ══ LIENS PROFONDS VERS L'ANCIENNE ADRESSE ══
+
+  GitHub Pages sert ce fichier pour tout chemin qui n'existe pas. Sans lui, un
+  favori ou un raccourci pointant vers une sous-page de l'ancienne adresse
+  aboutirait à une impasse : la page d'erreur par défaut, sans redirection.
+  Or ce sont précisément les postes qu'on veut faire migrer.
+
+  Il fait donc la même chose que la page de bascule principale : nettoyer, puis
+  rediriger. Le nettoyage est attendu avant de partir, avec un délai de garde
+  pour qu'une promesse suspendue ne laisse personne sur une page vide.
+
+  Exception volontaire : verification.html existe, donc il n'est jamais servi
+  par ce fichier — c'est ce qui garde un point d'appui stable sur cette origine.
+-->
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:#0B1F3A;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px}
+  .c{background:#fff;color:#0B1F3A;border-radius:20px;padding:32px;max-width:420px;width:100%;
+     text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+  h1{font-size:19px;margin:0 0 10px}
+  p{font-size:14px;color:#5A6B85;margin:0 0 20px;line-height:1.5}
+  a{display:block;padding:15px;border-radius:12px;background:linear-gradient(135deg,#0B1F3A,#1D73C9);
+    color:#fff;text-decoration:none;font-weight:800;font-size:15px}
+</style>
+</head>
+<body>
+<div class="c">
+  <div style="font-size:40px;margin-bottom:10px">🔁</div>
+  <h1>Le CRM a déménagé</h1>
+  <p>La nouvelle adresse est <b>crm.clinicnobel.com</b>. Vous y êtes redirigé automatiquement.</p>
+  <a href="https://crm.clinicnobel.com/">Ouvrir le CRM →</a>
+</div>
+<script>
+(function(){
+  "use strict";
+  var CIBLE = "https://crm.clinicnobel.com/";
+  function nettoyer(){
+    var taches = [];
+    try{
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+        taches.push(navigator.serviceWorker.getRegistrations()
+          .then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })
+          .catch(function(){}));
+      }
+    }catch(e){}
+    try{
+      if (window.caches && caches.keys){
+        taches.push(caches.keys()
+          .then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })
+          .catch(function(){}));
+      }
+    }catch(e){}
+    return Promise.all(taches).catch(function(){});
+  }
+  var parti = false;
+  function partir(){
+    if (parti) return;
+    parti = true;
+    try{ window.location.replace(CIBLE); }catch(e){ window.location.href = CIBLE; }
+  }
+  setTimeout(partir, 2000);
+  nettoyer().then(partir);
+})();
+</script>
+<noscript><meta http-equiv="refresh" content="0; url=https://crm.clinicnobel.com/"></noscript>
+</body>
+</html>
