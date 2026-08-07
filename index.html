@@ -6898,11 +6898,17 @@ function drHouseOpenAIShouldUse(question){
 // Constate en production le 6 aout 2026 (deux appels perdus avant diagnostic).
 function drHouseOpenAIWarn(reason, requestId, userId){
   const code = String(reason||"UNKNOWN").slice(0,80);
+  const rid  = String(requestId||"").slice(0,80);
   try {
-    console.warn("Dr House OpenAI fallback:", { reason:code, requestId:String(requestId||"").slice(0,80) });
+    console.warn("Dr House OpenAI fallback:", { reason:code, requestId:rid });
   } catch(e){}
+  // L'identifiant de requete est mis EN TETE : c'est lui qui permet d'apparier
+  // cette ligne avec la reponse locale qui suit. Sans lui, les deux lignes ne se
+  // relient que par l'horodatage — une conjecture des que plusieurs personnes
+  // travaillent en meme temps.
   try {
-    logIA(userId||"", "rejected", "chat_openai_fallback", "ia", "", "", "", code, "openai_responses_edge");
+    logIA(userId||"", "rejected", "chat_openai_fallback", "ia", "", "", "",
+          rid ? (rid + " | " + code) : code, "openai_responses_edge");
   } catch(e){}
 }
 
@@ -15278,7 +15284,12 @@ function logIA(userId, decision, action, cible, champ, avant, apres, extra, engi
       champ: champ || "",
       avant: String(avant||"").slice(0,120),
       apres: String(apres||"").slice(0,120),
-      extra: String(extra||"").slice(0,80),
+      // 300 et non 80 : la colonne est en texte libre, sans limite en base. Les
+      // 80 caracteres d'origine etaient une convention arbitraire, et ils
+      // obligeaient a tronquer la question pour loger un identifiant de requete.
+      // On garde une borne — un journal ne doit pas croitre sans limite — mais
+      // assez large pour que question ET identifiant tiennent ensemble.
+      extra: String(extra||"").slice(0,300),
       engine: engine || AI_CONFIG.engine
     };
     // Mémoire de session locale (pour affichage immédiat éventuel)
@@ -16194,12 +16205,24 @@ function aiProfileGreeting(profile){
   return t("ai.greeting."+profile) || t("ai.chatGreeting");
 }
 
-async function aiChatRespond(question, user, patient, finances, ctx, crm){
+// `trace` est facultatif et ne sert QU'A la journalisation : {engine, requestId}.
+// Sans lui, le comportement et la ligne ecrite sont exactement ceux d'avant, ce
+// qui laisse tous les appels existants inchanges. Avec lui, la ligne dit d'ou
+// elle vient — lampe, repli apres echec OpenAI, ou usage local nominal.
+async function aiChatRespond(question, user, patient, finances, ctx, crm, trace){
   if(aiDetectIntent(question)==="financial_status" && crm && typeof crm.ensureFinances==="function" && !(Array.isArray(crm.finances) && crm.finances.length)){
     try{ await crm.ensureFinances(); }catch(e){}
   }
   const r = aiLocalChatAnswer(question, user, patient, finances, ctx, crm);
-  try { logIA(user?user.id:"", "proposed", "chat", "ia", "", "", "", aiNormalize(question).slice(0,60)); } catch(e){}
+  try {
+    const _t = trace || {};
+    // La question n'est plus tronquee a 60 : la borne de logIA (300) suffit, et
+    // une question lisible vaut mieux qu'une question coupee au milieu.
+    const _q = aiNormalize(question);
+    logIA(user?user.id:"", "proposed", "chat", "ia", "", "", "",
+          _t.requestId ? (_t.requestId + " | " + _q) : _q,
+          _t.engine || AI_CONFIG.engine);
+  } catch(e){}
   return r;
 }
 
@@ -16886,7 +16909,11 @@ function AccueilPremiumDrHouse({ user, onOpenAI, rdvs=[], taches=[], patients=[]
         setDhMsgs(m=>[...m, { role:"assistant", text:rpt, id:"a"+Date.now() }]);
         try{ logIA(user?user.id:"", "proposed", "bilan_analyse", "ia", "", "", "", ""); }catch(e){}
       } else {
-        const r = await aiChatRespond(q, user, null, finances, { topic: dhTopicRef.current }, {patients, rdvs, finances});
+        // La lampe n'atteint jamais OpenAI : sa reponse est locale par construction.
+        // La marquer distinctement evite de la confondre, dans le journal, avec un
+        // repli de l'assistant — deux causes tres differentes qui ecrivaient jusqu'ici
+        // la meme ligne.
+        const r = await aiChatRespond(q, user, null, finances, { topic: dhTopicRef.current }, {patients, rdvs, finances}, { engine:"local_lampe" });
         if(r && r.topic) dhTopicRef.current = r.topic;
         const docs = (r && r.medExtra && Array.isArray(r.medExtra.docs)) ? r.medExtra.docs.slice(0,4) : [];
         const sug = (r && Array.isArray(r.suggestions)) ? r.suggestions.slice(0,3) : [];
@@ -17149,16 +17176,22 @@ function AssistantIA({ user, patient, patients=[], finances, activeView, onClose
       }
       // Mémoire de conversation : on passe le sujet courant au moteur.
       let r = null;
+      // Trace du repli : renseignee UNIQUEMENT si un appel OpenAI a ete tente et
+      // a echoue. Elle voyage jusqu'a la ligne de journal de la reponse locale,
+      // qui porte alors le MEME identifiant que la ligne d'echec — les deux se
+      // rattachent sans dependre d'une proximite d'horodatage.
+      let repli = null;
       if(drHouseOpenAIShouldUse(q)){
         const remote = await drHouseOpenAIChatAnswer(q);
         if(remote && remote.ok && remote.text && remote.patientDataUsed !== true){
           r = { text:remote.text, medLevel:aiMedicalLevel(remote.text), suggestions:[], medExtra:null, topic:null, provider:remote.provider||"openai" };
           try{ logIA(user?user.id:"", "proposed", "chat_openai", "ia", "", "", "", remote.requestId||"", "openai_responses_edge" ); }catch(e){}
         } else {
+          repli = { engine:"local_repli", requestId:(remote && remote.requestId) || "" };
           drHouseOpenAIWarn(remote && remote.error, remote && remote.requestId, user?user.id:"");
         }
       }
-      if(!r) r = await aiChatRespond(q, user, hasPatient?patient:null, finances, { topic: convTopic }, {patients, rdvs, finances, activeView, ensureFinances, financesLoaded, financesLoading});
+      if(!r) r = await aiChatRespond(q, user, hasPatient?patient:null, finances, { topic: convTopic }, {patients, rdvs, finances, activeView, ensureFinances, financesLoaded, financesLoading}, repli);
       if(r.topic) setConvTopic(r.topic);   // met à jour le sujet mémorisé
       setChatMsgs(m=>[...m, { role:"assistant", text:r.text, medLevel:r.medLevel||"none", suggestions:r.suggestions||[], medExtra:r.medExtra||null, feedback:null, id:uid(), source: r.provider==="openai" ? "openai" : "local" }]);
     } catch(e){
