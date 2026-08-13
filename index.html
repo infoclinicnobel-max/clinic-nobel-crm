@@ -17921,23 +17921,53 @@ function KnowledgeGraphAdmin({ user }){
 }
 
 function App() {
+  /* CORRECTIF SESSION (13 août 2026) — l'initialiseur ne décide plus rien.
+     Il lisait le jeton d'accès stocké et, s'il était expiré (durée : 1 h),
+     supprimait la session AVANT que supabase-js ait pu la renouveler avec le
+     jeton de rafraîchissement, pourtant valide des mois. D'où la redemande de
+     mot de passe à chaque réouverture passé une heure. La décision est reportée
+     au useEffect ci-dessous, seul canal qui sait renouveler. */
   const [user,setUser] = useState(()=>{
     try{
       const s=localStorage.getItem("cnsb_user");
       if(!s) return null;
-      const stored = JSON.parse(s);
-      if(isServerLoginRequired()){
-        const token = localStorage.getItem("cnsb_token")||"";
-        if(!sessionTokenLooksUsable(token, stored)){
-          localStorage.removeItem("cnsb_user");
-          localStorage.removeItem("cnsb2_user");
-          setAuthToken("");
-          return null;
-        }
-      }
-      return stored;
+      return JSON.parse(s);
     }catch(e){return null;}
   });
+  // Faux tant que la session serveur n'a pas été confirmée ou infirmée.
+  const [authVerifie,setAuthVerifie] = useState(()=>!isServerLoginRequired());
+  useEffect(()=>{
+    if(!isServerLoginRequired() || !sbClient){ setAuthVerifie(true); return; }
+    let annule = false;
+    /* Délai de garde : si getSession() ne répond pas (réseau coupé, Supabase
+       injoignable), on ne laisse PAS l'utilisateur bloqué sur l'attente. On le
+       laisse passer avec sa session stockée : les données restent protégées par
+       le RLS côté serveur, et supabase-js renouvellera dès que le réseau revient.
+       Mesuré au banc le 13 août 2026 : sans ce délai, écran d'attente infini. */
+    const DELAI_GARDE_MS = 8000;
+    (async ()=>{
+      try{
+        const { data } = await Promise.race([
+          sbClient.auth.getSession(),                        // renouvelle si nécessaire
+          new Promise(r=>setTimeout(()=>r({ data:{ session:{ access_token:null }, __delai:true } }), DELAI_GARDE_MS))
+        ]);
+        if(annule) return;
+        if(data && data.__delai){                            // pas de réponse à temps
+          /* on ne conclut rien : ni connexion forcée, ni déconnexion */
+        }else if(data && data.session && data.session.access_token){
+          setAuthToken(data.session.access_token);           // session vivante : on reste connecté
+        }else{
+          try{ localStorage.removeItem("cnsb_user"); localStorage.removeItem("cnsb2_user"); }catch(e){}
+          setAuthToken(""); setUser(null);                   // là seulement : déconnexion
+        }
+      }catch(e){
+        try{ localStorage.removeItem("cnsb_user"); localStorage.removeItem("cnsb2_user"); }catch(e2){}
+        setAuthToken(""); setUser(null);
+      }
+      if(!annule) setAuthVerifie(true);
+    })();
+    return ()=>{ annule = true; };
+  },[]);
   const [lang,setLangState] = useState(CURRENT_LANG);
   const changeLang = (code)=>{ setLang(code); setLangState(code); };
   const [view,setView] = useState("dashboard");
@@ -18363,6 +18393,17 @@ function App() {
   // par le lien de récupération, mais l'ancien mot de passe est encore actif.
   if(pwdRecovery) return <NewPasswordScreen onLangChange={changeLang} onDone={()=>{ pwdRecoverySet(false); setUser(null); }} />;
 
+  /* CORRECTIF SESSION (13 août 2026) — tant que la session n'est pas tranchée,
+     ni écran de connexion ni requête : sans cette attente, l'application
+     s'afficherait ~200 ms avec un jeton périmé et les premiers appels
+     échoueraient en 401. */
+  if(!authVerifie) return (
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14,background:"#F4F7FB",fontFamily:"system-ui,sans-serif"}}>
+      <div style={{width:34,height:34,border:"3px solid #E3E9F2",borderTopColor:"#0B1F3A",borderRadius:"50%",animation:"cnsbSpin 0.8s linear infinite"}}/>
+      <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>Clinic Nobel CRM</div>
+      <style>{"@keyframes cnsbSpin{to{transform:rotate(360deg)}}"}</style>
+    </div>
+  );
   if(!user) return <LoginScreen lang={lang} onLangChange={changeLang} onLogin={u=>{const full=isServerLoginRequired()?u:(USERS.find(x=>x.id===u.id)||u); setUser(full);}} />;
 
   const userFull = USERS.find(u2=>u2.id===user.id)||user;
