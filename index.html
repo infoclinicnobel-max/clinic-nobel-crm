@@ -1391,6 +1391,13 @@ const I18N = {
     "team.customPermissions": "Permissions personnalisées",
     "team.hasOwnRights": "Cet utilisateur a ses propres droits (override).",
     "team.usesDefaultRights": "Utilise les droits par défaut du rôle.",
+    "team.ceilingLabel": "Ne voit plus les nouveaux patients à partir du …",
+    "team.ceilingHelp": "Appliqué dans la base, pas à l’écran. Vide = aucune limite. Comparé à la date de création du dossier.",
+    "team.ceilingClear": "Effacer",
+    "team.ceilingStored": "Valeur en base : {v}",
+    "team.ceilingSaved": "Plafond de visibilité mis à jour",
+    "team.ceilingCleared": "Plafond de visibilité retiré",
+    "team.ceilingError": "Le plafond de visibilité n’a pas pu être enregistré.",
     "team.adminOnly": "Accès réservé à l'administrateur.",
     "team.roleUpdated": "Rôle mis à jour — appliqué en direct",
     "team.noDefaultValue": "Pas de valeur par défaut.",
@@ -2622,6 +2629,13 @@ const I18N = {
     "team.customPermissions": "Custom permissions",
     "team.hasOwnRights": "This user has custom rights (override).",
     "team.usesDefaultRights": "Uses the role's default rights.",
+    "team.ceilingLabel": "No longer sees new patients from …",
+    "team.ceilingHelp": "Enforced in the database, not on screen. Empty = no limit. Compared against the record creation date.",
+    "team.ceilingClear": "Clear",
+    "team.ceilingStored": "Value in the database: {v}",
+    "team.ceilingSaved": "Visibility limit updated",
+    "team.ceilingCleared": "Visibility limit removed",
+    "team.ceilingError": "The visibility limit could not be saved.",
     "team.adminOnly": "Access restricted to administrator.",
     "team.roleUpdated": "Role updated — applied live",
     "team.noDefaultValue": "No default value.",
@@ -3853,6 +3867,13 @@ const I18N = {
     "team.customPermissions": "Özel izinler",
     "team.hasOwnRights": "Bu kullanıcının özel hakları var (geçersiz kılma).",
     "team.usesDefaultRights": "Rolün varsayılan haklarını kullanır.",
+    "team.ceilingLabel": "Şu tarihten sonraki yeni hastaları görmez …",
+    "team.ceilingHelp": "Ekranda değil, veritabanında uygulanır. Boş = sınır yok. Dosyanın oluşturulma tarihiyle karşılaştırılır.",
+    "team.ceilingClear": "Temizle",
+    "team.ceilingStored": "Veritabanındaki değer: {v}",
+    "team.ceilingSaved": "Görünürlük sınırı güncellendi",
+    "team.ceilingCleared": "Görünürlük sınırı kaldırıldı",
+    "team.ceilingError": "Görünürlük sınırı kaydedilemedi.",
     "team.adminOnly": "Erişim yalnızca yöneticiye açık.",
     "team.roleUpdated": "Rol güncellendi — anında uygulandı",
     "team.noDefaultValue": "Varsayılan değer yok.",
@@ -5084,6 +5105,13 @@ const I18N = {
     "team.customPermissions": "Permisos personalizados",
     "team.hasOwnRights": "Este usuario tiene derechos personalizados (anulación).",
     "team.usesDefaultRights": "Usa los derechos predeterminados del rol.",
+    "team.ceilingLabel": "Ya no ve los nuevos pacientes a partir del …",
+    "team.ceilingHelp": "Se aplica en la base de datos, no en la pantalla. Vacío = sin límite. Compara con la fecha de creación del expediente.",
+    "team.ceilingClear": "Borrar",
+    "team.ceilingStored": "Valor en la base: {v}",
+    "team.ceilingSaved": "Límite de visibilidad actualizado",
+    "team.ceilingCleared": "Límite de visibilidad eliminado",
+    "team.ceilingError": "No se pudo guardar el límite de visibilidad.",
     "team.adminOnly": "Acceso restringido al administrador.",
     "team.roleUpdated": "Rol actualizado — aplicado en vivo",
     "team.noDefaultValue": "Sin valor predeterminado.",
@@ -14871,6 +14899,94 @@ function ModalUser({admin, target, onClose, onApplied}) {
   const [pwdErr,setPwdErr] = useState("");
   const [pwdLink,setPwdLink] = useState("");
   const [pwdBusy,setPwdBusy] = useState(false);
+
+  /* ── PLAFOND DE VISIBILITÉ DATÉ ────────────────────────────────────────
+     Ce champ NE PASSE PAS par la plomberie des autres permissions.
+
+     Les autres réglages de ce panneau partent dans `overrides`, puis dans
+     la table `permissions`, et sont appliqués par l'INTERFACE (scopeArray,
+     can(...)). Ils disent ce que l'application affiche.
+
+     Celui-ci écrit dans `profiles.patients_visibles_jusqu_au`, parce que
+     c'est cette colonne que lisent les politiques RLS de patients, rdvs,
+     finances, nw_devis et taches. C'est là toute sa valeur : hors
+     chirurgiens et anonymes, tout le personnel a en base accès à
+     l'intégralité des dossiers, et le filtrage par personne que montre
+     l'écran est cosmétique. Une date posée dans `permissions` ne
+     protégerait rien.
+
+     La colonne n'est PAS chargée dans les objets USERS (tableau en dur +
+     overrides) : il faut donc la lire ici, à l'ouverture du panneau. */
+  const [plafondDate,setPlafondDate] = useState("");      // AAAA-MM-JJ, "" = aucune limite
+  const [plafondStocke,setPlafondStocke] = useState(null); // l'horodatage exact lu en base
+  const [plafondPret,setPlafondPret] = useState(false);
+  const [plafondErr,setPlafondErr] = useState("");
+
+  /* Le champ `date` ne porte pas l'heure, or la valeur en base en a une
+     (Andréa : 13/08/2026 10:16:35). Convertir sa date en minuit
+     DÉPLACERAIT son plafond de dix heures sans que personne l'ait
+     demandé. On mémorise donc la date affichée à l'ouverture et on
+     n'écrit QUE si l'utilisateur en choisit une autre. */
+  const dateLocaleDepuisIso = (iso) => {
+    if(!iso) return "";
+    const d = new Date(iso);
+    if(isNaN(d.getTime())) return "";
+    const p = (n)=>String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+  };
+
+  useEffect(()=>{
+    if(isNew || !sbClient){ setPlafondPret(true); return; }
+    let annule = false;
+    (async ()=>{
+      try{
+        const { data, error } = await sbClient.from("profiles")
+          .select("patients_visibles_jusqu_au").eq("id", target.id).maybeSingle();
+        if(annule) return;
+        if(error) throw error;
+        const iso = data ? data.patients_visibles_jusqu_au : null;
+        setPlafondStocke(iso || null);
+        setPlafondDate(dateLocaleDepuisIso(iso));
+      }catch(e){
+        if(!annule) setPlafondErr(tt("team.ceilingError"));
+      }
+      if(!annule) setPlafondPret(true);
+    })();
+    return ()=>{ annule = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[isNew, target && target.id]);
+
+  /* Écrit la colonne et journalise. Rien n'est écrit si la date affichée
+     n'a pas changé — c'est ce qui préserve l'heure exacte d'un plafond
+     déjà posé. Renvoie un libellé pour le message de confirmation, ou
+     null si rien n'a bougé. */
+  const enregistrerPlafond = async (profilId) => {
+    if(!sbClient) return null;
+    const avant = dateLocaleDepuisIso(plafondStocke);
+    if(plafondDate === avant) return null;
+    let valeur = null;
+    if(plafondDate){
+      /* Minuit en heure LOCALE du navigateur — la convention de toute
+         l'application. « À partir du 20 » veut dire dès le début du 20,
+         heure de la clinique. */
+      const d = new Date(`${plafondDate}T00:00:00`);
+      if(isNaN(d.getTime())) throw new Error("date illisible");
+      valeur = d.toISOString();
+    }
+    const { data, error } = await sbClient.from("profiles")
+      .update({ patients_visibles_jusqu_au: valeur })
+      .eq("id", profilId).select("id");
+    if(error) throw error;
+    /* Aucune ligne touchée : le profil n'existe pas en base. On ne crée
+       RIEN — un panneau de permissions n'invente pas un profil. */
+    if(!data || !data.length) throw new Error("profil introuvable en base");
+    logPerm(admin.id, "user", profilId, tt("team.ceilingLabel"),
+      plafondStocke ? String(plafondStocke) : "—",
+      valeur ? String(valeur) : "—");
+    setPlafondStocke(valeur);
+    return valeur ? tt("team.ceilingSaved") : tt("team.ceilingCleared");
+  };
+
   const callPwdFn = async (mode) => {
     setPwdErr(""); setPwdMsg(""); setPwdLink("");
     if(mode==="set"){
@@ -14898,7 +15014,7 @@ function ModalUser({admin, target, onClose, onApplied}) {
     setPwdVal(""); setPwdVal2(""); setPwdBusy(false);
   };
 
-  const save = () => {
+  const save = async () => {
     if(!f.prenom.trim()||!f.email.trim()){ alert(tt("team.nameEmailRequired")); return; }
     if(isNew && !f.password.trim()){ alert(tt("team.setPassword")); return; }
     if(isNew && USERS.find(u=>u.email.toLowerCase()===f.email.trim().toLowerCase())){ alert(tt("team.emailExists")); return; }
@@ -14914,6 +15030,21 @@ function ModalUser({admin, target, onClose, onApplied}) {
       const o = cfgStore.load("overrides")||{}; if(o[id]){ delete o[id].perms; delete o[id].scopes; delete o[id].editOwn; cfgStore.save("overrides",o); RBAC.overrides=o; }
     }
     saveUserConfig(admin.id, u, isNew);
+
+    /* Le plafond part APRÈS le reste, et son échec ne perd rien : la fiche
+       est déjà enregistrée. On garde le panneau ouvert pour dire ce qui
+       n'est pas passé, plutôt que de fermer sur un succès partiel
+       silencieux — c'est la seule écriture de ce panneau qui touche la
+       base directement, donc la seule qui puisse échouer seule. */
+    if(!isNew){
+      try{
+        await enregistrerPlafond(id);
+      }catch(e){
+        setPlafondErr(`${tt("team.ceilingError")} ${e && e.message ? "("+e.message+")" : ""}`.trim());
+        onApplied();
+        return;
+      }
+    }
     onApplied(); onClose();
   };
   const del = () => {
@@ -15007,6 +15138,31 @@ function ModalUser({admin, target, onClose, onApplied}) {
             </div>
           </label>
           {customPerms&&<PermMatrix value={pv} onChange={setPv}/>}
+        </div>}
+
+        {/* Plafond de visibilité daté — écrit dans profiles, pas dans
+            permissions. Absent à la création : il n'y a pas encore de
+            ligne profiles à mettre à jour, et ce panneau n'en crée aucune. */}
+        {!isNew&&<div style={{background:C.white,borderRadius:14,padding:14,marginBottom:14}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>🔒 {tt("team.ceilingLabel")}</div>
+          <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>{tt("team.ceilingHelp")}</div>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <input type="date" value={plafondDate} disabled={!plafondPret}
+              onChange={(e)=>{ setPlafondDate(e.target.value); setPlafondErr(""); }}
+              style={{flex:1,padding:"10px 12px",border:`1.5px solid ${C.border}`,borderRadius:10,fontSize:13,background:plafondPret?C.white:C.bg,color:C.text}}/>
+            <button type="button" disabled={!plafondPret||!plafondDate}
+              onClick={()=>{ setPlafondDate(""); setPlafondErr(""); }}
+              style={{padding:"10px 14px",border:`1px solid ${C.border}`,borderRadius:10,background:C.white,cursor:(plafondPret&&plafondDate)?"pointer":"not-allowed",fontWeight:700,color:C.muted,fontSize:12,opacity:(plafondPret&&plafondDate)?1:0.5}}>
+              {tt("team.ceilingClear")}
+            </button>
+          </div>
+          {/* L'horodatage EXACT déjà en base. Le champ ci-dessus n'affiche
+              que le jour ; sans cette ligne, Veys ne verrait pas l'heure
+              qu'il conserve — ni celle qu'il remplacerait. */}
+          {plafondStocke&&<div style={{fontSize:10,color:C.muted,marginTop:8,fontFamily:"monospace"}}>
+            {tt("team.ceilingStored").replace("{v}", new Date(plafondStocke).toLocaleString())}
+          </div>}
+          {plafondErr&&<div style={{fontSize:11,color:C.red,marginTop:8,fontWeight:700}}>{plafondErr}</div>}
         </div>}
 
         {/* Boutons */}
