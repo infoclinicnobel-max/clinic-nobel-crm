@@ -11255,7 +11255,8 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
       patient:p?`${p.prenom} ${p.nom}`:"—", intervention:f.procedure||(p&&p.procedure)||"—",
       opDate:(p&&p.dateOperation)?p.dateOperation:"—", methode:f.type===FIN_SURGEON_PAY?(f.methode||"Espèces"):"—",
       user:f.type===FIN_SURGEON_PAY?sgUserName(f.creePar):"—", txn:sgTxn(f.id),
-      montant:Math.abs(Number(f.montant)||0), statut:f.type===FIN_SURGEON_FEE?"—":(isSurgeonGiven(f)?tt("finance.paidOut"):tt("finance.toPay")),
+      montant:Math.abs(Number(f.montant)||0), devise:financeCurrencyCode(f.devise), montantAff:surgeonFmt(f),
+      statut:f.type===FIN_SURGEON_FEE?"—":(isSurgeonGiven(f)?tt("finance.paidOut"):tt("finance.toPay")),
       note:surgeonNoteOf(f)||"" };
   });
   // Relevé complet d'un chirurgien : fenêtre imprimable (Imprimer / Enregistrer en PDF)
@@ -11263,7 +11264,7 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
     try{
       const du=surgeonDue(recs), donne=surgeonGiven(recs), reste=Math.max(du-donne,0);
       const lp=sgLastPay(recs);
-      const rows=sgRowsFor(recs,getP).map(r=>`<tr><td>${sgEsc(fmtJour(r.date))}</td><td>${sgEsc(r.type)}</td><td>${sgEsc(r.patient)}</td><td>${sgEsc(r.intervention)}</td><td>${sgEsc(r.opDate==="—"?"—":fmtJour(r.opDate))}</td><td>${sgEsc(r.methode)}</td><td>${sgEsc(r.user)}</td><td>${sgEsc(r.txn)}</td><td style="text-align:right;font-weight:700">${sgEsc(eur(r.montant))}</td><td>${sgEsc(r.statut)}</td><td>${sgEsc(r.note)}</td></tr>`).join("");
+      const rows=sgRowsFor(recs,getP).map(r=>`<tr><td>${sgEsc(fmtJour(r.date))}</td><td>${sgEsc(r.type)}</td><td>${sgEsc(r.patient)}</td><td>${sgEsc(r.intervention)}</td><td>${sgEsc(r.opDate==="—"?"—":fmtJour(r.opDate))}</td><td>${sgEsc(r.methode)}</td><td>${sgEsc(r.user)}</td><td>${sgEsc(r.txn)}</td><td style="text-align:right;font-weight:700">${sgEsc(r.montantAff)}</td><td>${sgEsc(r.statut)}</td><td>${sgEsc(r.note)}</td></tr>`).join("");
       const w=window.open("","_blank");
       if(!w){ alert(tt("fin.exportError")); return; }
       w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${sgEsc(tt("finance.sgStatement"))} — ${sgEsc(chir)} — ${todayStr()}</title>
@@ -11277,7 +11278,7 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
           <div class="k">${sgEsc(tt("finance.totalFees"))}<b>${sgEsc(eur(du))}</b></div>
           <div class="k">${sgEsc(tt("finance.totalGiven"))}<b>${sgEsc(eur(donne))}</b></div>
           <div class="k">${sgEsc(tt("finance.totalRemaining"))}<b>${sgEsc(eur(reste))}</b></div>
-          <div class="k">${sgEsc(tt("finance.sgLastPay"))}<b>${lp?sgEsc(eur(lp.montant))+" · "+sgEsc(fmtJour(lp.date)):"—"}</b></div>
+          <div class="k">${sgEsc(tt("finance.sgLastPay"))}<b>${lp?sgEsc(surgeonFmt(lp))+" · "+sgEsc(fmtJour(lp.date)):"—"}</b></div>
         </div>
         <table><thead><tr><th>${sgEsc(tt("common.date"))}</th><th>Type</th><th>${sgEsc(tt("nav.patients"))}</th><th>${sgEsc(tt("finance.sgIntervention"))}</th><th>${sgEsc(tt("finance.sgOpDate"))}</th><th>${sgEsc(tt("finance.sgMethod"))}</th><th>${sgEsc(tt("finance.givenBy"))}</th><th>${sgEsc(tt("finance.sgTxn"))}</th><th>${sgEsc(tt("finance.amount"))}</th><th>${sgEsc(tt("common.status"))}</th><th>Note</th></tr></thead>
         <tbody>${rows}</tbody></table>
@@ -11289,9 +11290,9 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
   // Exports CSV / Excel (colonnes complètes, tous chirurgiens filtrés)
   const sgExport = (kind, rowsByChir)=>{
     try{
-      const head=[tt("finance.surgeon"),tt("common.date"),"Type",tt("nav.patients"),tt("finance.sgIntervention"),tt("finance.sgOpDate"),tt("finance.sgMethod"),tt("finance.givenBy"),tt("finance.sgTxn"),tt("finance.amount"),tt("common.status"),"Note"];
+      const head=[tt("finance.surgeon"),tt("common.date"),"Type",tt("nav.patients"),tt("finance.sgIntervention"),tt("finance.sgOpDate"),tt("finance.sgMethod"),tt("finance.givenBy"),tt("finance.sgTxn"),tt("finance.amount"),"Devise",tt("common.status"),"Note"];
       const lines=[];
-      Object.keys(rowsByChir).forEach(chir=>{ rowsByChir[chir].forEach(r=>{ lines.push([chir,r.date,r.type,r.patient,r.intervention,r.opDate,r.methode,r.user,r.txn,String(r.montant),r.statut,r.note]); }); });
+      Object.keys(rowsByChir).forEach(chir=>{ rowsByChir[chir].forEach(r=>{ lines.push([chir,r.date,r.type,r.patient,r.intervention,r.opDate,r.methode,r.user,r.txn,String(r.montant),r.devise||"EUR",r.statut,r.note]); }); });
       let blob, fname;
       if(kind==="xls"){
         const tr=rows=>rows.map(c=>`<td>${sgEsc(c)}</td>`).join("");
