@@ -1524,6 +1524,11 @@ const I18N = {
     "caisse.amountRequired": "Le montant est requis (chiffres uniquement).",
     "caisse.changeBothRequired": "Il faut les deux montants : les euros donnés et les livres reçues.",
     "caisse.pending": "En attente",
+    "caisse.beforeCountConfirm": "Ce mouvement est daté au plus tard du dernier arrêté ({d}) : il n'entrera dans aucun solde, l'argent compté ce jour-là le contient peut-être déjà. Enregistrer quand même ?",
+    "caisse.notReady": "Chargement des données financières… l'arrêté est bloqué tant que tout n'est pas chargé.",
+    "caisse.saveFailed": "❌ NON enregistré — vérifiez la connexion et réessayez.",
+    "caisse.unreadableRow": "montant illisible",
+    "patient.quoteChecking": "Budget verrouillé — vérification du devis…",
     "patient.quoteIsTruth": "Le devis {n} fait foi : ce montant n'est plus saisi à la main.",
     "patient.quoteConflict": "Fiche et devis divergent — Veys tranche, rien n'est corrigé automatiquement.",
     "common.loadingSheets": "Chargement depuis Google Sheets…",
@@ -2823,6 +2828,11 @@ const I18N = {
     "caisse.amountRequired": "Amount is required (digits only).",
     "caisse.changeBothRequired": "Both amounts are needed: euros given and lira received.",
     "caisse.pending": "Pending",
+    "caisse.beforeCountConfirm": "This movement is dated on or before the last cash count ({d}): it will never enter any balance, the counted cash may already include it. Save anyway?",
+    "caisse.notReady": "Loading financial data… the cash count is blocked until everything is loaded.",
+    "caisse.saveFailed": "❌ NOT saved — check the connection and try again.",
+    "caisse.unreadableRow": "unreadable amount",
+    "patient.quoteChecking": "Budget locked — checking the quote…",
     "patient.quoteIsTruth": "Quote {n} rules: this amount is no longer typed by hand.",
     "patient.quoteConflict": "Sheet and quote differ — Veys decides, nothing is fixed automatically.",
     "common.loadingSheets": "Loading from Google Sheets…",
@@ -4122,6 +4132,11 @@ const I18N = {
     "caisse.amountRequired": "Tutar zorunlu (yalnızca rakam).",
     "caisse.changeBothRequired": "İki tutar da gerekli: verilen euro ve alınan lira.",
     "caisse.pending": "Beklemede",
+    "caisse.beforeCountConfirm": "Bu hareketin tarihi son sayımdan ({d}) önce veya aynı gün: hiçbir bakiyeye girmeyecek, sayılan para onu zaten içeriyor olabilir. Yine de kaydedilsin mi?",
+    "caisse.notReady": "Finansal veriler yükleniyor… her şey yüklenene kadar sayım engellendi.",
+    "caisse.saveFailed": "❌ KAYDEDİLMEDİ — bağlantıyı kontrol edip yeniden deneyin.",
+    "caisse.unreadableRow": "okunamayan tutar",
+    "patient.quoteChecking": "Bütçe kilitli — teklif kontrol ediliyor…",
     "patient.quoteIsTruth": "{n} numaralı teklif geçerli: bu tutar artık elle girilmez.",
     "patient.quoteConflict": "Dosya ile teklif farklı — Veys karar verir, hiçbir şey otomatik düzeltilmez.",
     "common.loadingSheets": "Google Sheets'ten yükleniyor…",
@@ -5421,6 +5436,11 @@ const I18N = {
     "caisse.amountRequired": "El importe es obligatorio (solo cifras).",
     "caisse.changeBothRequired": "Hacen falta los dos importes: euros entregados y liras recibidas.",
     "caisse.pending": "Pendiente",
+    "caisse.beforeCountConfirm": "Este movimiento está fechado en el último arqueo ({d}) o antes: no entrará en ningún saldo, el efectivo contado quizá ya lo incluye. ¿Guardar de todos modos?",
+    "caisse.notReady": "Cargando datos financieros… el arqueo está bloqueado hasta que todo esté cargado.",
+    "caisse.saveFailed": "❌ NO guardado — compruebe la conexión y vuelva a intentarlo.",
+    "caisse.unreadableRow": "importe ilegible",
+    "patient.quoteChecking": "Presupuesto bloqueado — comprobando el presupuesto…",
     "patient.quoteIsTruth": "Manda el presupuesto {n}: este importe ya no se teclea a mano.",
     "patient.quoteConflict": "Ficha y presupuesto difieren — decide Veys, nada se corrige automáticamente.",
     "common.loadingSheets": "Cargando desde Google Sheets…",
@@ -9349,7 +9369,7 @@ function FichePatient({user, patient, patients, rdvs, finances, taches, nwDevis,
                     <div style={{fontSize:10,fontWeight:700,color:C.muted,marginBottom:4}}>{tt("finance.paymentHistory")}</div>
                     {pays.map(f=>(
                       <div key={f.id} style={{display:"flex",alignItems:"center",gap:8,fontSize:11,padding:"3px 0",flexWrap:"wrap"}}>
-                        <span style={{fontWeight:800,color:isSurgeonGiven(f)?C.red:C.muted,whiteSpace:"nowrap"}}>−{eurF(f.montant)}</span>
+                        <span style={{fontWeight:800,color:isSurgeonGiven(f)?C.red:C.muted,whiteSpace:"nowrap"}}>−{surgeonFmt(f)}</span>
                         <span style={{color:C.muted}}>{fmtDate(f.date)}</span>
                         <span style={{color:C.muted}}>👤 {tt("finance.givenBy")} {recuPar(f)}</span>
                         {!isSurgeonGiven(f)&&<Badge text={tt("finance.toPay")} color={C.amber} small/>}
@@ -10423,8 +10443,17 @@ function isSurgeonFee(f){ return f?.type===FIN_SURGEON_FEE && f?.statut!=="Annul
 // Un paiement chirurgien COMPTE comme remis si statut "Payé" (ou "Complété").
 // Les anciens enregistrements "À payer" restent visibles mais ne comptent pas comme remis.
 function isSurgeonGiven(f){ return f?.type===FIN_SURGEON_PAY && (f?.statut==="Payé"||f?.statut==="Complété"); }
-function surgeonDue(records){ return records.filter(isSurgeonFee).reduce((a,f)=>a+Math.abs(Number(f.montant||0)),0); }
-function surgeonGiven(records){ return records.filter(isSurgeonGiven).reduce((a,f)=>a+Math.abs(Number(f.montant||0)),0); }
+// Lot 73 : la caisse paie les chirurgiens en TL (sauf exception en EUR). Les
+// totaux € n'additionnent QUE les lignes en euros — deux devises ne s'ajoutent
+// jamais ; les lignes TL restent visibles une à une avec leur devise (surgeonFmt).
+const isEurRow = (f)=> financeCurrencyCode(f?.devise)==="EUR";
+function surgeonFmt(f){
+  const dev = financeCurrencyCode(f?.devise);
+  const n = Math.abs(parseMoney(f?.montant));
+  return (Math.round(n*100)/100).toLocaleString("fr-FR") + (dev==="EUR" ? " €" : dev==="TRY" ? " TL" : " "+dev);
+}
+function surgeonDue(records){ return records.filter(isSurgeonFee).filter(isEurRow).reduce((a,f)=>a+Math.abs(Number(f.montant||0)),0); }
+function surgeonGiven(records){ return records.filter(isSurgeonGiven).filter(isEurRow).reduce((a,f)=>a+Math.abs(Number(f.montant||0)),0); }
 function surgeonRemaining(records){ return Math.max(surgeonDue(records)-surgeonGiven(records),0); }
 // Statut calculé : rien remis → À payer · partiellement → Partiel · tout remis → Payé
 function surgeonStatusKey(due, given){
@@ -11924,7 +11953,7 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
                 </div>
                 <Badge text={isFee?tt("finance.due"):FIN_MODE_CASH} color={isFee?C.navy:C.red} small/>
                 <div style={{textAlign:"right",flexShrink:0}}>
-                  <div style={{fontSize:14,fontWeight:800,color:isFee?C.navy:C.red}}>{isFee?"":"−"}{eur(f.montant)}</div>
+                  <div style={{fontSize:14,fontWeight:800,color:isFee?C.navy:C.red}}>{isFee?"":"−"}{surgeonFmt(f)}</div>
                   <Badge text={tt(stKey)} color={stColor} small/>
                 </div>
                 {can(user,"finances","delete")&&<button onClick={()=>onDelete&&onDelete(f.id)} style={{border:"none",background:"none",cursor:"pointer",fontSize:15,opacity:0.5,flexShrink:0}}>🗑</button>}
@@ -12090,7 +12119,7 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
                       <div style={{fontWeight:700,color:C.text}}>{isFee?tt("finance.surgeonFee"):tt("finance.addPay")}{f.procedure?` · ${f.procedure}`:""}</div>
                       <div style={{color:C.muted}}>{p?`${p.prenom} ${p.nom}`:tt("finance.patientUnknown")}{p?.hopital?` · 🏥 ${p.hopital}`:""} · {fmtJour(f.date)}{!isFee?` · 👤 ${tt("finance.givenBy")} ${remisPar(f)}`:""}{surgeonNoteOf(f)?` · ${surgeonNoteOf(f)}`:""}</div>
                     </div>
-                    <span style={{fontWeight:800,color:isFee?C.navy:C.red,whiteSpace:"nowrap"}}>{isFee?"":"−"}{eur(f.montant)}</span>
+                    <span style={{fontWeight:800,color:isFee?C.navy:C.red,whiteSpace:"nowrap"}}>{isFee?"":"−"}{surgeonFmt(f)}</span>
                     {!isFee&&!isSurgeonGiven(f)&&can(user,"finances","edit")&&onUpdate&&<button onClick={()=>onUpdate({...f,statut:"Payé"})} style={{minHeight:30,padding:"4px 9px",border:"none",borderRadius:8,background:C.green,color:C.white,cursor:"pointer",fontWeight:700,fontSize:10}}>✓ {tt("finance.markPaid")}</button>}
                     {!isFee&&!isSurgeonGiven(f)&&<Badge text={tt("finance.toPay")} color={C.amber} small/>}
                     {can(user,"finances","edit")&&<button onClick={()=>setSgEdit(sgEdit&&sgEdit.id===f.id?null:{id:f.id,isFee,chir,montant:String(Math.abs(Number(f.montant)||0)),date:f.date||todayStr(),methode:f.methode||"Espèces",note:surgeonNoteOf(f),statut:f.statut||(isFee?"":"Payé")})} title={tt("finance.editPay")} style={{minHeight:30,border:"none",background:"none",cursor:"pointer",fontSize:13,flexShrink:0}}>✏️</button>}
@@ -13082,7 +13111,7 @@ function OperationsPicker({value, onChange, onClose}) {
 }
 
 
-function ModalPatient({user, patient, nwDevis, onSave, onClose}) {
+function ModalPatient({user, patient, nwDevis, nwDevisReady, onSave, onClose}) {
   const tt = t; // alias sûr : évite toute collision avec variables locales "t"
   const isEdit = !!patient?.id;
   const [step, setStep] = useState(0);
@@ -13126,7 +13155,11 @@ function ModalPatient({user, patient, nwDevis, onSave, onClose}) {
   const handleSave = async () => {
     if(!f.prenom||!f.nom){alert("Prénom et nom obligatoires !");return;}
     setSaving(true);
-    await onSave(f);
+    // Lot 73 — ceinture et bretelles : dès qu'un devis existe, le budget de la
+    // fiche ne s'écrase JAMAIS (même si le champ a pu être touché pendant que la
+    // liste des devis se chargeait). Le devis fait foi, la base ne bouge pas.
+    const devisExistant = patient?.id ? nwDevisOf(nwDevis||[], patient.id) : null;
+    await onSave(devisExistant ? {...f, budget: patient.budget} : f);
     setSaving(false);
   };
 
@@ -13175,7 +13208,12 @@ function ModalPatient({user, patient, nwDevis, onSave, onClose}) {
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
             {(()=>{ // Lot 73 : dès qu'un devis NobelWorld existe, il fait foi — le budget
                     // n'est plus saisi à la main (le champ reflète le devis, jamais une recopie).
+                    // Tant que la liste des devis n'est pas confirmée chargée, le champ reste
+                    // verrouillé (« jamais chargé » n'est pas « aucun devis »).
               const dv = patient ? nwDevisOf(nwDevis||[], patient.id) : null;
+              if(patient && !dv && !nwDevisReady) return <div><label style={lbl}>Budget (€) ⏳</label>
+                <div style={{...inp,background:"#F1F5F9",color:C.muted,display:"flex",alignItems:"center",minHeight:38}}>{t("patient.quoteChecking")}</div>
+              </div>;
               if(!dv) return <div><label style={lbl}>Budget (€)</label><input style={inp} {...inpProps} type="number" value={f.budget||""} onChange={e=>ch("budget",e.target.value)}/></div>;
               return <div><label style={lbl}>Budget (€) 📄</label>
                 <div style={{...inp,background:"#F1F5F9",color:C.muted,display:"flex",alignItems:"center",minHeight:38}} title={t("patient.quoteIsTruth").replace("{n}", dv.numero||"NobelWorld")}>{Number(dv.forfait)||0} € · {dv.numero||"devis"}</div>
@@ -15560,8 +15598,11 @@ function GestionUtilisateurs({user, onApplied, permVer}) {
             const sel = {padding:"8px 10px",border:`1.5px solid ${C.border}`,borderRadius:9,fontSize:12,background:C.white,minWidth:0};
             const uA = USERS.find(x=>x.id===cmpA), uB = USERS.find(x=>x.id===cmpB);
             const src = (u2)=>{ const ov=userOverride(u2); return (ov&&ov.perms&&Object.keys(ov.perms).length>0) ? tt("team.cmpCustom") : `${tt("team.role")} : ${roleLabel(u2.role)||u2.role}`; };
+            // La caisse s'accorde par hasCaisse (rôle coordinatrice/admin ou coche),
+            // pas par can() seul : le diagnostic doit refléter l'accès réel.
+            const viewOf = (u2,k)=> k==="caisse" ? hasCaisse(u2) : can(u2,k,"view");
             const rows = (uA&&uB) ? PERM_MODULES.map(m=>{
-              const a=can(uA,m.k,"view"), b=can(uB,m.k,"view");
+              const a=viewOf(uA,m.k), b=viewOf(uB,m.k);
               return {k:m.k, icon:m.icon, label:moduleLabel(m.k)||m.l, a, b, diff:a!==b};
             }) : [];
             const diffs = rows.filter(r=>r.diff);
@@ -15573,7 +15614,7 @@ function GestionUtilisateurs({user, onApplied, permVer}) {
               {uA&&!uB&&(()=>{
                 const ovA = userOverride(uA)||{};
                 const custom = !!(ovA.perms && Object.keys(ovA.perms).length>0);
-                const visibles = PERM_MODULES.filter(m=>can(uA,m.k,"view")).map(m=>`${m.icon} ${moduleLabel(m.k)||m.l}`);
+                const visibles = PERM_MODULES.filter(m=>viewOf(uA,m.k)).map(m=>`${m.icon} ${moduleLabel(m.k)||m.l}`);
                 const Row=({l,v})=>(<div style={{display:"flex",gap:8,padding:"3px 0",fontSize:11}}><span style={{color:C.muted,minWidth:170}}>{l}</span><span style={{fontWeight:700,color:C.text,flex:1,wordBreak:"break-word"}}>{v}</span></div>);
                 return (<div style={{background:C.bg,borderRadius:10,padding:"10px 12px",marginBottom:8}}>
                   <div style={{fontSize:12,fontWeight:800,color:C.navy,marginBottom:6}}>🩺 {tt("team.diagUser")} — {uA.prenom} {uA.nom}</div>
@@ -18511,19 +18552,21 @@ function montantConvenuInfo(p, nwDevis){
   return {source:"devis", montant:forfait, net:nwNet(devis), devis, budget};
 }
 // Versements réalisés d'une patiente, par devise (remboursements déduits).
+// Une ligne au montant illisible ne s'ignore pas : elle est rendue à l'appelant
+// pour être SIGNALÉE sur la ligne de la patiente.
 function caisseVerseParDevise(p, finances){
-  const out = {};
+  const out = {}; const illisibles = [];
   (finances||[]).forEach(f=>{
     if(!f || String(f.patientId)!==String(p?.id)) return;
     if(!(f.statut==="Complété"||f.statut==="Payé")) return;
     const rembours = f.type==="Remboursement";
     if(f.sens==="entree" || (rembours && f.sens==="sortie")){
-      const m = caisseNum(f.montant); if(m===null) return;
+      const m = caisseNum(f.montant); if(m===null){ illisibles.push(f); return; }
       const dev = financeCurrencyCode(f.devise);
       out[dev] = (out[dev]||0) + (rembours ? -m : m);
     }
   });
-  return out;
+  return { montants: out, illisibles };
 }
 // Ligne saisie après coup : datée avant le jour où elle a été enregistrée.
 const caisseApresCoup = (f)=> !!(f && f.created_at && f.date && String(f.created_at).slice(0,10) > String(f.date));
@@ -18563,7 +18606,7 @@ function CaissePatientPick({patients, value, onPick, optional, onClear}){
   );
 }
 
-function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecins, hopitaux, onSave, onUpdate, onSaveArrete}){
+function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecins, hopitaux, pret, onSave, onUpdate, onSaveArrete}){
   const tt = t;
   const [tab,setTab] = useState("solde");
   const [sheet,setSheet] = useState(null);   // {kind:"menu"|"encaisse"|"paye"|"change"|"rendu"|"arrete"}
@@ -18578,6 +18621,21 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
   const calc = caisseSoldes(finances, arretes);
   const getP = (pid)=> (patients||[]).find(p=>String(p.id)===String(pid));
 
+  // Droits : la coche « caisse.view » de la matrice n'ouvre que la LECTURE.
+  // Écrire (saisir, arrêter) et annuler restent aux détenteurs naturels de la
+  // caisse (coordinatrice, admin/pdg) ou aux coches add/edit explicites.
+  const roleCaisse = isFullRole(user.role) || user.role==="coordinatrice";
+  const canAdd  = roleCaisse || can(user,"caisse","add");
+  const canEdit = roleCaisse || can(user,"caisse","edit");
+  // Le SOLDE se calcule sur TOUS les mouvements (sinon il serait faux), mais le
+  // détail affiché respecte les gardes existantes : les mouvements chirurgien et
+  // commissions ne se listent pas à un simple détenteur de « caisse.view ».
+  const voitTout = roleCaisse || hasFinancesAdmin(user);
+  const finVisibles = voitTout ? (finances||[]) : (finances||[])
+    .filter(f=> FIN_SURGEON_TYPES.indexOf(f.type)<0)
+    .filter(f=> hasCommissions(user) || FIN_COMMISSION_TYPES.indexOf(f.type)<0);
+  const estVisible = (mv)=> finVisibles.indexOf(mv)>=0;
+
   // Bénéficiaires connus : chirurgiens (constantes + collection serveur) puis hôpitaux.
   const chirNames = Array.from(new Set([
     ...((typeof MEDECINS_LIST!=="undefined"?MEDECINS_LIST:[])||[]),
@@ -18589,8 +18647,17 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
   const lbl = {fontSize:10.5,fontWeight:800,color:C.muted,textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:5};
   const chip = (active,color)=>({flex:1,minHeight:40,padding:"9px 8px",border:`1.5px solid ${active?(color||C.navy):C.border}`,borderRadius:10,background:active?(color||C.navy)+"14":C.white,color:active?(color||C.navy):C.muted,fontWeight:800,fontSize:12.5,cursor:"pointer"});
 
-  const montantOk = (v)=>{ const n=parseMoney(v); return n>0 ? n : null; };
+  // Saisie de montant : cast STRICT (miroir de la vue SQL), après retrait des
+  // seuls séparateurs de milliers/du signe € — « 1 500,50 » passe, « 5OO » non.
+  const montantStrict = (v)=> caisseNum(String(v==null?"":v).replace(/[\s\u00A0\u202F€]/g,""));
+  const montantOk = (v)=>{ const n=montantStrict(v); return (n!==null && n>0) ? n : null; };
   const doSave = async (row, apres)=>{
+    // Un mouvement daté au plus tard du dernier arrêté de sa devise n'entrera
+    // dans AUCUN solde (la vue repart de l'arrêté) : on prévient avant d'écrire.
+    const devs = row.sens==="change" ? [financeCurrencyCode(row.devise), financeCurrencyCode(row.devise_contrepartie)]
+      : (row.lieu==="caisse" ? [financeCurrencyCode(row.devise)] : []);
+    const bloquant = devs.map(d=>calc.arretes[d]).filter(Boolean).find(a=> String(row.date||"") <= String(a.date||""));
+    if(bloquant && !window.confirm(tt("caisse.beforeCountConfirm").replace("{d}", fmtJour(bloquant.date)))) return;
     setSaving(true);
     try{ await onSave(row); flash("✅ "+tt("caisse.savedNext")); if(apres!=="stay"){ setF({date:todayStr(),lieu:"caisse",nature:"acompte",devise:"EUR"}); setSheet({kind:"menu"}); } }
     finally{ setSaving(false); }
@@ -18611,13 +18678,18 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
     const m = montantOk(f.montant); if(m===null){ alert(tt("caisse.amountRequired")); return; }
     const benef = String(f.benef||"").trim();
     if(!benef){ alert(tt("caisse.beneficiary")+" ?"); return; }
-    const estChir = chirNames.some(n=>n.toLowerCase()===benef.toLowerCase());
+    // Les consommateurs existants (surgeonOf, regroupements) comparent le nom en
+    // EXACT : on stocke donc le nom canonique de la liste, retrouvé sans tenir
+    // compte de la casse ni des accents — jamais la frappe brute de Ceyda.
+    const norm = (s)=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();
+    const canon = chirNames.find(n=>norm(n)===norm(benef));
+    const nomBenef = canon || benef;
     await doSave({
-      patientId:f.patientId||"", type: estChir ? FIN_SURGEON_PAY : FIN_PRESTA_PAY, procedure:"",
+      patientId:f.patientId||"", type: canon ? FIN_SURGEON_PAY : FIN_PRESTA_PAY, procedure:"",
       montant:String(m), date:f.date||todayStr(), statut:"Payé", methode:"Espèces",
       devise: f.devise==="EUR" ? "EUR" : "TRY",
       lieu:"caisse", sens:"sortie",
-      notes: f.note ? `${benef} · ${f.note}` : benef,   // même format que l'existant : « Nom · note »
+      notes: f.note ? `${nomBenef} · ${f.note}` : nomBenef,   // même format que l'existant : « Nom · note »
     });
   };
   const saveChange = async ()=>{
@@ -18640,8 +18712,12 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
     });
   };
   const saveArreteLocal = async ()=>{
-    const m = parseMoney(f.montant);
-    if(String(f.montant||"").trim()===""){ alert(tt("caisse.amountRequired")); return; }
+    // L'arrêté écrit des colonnes NUMÉRIQUES qui deviennent le point de repère
+    // du solde : cast strict (« 5OO » refusé, 0 permis — une caisse vide comptée
+    // à zéro est un arrêté légitime), et jamais sur des données pas encore chargées.
+    if(!pret){ alert(tt("caisse.notReady")); return; }
+    const m = montantStrict(f.montant);
+    if(m===null || m<0){ alert(tt("caisse.amountRequired")); return; }
     const dev = f.devise==="TRY" ? "TRY" : "EUR";
     const date = f.date||todayStr();
     const calcule = (caisseSoldesAsOf(finances, arretes, date).soldes[dev])||0;
@@ -18650,16 +18726,20 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
       await onSaveArrete({ devise:dev, date, montant_compte:m, montant_calcule:calcule, ecart:Math.round((m-calcule)*100)/100, notes:String(f.note||"") });
       flash(`✅ ${tt("caisse.gap")} : ${caisseFmt(m-calcule, dev)}`);
       setSheet(null);
+    } catch(e){
+      alert(tt("caisse.saveFailed"));   // l'échec reste visible, la feuille reste ouverte
     } finally { setSaving(false); }
   };
   const annuler = async (mv)=>{
     if(!window.confirm(tt("caisse.cancelConfirm"))) return;
-    await onUpdate({...mv, statut:"Annulé", notes:`${mv.notes?mv.notes+" ":""}[${tt("caisse.cancelledBy")} ${user.prenom||user.id} · ${todayStr()}]`});
+    // Trace SANS « · » : ce séparateur sert à surgeonOf() pour extraire le nom
+    // du chirurgien en tête des notes — il ne doit jamais apparaître ailleurs.
+    await onUpdate({...mv, statut:"Annulé", notes:`${mv.notes?mv.notes+" ":""}[${tt("caisse.cancelledBy")} ${user.prenom||user.id} — ${todayStr()}]`});
     flash("↩️ "+tt("caisse.cancelMove"));
   };
 
   // ── Journal : tous les mouvements d'argent qualifiés (sens posé, statut réel) ──
-  const journal = (finances||[])
+  const journal = finVisibles
     .filter(mv=> mv && mv.sens && mv.statut!=="")
     .sort((a,b)=> String(b.date||"").localeCompare(String(a.date||"")) || String(b.created_at||"").localeCompare(String(a.created_at||"")))
     .slice(0,120);
@@ -18667,8 +18747,10 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
     if(mv.sens==="change"){
       const mc = caisseNum(mv.montant_contrepartie);
       const m = caisseNum(mv.montant);
+      const devM = financeCurrencyCode(mv.devise);
+      const devC = mv.devise_contrepartie ? financeCurrencyCode(mv.devise_contrepartie) : (devM==="EUR"?"TRY":"EUR");
       const taux = (m&&mc) ? ` · ${tt("caisse.rate").toLowerCase()} ${(mc/m).toLocaleString("fr-FR",{maximumFractionDigits:2})}` : "";
-      return `${caisseFmt(m||0,"EUR")} → ${caisseFmt(mc||0,"TRY")}${taux}`;
+      return `${caisseFmt(m||0,devM)} → ${caisseFmt(mc||0,devC)}${taux}`;
     }
     if(mv.sens==="remise") return tt("caisse.actRendu");
     const p = getP(mv.patientId);
@@ -18681,13 +18763,14 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
   // ── Rapprochement par patiente : le cas SANS devis ni facture est LA norme ──
   const lignesPat = (patients||[]).map(p=>{
     const info = montantConvenuInfo(p, nwDevis);
-    const verse = caisseVerseParDevise(p, finances);
+    const vd = caisseVerseParDevise(p, finances);
+    const verse = vd.montants;
     const vEur = verse.EUR||0;
     const autres = Object.keys(verse).filter(d=>d!=="EUR" && verse[d]);
     const fact = nwFactureOf(nwFactures, p.id);
     const reste = (info.net!=null) ? Math.round((info.net - vEur)*100)/100 : null;
-    return {p, info, verse, vEur, autres, fact, reste};
-  }).filter(r=> r.info.source!=="aucun" || r.vEur!==0 || r.autres.length>0)
+    return {p, info, verse, vEur, autres, fact, reste, illisibles:vd.illisibles};
+  }).filter(r=> r.info.source!=="aucun" || r.vEur!==0 || r.autres.length>0 || r.illisibles.length>0)
     .filter(r=>{ const s=q.trim().toLowerCase(); return !s || `${r.p.prenom} ${r.p.nom}`.toLowerCase().includes(s); })
     .sort((a,b)=> (b.reste!=null?b.reste:-1) - (a.reste!=null?a.reste:-1));
   const conflits = (patients||[]).map(p=>({p, info:montantConvenuInfo(p, nwDevis)})).filter(x=>x.info.source==="conflit");
@@ -18741,10 +18824,13 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
           {!arrEUR && !arrTRY && (
             <div style={{fontSize:11.5,color:C.muted,textAlign:"center",margin:"2px 4px 10px"}}>{tt("caisse.firstCount")}</div>
           )}
+          {!pret && (
+            <div style={{background:C.amber+"14",border:`1px solid ${C.amber}44`,borderRadius:12,padding:"8px 12px",marginBottom:10,fontSize:11.5,color:"#92400E",fontWeight:600}}>⏳ {tt("caisse.notReady")}</div>
+          )}
           {calc.illisibles.length>0 && (
             <Card style={{borderLeft:`3px solid ${C.red}`}}>
               <div style={{fontWeight:800,fontSize:13,color:C.red}}>⚠ {calc.illisibles.length} {tt("caisse.unreadable")}</div>
-              {calc.illisibles.slice(0,5).map(mv=>(
+              {calc.illisibles.filter(estVisible).slice(0,5).map(mv=>(
                 <div key={mv.id} style={{fontSize:11.5,color:C.muted,marginTop:4}}>{fmtJour(mv.date)} · {mv.type} · « {String(mv.montant)} »</div>
               ))}
             </Card>
@@ -18752,7 +18838,7 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
           {calc.horsCadre.length>0 && (
             <Card style={{borderLeft:`3px solid ${C.amber}`}}>
               <div style={{fontWeight:800,fontSize:13,color:C.amber}}>⚠ {calc.horsCadre.length} {tt("caisse.noSens")}</div>
-              {calc.horsCadre.slice(0,5).map(mv=>(
+              {calc.horsCadre.filter(estVisible).slice(0,5).map(mv=>(
                 <div key={mv.id} style={{fontSize:11.5,color:C.muted,marginTop:4}}>{fmtJour(mv.date)} · {mv.type} · {caisseFmt(parseMoney(mv.montant),"EUR")}</div>
               ))}
             </Card>
@@ -18785,7 +18871,9 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
                   {mv.sens!=="change" && m!==null && (
                     <div style={{fontWeight:800,fontSize:14,color:mv.sens==="entree"?C.green:C.text,textDecoration:annule?"line-through":"none",flexShrink:0}}>{signe}{caisseFmt(m, financeCurrencyCode(mv.devise))}</div>
                   )}
-                  {!annule && (
+                  {/* Annuler : périmètre caisse (ses gestes), ses propres lignes, ou admin —
+                      jamais les virements/commissions saisis par la direction. */}
+                  {!annule && canEdit && (isFullRole(user.role) || mv.lieu==="caisse" || String(mv.creePar||"")===String(user.id)) && (
                     <button title={tt("caisse.cancelMove")} onClick={()=>annuler(mv)} style={{border:"none",background:"none",cursor:"pointer",fontSize:14,opacity:0.65,flexShrink:0}}>🚫</button>
                   )}
                 </div>
@@ -18810,10 +18898,11 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
           )}
           <input value={q} onChange={e=>setQ(e.target.value)} placeholder={tt("caisse.searchPatient")}
             style={{...inp, marginBottom:10}}/>
-          {lignesPat.map(({p, info, vEur, autres, verse, fact, reste})=>(
+          {lignesPat.map(({p, info, vEur, autres, verse, fact, reste, illisibles})=>(
             <Card key={p.id} style={{padding:"12px 14px"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                 <div style={{fontWeight:800,fontSize:13.5,color:C.text,flex:1,minWidth:120}}>{p.prenom} {p.nom}</div>
+                {illisibles.length>0 && <Badge text={"⚠ "+illisibles.length+" "+tt("caisse.unreadableRow")} color={C.red} small/>}
                 {info.source==="devis"  && <Badge text={"📄 "+tt("caisse.srcQuote")} color={C.blue} small/>}
                 {info.source==="fiche"  && <Badge text={tt("caisse.srcSheet")} color={C.muted} small/>}
                 {info.source==="aucun"  && <Badge text={tt("caisse.srcNone")} color={C.amber} small/>}
@@ -18845,9 +18934,10 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
         </div>
       )}
 
-      {/* Bouton + (le pouce de Ceyda) — miroir gauche de l'avatar IA */}
-      <button onClick={()=>setSheet({kind:"menu"})} aria-label="+"
-        style={{position:"fixed",left:16,bottom:78,zIndex:1000,width:56,height:56,borderRadius:"50%",border:"none",background:C.navy,color:C.white,fontSize:30,fontWeight:800,cursor:"pointer",boxShadow:"0 6px 20px rgba(11,31,58,0.35)",lineHeight:1}}>+</button>
+      {/* Bouton + (le pouce de Ceyda) — miroir gauche de l'avatar IA.
+          zIndex 80 : sous le tiroir du menu latéral (90) et son voile (89). */}
+      {canAdd && <button onClick={()=>setSheet({kind:"menu"})} aria-label="+"
+        style={{position:"fixed",left:16,bottom:78,zIndex:80,width:56,height:56,borderRadius:"50%",border:"none",background:C.navy,color:C.white,fontSize:30,fontWeight:800,cursor:"pointer",boxShadow:"0 6px 20px rgba(11,31,58,0.35)",lineHeight:1}}>+</button>}
 
       {/* Feuilles de saisie */}
       {sheet?.kind==="menu" && sheetWrap(
@@ -18963,7 +19053,7 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
 
       {sheet?.kind==="arrete" && (()=>{ const dev=f.devise==="TRY"?"TRY":"EUR"; const date=f.date||todayStr();
         const calcule=(caisseSoldesAsOf(finances, arretes, date).soldes[dev])||0;
-        const compte=parseMoney(f.montant); const aSaisi=String(f.montant||"").trim()!=="";
+        const compte=montantStrict(f.montant); const aSaisi=compte!==null;
         return sheetWrap(
         <div>
           {sheetTitle("🧮","caisse.actArrete")}
@@ -19059,6 +19149,9 @@ function App() {
   const [nwDevis,setNwDevis] = useState(()=>cache.load("nw_devis")||[]);
   const [nwFactures,setNwFactures] = useState(()=>cache.load("nw_factures")||[]);
   const [caisseArretes,setCaisseArretes] = useState(()=>cache.load("caisse_arretes")||[]);
+  // « Jamais chargé » ≠ « chargé vide » : le verrou du budget et l'arrêté ne
+  // doivent pas se décider sur une liste simplement pas encore arrivée.
+  const [caisseRefsReady,setCaisseRefsReady] = useState(()=>!!cache.load("nw_devis"));
   const [taches,setTaches] = useState(()=>cache.load("taches")||[]);
   const [medecins,setMedecins] = useState(()=>cache.load("medecins")||[]);
   const [hopitaux,setHopitaux] = useState(()=>{
@@ -19195,7 +19288,8 @@ function App() {
       if(Array.isArray(nd)){ setNwDevis(nd); cache.save("nw_devis", nd); }
       if(Array.isArray(nf)){ setNwFactures(nf); cache.save("nw_factures", nf); }
       if(Array.isArray(ca)){ setCaisseArretes(ca); cache.save("caisse_arretes", ca); }
-      if(!Array.isArray(nd) || !Array.isArray(nf) || !Array.isArray(ca)) caisseRefsRef.current = false;
+      if(Array.isArray(nd) && Array.isArray(nf) && Array.isArray(ca)) setCaisseRefsReady(true);
+      else caisseRefsRef.current = false;
     } catch(e){ caisseRefsRef.current = false; }
   };
 
@@ -19433,7 +19527,11 @@ function App() {
   // numériques, comme le module Devis) — jamais via sbClean qui stringifie tout.
   // Le PREMIER arrêté est le seul « solde saisi » : le solde d'ouverture, compté.
   const saveArrete = async (a) => {
-    const row = { id:uid(), date:String(a.date||todayStr()), devise:String(a.devise||"EUR"),
+    // created_at posé à la MAIN (même règle que updated_at : aucun trigger, et
+    // caisseLastArretes/vue_caisse_solde départagent deux arrêtés du même jour
+    // par created_at — la ligne locale doit porter la même clé que la base).
+    const row = { id:uid(), created_at:new Date().toISOString(),
+      date:String(a.date||todayStr()), devise:String(a.devise||"EUR"),
       montant_compte:Number(a.montant_compte)||0, montant_calcule:Number(a.montant_calcule)||0,
       ecart:Number(a.ecart)||0, par:String(user.id||""), notes:String(a.notes||"") };
     setCaisseArretes(arr=>{ const na=[...arr,row]; cache.save("caisse_arretes",na); return na; });
@@ -19443,9 +19541,18 @@ function App() {
       const { error } = await sbClient.from("caisse_arretes").insert(row);
       if(error) throw error;
       setSaveStatus("saved");
-    }catch(e){ console.error("caisse_arretes:", e); setSaveStatus("unsaved"); }
-    setSyncing(false);
-    setTimeout(()=>setSaveStatus("saved"), 5000);
+      setSyncing(false);
+      setTimeout(()=>setSaveStatus("saved"), 5000);
+    }catch(e){
+      // Échec : on retire la ligne fantôme (un arrêté n'existe que s'il est en
+      // base — c'est le point de repère de la vue SQL) et on laisse l'appelant
+      // prévenir Ceyda. Pas de faux « saved ».
+      console.error("caisse_arretes:", e);
+      setCaisseArretes(arr=>{ const na=arr.filter(x=>x.id!==row.id); cache.save("caisse_arretes",na); return na; });
+      setSaveStatus("unsaved");
+      setSyncing(false);
+      throw e;
+    }
   };
   const deleteFinance = async (id) => {
     if(!window.confirm(t("finance.deleteConfirm"))) return;
@@ -19689,7 +19796,7 @@ function App() {
           {activeView==="finances"&&<Finances user={userFull} finances={vFinances} patients={vPatients} rdvs={vRdvs} onAdd={()=>setModal({type:"finance"})} onDelete={deleteFinance} onSave={saveFinance} onUpdate={updateFinance} onSavePatient={savePatient}/>}
           {/* Caisse (lot 73) : finances NON filtrées — le solde a besoin de TOUS les
               mouvements (paiements chirurgien compris). Accès verrouillé par hasCaisse. */}
-          {activeView==="caisse"&&hasCaisse(userFull)&&<Caisse user={userFull} patients={vPatients} finances={finances} arretes={caisseArretes} nwDevis={nwDevis} nwFactures={nwFactures} medecins={medecins} hopitaux={hopitaux} onSave={saveFinance} onUpdate={updateFinance} onSaveArrete={saveArrete}/>}
+          {activeView==="caisse"&&hasCaisse(userFull)&&<Caisse user={userFull} patients={vPatients} finances={finances} arretes={caisseArretes} nwDevis={nwDevis} nwFactures={nwFactures} medecins={medecins} hopitaux={hopitaux} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onSave={saveFinance} onUpdate={updateFinance} onSaveArrete={saveArrete}/>}
           {activeView==="hopitaux"&&<Hopitaux user={userFull} patients={patients} rdvs={rdvs} hopitaux={hopitaux} setHopitaux={setHopitaux} syncing={syncing} setSyncing={setSyncing}/>}
           {activeView==="equipe"&&<VueEquipe patients={patients} rdvs={rdvs} taches={taches} finances={finances}/>}
           {activeView==="medecins"&&<Medecins user={userFull} patients={patients} rdvs={rdvs} finances={finances} medecins={medecins} setMedecins={setMedecins}/>}
@@ -19701,7 +19808,7 @@ function App() {
         </ErrorBoundary>}
       </div>
 
-      {modal?.type==="patient"&&<ModalPatient user={userFull} patient={modal.data||null} nwDevis={nwDevis} onSave={savePatient} onClose={()=>setModal(null)}/>}      {modal?.type==="rdv"&&<ModalRdv user={userFull} patients={patients} rdv={modal.data||null} onSave={modal.data?updateRdv:saveRdv} onClose={()=>setModal(null)} taches={taches} setTaches={setTaches} onDelete={deleteRdv} onDuplicate={duplicateRdvApp} onOpenPatient={openPatientById}/>}
+      {modal?.type==="patient"&&<ModalPatient user={userFull} patient={modal.data||null} nwDevis={nwDevis} nwDevisReady={caisseRefsReady} onSave={savePatient} onClose={()=>setModal(null)}/>}      {modal?.type==="rdv"&&<ModalRdv user={userFull} patients={patients} rdv={modal.data||null} onSave={modal.data?updateRdv:saveRdv} onClose={()=>setModal(null)} taches={taches} setTaches={setTaches} onDelete={deleteRdv} onDuplicate={duplicateRdvApp} onOpenPatient={openPatientById}/>}
       {modal?.type==="finance"&&<ModalFinance user={userFull} patients={patients} onSave={saveFinance} onClose={()=>setModal(null)}/>}
 
       {/* Confirmation avant de quitter (uniquement depuis l'accueil) */}
