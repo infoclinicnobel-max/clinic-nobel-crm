@@ -12061,10 +12061,15 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
                   <div style={{fontSize:11}}><div style={{color:C.muted}}>{tt("finance.sgLastPay")}</div><div style={{fontWeight:800,color:lp?C.text:C.muted}}>{lp?eur(lp.montant):"—"}</div></div>
                   <div style={{fontSize:11}}><div style={{color:C.muted}}>{tt("finance.sgLastPayDate")}</div><div style={{fontWeight:800,color:lp?C.text:C.muted}}>{lp?fmtJour(lp.date):"—"}</div></div>
                 </div> ); })()}
-                {/* ── Actions carte (admin/financesAdmin — l'onglet entier leur est réservé) ── */}
+                {/* ── Actions carte (admin/financesAdmin — l'onglet entier leur est réservé) ──
+                    Le bouton « ✓ Marquer payé » (paiement pré-rempli au reste) a été RETIRÉ le
+                    30/08/2026 sur décision de Veys : il CRÉAIT une ligne « Paiement chirurgien »
+                    au lieu de mettre à jour l'existante — trois lignes fantômes de 2 360 € créées
+                    le 30/08 à 14 h 14 (annulées avec leur trace, jamais supprimées). Déclarer un
+                    chirurgien payé se fait par « J'ai payé » dans la caisse : l'argent ne s'écrit
+                    qu'à un seul endroit. */}
                 {can(user,"finances","add") && (
                   <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-                    {reste>0 && <button onClick={()=>setSgPanel({chir,kind:"pay",full:true,montant:String(reste),methode:"Espèces",note:tt("finance.payValidatedNote"),date:todayStr()})} style={{minHeight:34,padding:"7px 12px",border:"none",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11.5,background:C.green,color:C.white}}>✓ {tt("finance.markPaid")}</button>}
                     <button onClick={()=>setSgPanel({chir,kind:"pay",full:false,montant:"",methode:"Espèces",note:"",date:todayStr()})} style={{minHeight:34,padding:"7px 12px",border:"none",borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11.5,background:C.amber+"22",color:"#92400E"}}>💶 {tt("finance.payGiven")}</button>
                     <button onClick={()=>setSgPanel(sgPanel&&sgPanel.chir===chir&&sgPanel.kind==="history"?null:{chir,kind:"history"})} style={{minHeight:34,padding:"7px 12px",border:`1px solid ${C.border}`,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11.5,background:C.white,color:C.navy}}>🕘 {tt("finance.payHistory")}</button>
                     <button onClick={()=>sgStatement(chir, recs, getP)} style={{minHeight:34,padding:"7px 12px",border:`1px solid ${C.border}`,borderRadius:9,cursor:"pointer",fontWeight:800,fontSize:11.5,background:C.white,color:C.navy}}>🖨 {tt("finance.sgStatement")}</button>
