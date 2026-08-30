@@ -7151,21 +7151,28 @@ const api = {
   // Lot 74 : « id introuvable = ajout » est SUPPRIMÉ. Un update qui ne touche
   // aucune ligne est un ÉCHEC signalé ({ok:false}), jamais une création : l'ancien
   // repli ressuscitait des lignes supprimées et fabriquait des fantômes — la même
-  // famille de défaut que le bouton retiré le 30/08. Retour : undefined ou
-  // {ok:true} = succès ; {ok:false, reason} = échec (syncPost lit ce retour).
+  // famille de défaut que le bouton retiré le 30/08. TOUTES les branches lisent
+  // {error} (supabase-js v2 ne rejette jamais tout seul) et toute erreur rejoint
+  // le journal cnsb_sync_errors. Retour : {ok:true} = succès ; {ok:false, reason}
+  // = échec — syncPost lit ce retour et garde « non enregistré » affiché.
   post: async (type, action, record) => {
     try {
       if(!sbClient) throw new Error("supabase indisponible");
       const rec = record || {};
       if(type==="system") return;                        // sauvegardes/maintenance : Supabase (LOT M5)
+      // supabase-js v2 ne REJETTE JAMAIS sans .throwOnError() : un refus RLS ou
+      // une panne réseau RÉSOUT avec {error}. Chaque branche lit donc {error} et
+      // le lance — sinon le contrat {ok} mentirait sur l'écriture la plus
+      // fréquente (add) exactement comme l'ancien indicateur mentait « saved ».
+      const ck = ({error})=>{ if(error) throw error; };
       if(type==="permissions"){
-        if(action==="log"){ await sbClient.from("perm_log").insert(sbClean(rec)); return; }
-        if(rec.roles)     await sbClient.from("permissions").upsert({ key:"roles",     json:rec.roles,     maj:new Date().toISOString() });
-        if(rec.overrides) await sbClient.from("permissions").upsert({ key:"overrides", json:rec.overrides, maj:new Date().toISOString() });
-        return;
+        if(action==="log"){ ck(await sbClient.from("perm_log").insert(sbClean(rec))); return { ok:true }; }
+        if(rec.roles)     ck(await sbClient.from("permissions").upsert({ key:"roles",     json:rec.roles,     maj:new Date().toISOString() }));
+        if(rec.overrides) ck(await sbClient.from("permissions").upsert({ key:"overrides", json:rec.overrides, maj:new Date().toISOString() }));
+        return { ok:true };
       }
       const t = SB_TABLE_MAP[type] || type;
-      if(action==="add"){ await sbClient.from(t).upsert(sbClean(rec)); return; }
+      if(action==="add"){ ck(await sbClient.from(t).upsert(sbClean(rec))); return { ok:true }; }
       if(action==="update"){
         const patch = {};
         Object.keys(rec).forEach(k=>{
@@ -7189,15 +7196,22 @@ const api = {
         }
         return { ok:true };
       }
-      if(action==="delete"){ await sbClient.from(t).delete().eq("id", rec.id); return; }
+      if(action==="delete"){ ck(await sbClient.from(t).delete().eq("id", rec.id)); return { ok:true }; }
       if(action==="bulk"){
         const items = (rec && rec.items) || [];
-        await sbClient.from(t).delete().neq("id","");
-        if(items.length){ await sbClient.from(t).insert(items.map(sbClean)); }
-        return;
+        ck(await sbClient.from(t).delete().neq("id",""));
+        if(items.length){ ck(await sbClient.from(t).insert(items.map(sbClean))); }
+        return { ok:true };
       }
     } catch(e) {
       console.error("POST error:", type, action, e);
+      // Toute erreur d'écriture rejoint le journal du panneau diagnostic —
+      // même canal que les échecs de lecture et le « update introuvable ».
+      try{
+        const log = JSON.parse(localStorage.getItem("cnsb_sync_errors")||"[]");
+        log.push({ t:new Date().toISOString().slice(0,19).replace("T"," "), type, err:(String(action||"")+" : "+String(e&&e.message||e)).slice(0,80) });
+        localStorage.setItem("cnsb_sync_errors", JSON.stringify(log.slice(-20)));
+      }catch(x){}
       return { ok:false, reason:String(e&&e.message||e).slice(0,120) };
     }
   }
@@ -10472,8 +10486,12 @@ function surgeonNoteOf(f){
   const b = String(f?.beneficiaire||"").trim();
   if(b){
     if(notes.trim()===b) return "";
-    if(notes.startsWith(b+" · ")) return notes.slice(b.length+3);
-    if(notes.startsWith(b+" | ")) return notes.slice(b.length+3);
+    // Nom en préfixe suivi d'un séparateur QUELCONQUE (« · », « | » de journal,
+    // simple espace avant une trace d'annulation) : on le masque, le reste est
+    // la note. Un nom en préfixe collé à autre chose reste affiché tel quel.
+    if(notes.startsWith(b) && /^[\s·|]/.test(notes.slice(b.length))){
+      return notes.slice(b.length).replace(/^[\s·|]+/,"");
+    }
     return notes;
   }
   const parts = notes.split(" · ");
@@ -11270,7 +11288,11 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
       const rec = finances.find(x=>x.id===sgEdit.id); if(rec){
         const upd = { ...rec, montant:m, date:sgEdit.date||rec.date,
           beneficiaire: sgEdit.chir || rec.beneficiaire || "",
-          notes: String(sgEdit.note||"") };
+          // Note vidée → __CLEAR__ : la couche update conserve les champs vides,
+          // seul ce jeton efface réellement en base (et purge au passage un vieux
+          // préfixe « Nom · … » d'une ligne migrée). updateFinance le traduit en
+          // "" pour l'état local.
+          notes: sgEdit.note ? String(sgEdit.note) : "__CLEAR__" };
         if(!sgEdit.isFee){ upd.methode = sgEdit.methode||rec.methode||"Espèces"; upd.statut = sgEdit.statut||rec.statut||"Payé"; }
         await onUpdate(upd);
         try{ logIA(user.id,"confirmed","surgeon_edit_pay","finance", sgEdit.chir, sgEdit.isFee?"honoraires":"paiement", String(rec.montant), String(m)); }catch(e){}
@@ -19218,6 +19240,7 @@ function App() {
   // Don't show loading if we have cached data
   const [loading,setLoading] = useState(()=>!(cache.load("patients")));
   const finLoadedRef = React.useRef(!!cache.load("finances")); // finances en lazy-load
+  const saveTimerRef = React.useRef(null); // timer « retour à saved » — annulé à chaque nouvelle écriture
   const [finLoading,setFinLoading] = useState(false);
   const [syncing,setSyncing] = useState(false);
   const [loadError,setLoadError] = useState(null);
@@ -19385,11 +19408,14 @@ function App() {
   const syncPost = async (type, action, record) => {
     setSyncing(true);
     setSaveStatus("saving");
+    // Le timer « retour à saved » d'une écriture réussie ne doit jamais écraser
+    // l'« unsaved » d'un échec survenu dans les 5 secondes suivantes.
+    if(saveTimerRef.current){ clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
     let ok = false;
     try {
       // Lot 74 : api.post remonte désormais {ok:false} (update introuvable, erreur
-      // serveur…) au lieu d'avaler. Un échec reste affiché « non enregistré »
-      // jusqu'à la prochaine écriture réussie — plus de faux « saved » après 5 s.
+      // serveur, refus RLS, panne réseau — toutes actions) au lieu d'avaler. Un
+      // échec reste affiché « non enregistré » jusqu'à la prochaine écriture réussie.
       const r = await api.post(type, action, record);
       ok = !(r && r.ok===false);
       setSaveStatus(ok ? "saved" : "unsaved");
@@ -19398,7 +19424,7 @@ function App() {
       setSaveStatus("unsaved");
     }
     setSyncing(false);
-    if(ok) setTimeout(()=>setSaveStatus("saved"), 5000);
+    if(ok) saveTimerRef.current = setTimeout(()=>setSaveStatus("saved"), 5000);
   };
 
   // Manual sync - reload from Google Sheets
@@ -19573,7 +19599,9 @@ function App() {
   const updateFinance = async (f) => {
     // finances n'a AUCUN déclencheur : updated_at doit être posé à la main.
     const n={...f, updated_at:new Date().toISOString()};
-    setFinances(fs=>{const nf=fs.map(x=>x.id===n.id?{...x,...n}:x);cache.save("finances",nf);return nf;});
+    // L'état local reçoit la même traduction que le serveur : __CLEAR__ = "".
+    const local={...n}; Object.keys(local).forEach(k=>{ if(local[k]==="__CLEAR__") local[k]=""; });
+    setFinances(fs=>{const nf=fs.map(x=>x.id===local.id?{...x,...local}:x);cache.save("finances",nf);return nf;});
     await syncPost("finances","update",n);
     setModal(null);
   };
