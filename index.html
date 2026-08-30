@@ -10486,11 +10486,14 @@ function surgeonNoteOf(f){
   const b = String(f?.beneficiaire||"").trim();
   if(b){
     if(notes.trim()===b) return "";
-    // Nom en préfixe suivi d'un séparateur QUELCONQUE (« · », « | » de journal,
-    // simple espace avant une trace d'annulation) : on le masque, le reste est
-    // la note. Un nom en préfixe collé à autre chose reste affiché tel quel.
-    if(notes.startsWith(b) && /^[\s·|]/.test(notes.slice(b.length))){
-      return notes.slice(b.length).replace(/^[\s·|]+/,"");
+    if(notes.startsWith(b)){
+      const rest = notes.slice(b.length);
+      // Préfixe hérité « Nom · … » ou « Nom | journal » : masqué, le reste est la note.
+      if(/^\s*[·|]/.test(rest)) return rest.replace(/^[\s·|]+/,"");
+      // Nom nu suivi d'une trace d'annulation « [annulé par …] » : masqué aussi.
+      // Un simple espace devant AUTRE CHOSE ne masque rien — une note légitime
+      // peut commencer par le nom (« Ahmed viendra chercher le reste »).
+      if(/^\s+\[/.test(rest)) return rest.replace(/^\s+/,"");
     }
     return notes;
   }
