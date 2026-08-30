@@ -187,7 +187,7 @@ if("serviceWorker" in navigator){
       les échecs transitoires de CDN, exactement le symptôme constaté) ;
    3) si le second essai échoue aussi → message d'erreur clair + bouton Recharger. */
 (function(){
-  window.__CRM_VERSION = "v7.3 — Caisse coordinatrice lot 73 (2026-08-30)";
+  window.__CRM_VERSION = "v7.4 — Bénéficiaire en colonne + update strict, lot 74 (2026-08-30)";
   /* SAS localStorage : toute clé applicative (cn_*) illisible en JSON est supprimée
      INDIVIDUELLEMENT avant le démarrage de React. Un stockage corrompu ne peut donc
      jamais empêcher le boot, et on ne perd que la clé abîmée — jamais tout. */
@@ -7147,7 +7147,12 @@ const api = {
     } catch(e) { return { ok:false }; }
   },
   // Écritures : lisibles désormais (fini le no-cors) — sémantique Apps Script conservée
-  // (update : champ vide = conservé, __CLEAR__ = effacé, id introuvable = ajout).
+  // pour les champs (update : champ vide = conservé, __CLEAR__ = effacé).
+  // Lot 74 : « id introuvable = ajout » est SUPPRIMÉ. Un update qui ne touche
+  // aucune ligne est un ÉCHEC signalé ({ok:false}), jamais une création : l'ancien
+  // repli ressuscitait des lignes supprimées et fabriquait des fantômes — la même
+  // famille de défaut que le bouton retiré le 30/08. Retour : undefined ou
+  // {ok:true} = succès ; {ok:false, reason} = échec (syncPost lit ce retour).
   post: async (type, action, record) => {
     try {
       if(!sbClient) throw new Error("supabase indisponible");
@@ -7169,9 +7174,20 @@ const api = {
           if(v==="__CLEAR__"){ patch[k]=""; return; }
           if(v!==undefined && v!==null && v!==""){ patch[k] = (typeof v==="object") ? JSON.stringify(v) : String(v); }
         });
-        const { data } = await sbClient.from(t).update(patch).eq("id", rec.id).select("id");
-        if(!data || !data.length){ await sbClient.from(t).upsert(sbClean(rec)); }
-        return;
+        const { data, error } = await sbClient.from(t).update(patch).eq("id", rec.id).select("id");
+        if(error) throw error;   // avant : l'erreur était ignorée ET déclenchait la création
+        if(!data || !data.length){
+          // Ligne introuvable : rien n'est créé. Journalisé (panneau diagnostic)
+          // et remonté à l'appelant — jamais réparé en silence.
+          try{
+            const log = JSON.parse(localStorage.getItem("cnsb_sync_errors")||"[]");
+            log.push({ t:new Date().toISOString().slice(0,19).replace("T"," "), type, err:("update #"+String(rec.id).slice(0,20)+" introuvable — rien créé").slice(0,80) });
+            localStorage.setItem("cnsb_sync_errors", JSON.stringify(log.slice(-20)));
+          }catch(x){}
+          console.error("POST update introuvable:", t, rec.id);
+          return { ok:false, reason:"introuvable" };
+        }
+        return { ok:true };
       }
       if(action==="delete"){ await sbClient.from(t).delete().eq("id", rec.id); return; }
       if(action==="bulk"){
@@ -7180,7 +7196,10 @@ const api = {
         if(items.length){ await sbClient.from(t).insert(items.map(sbClean)); }
         return;
       }
-    } catch(e) { console.error("POST error:", type, action, e); }
+    } catch(e) {
+      console.error("POST error:", type, action, e);
+      return { ok:false, reason:String(e&&e.message||e).slice(0,120) };
+    }
   }
 };
 
@@ -10435,10 +10454,31 @@ function AgendaMonthlyFinanceSummaryCard({summary, monthLabel, financesReady, us
 const FIN_SURGEON_FEE = "Honoraires chirurgien";
 const FIN_SURGEON_PAY = "Paiement chirurgien";
 const FIN_SURGEON_TYPES = [FIN_SURGEON_FEE, FIN_SURGEON_PAY];
-// Nom du chirurgien stocké dans `notes` (colonne existante) au format
-// "Nom Chirurgien · note libre" — migration vers une vraie colonne en Phase B.
-function surgeonOf(f){ const n=String(f?.notes||"").split(" · ")[0].trim(); return n || t("finance.surgeonUnknown"); }
-function surgeonNoteOf(f){ const parts=String(f?.notes||"").split(" · "); return parts.slice(1).join(" · "); }
+// Lot 74 (la « Phase B » annoncée) : le nom du bénéficiaire vit dans la VRAIE
+// colonne finances.beneficiaire. Les notes redeviennent des notes. Repli sur
+// l'ancien format « Nom · note » pour les lignes d'avant le rattrapage (caches
+// d'appareils pas encore resynchronisés) — la base, elle, est déjà rattrapée.
+function surgeonOf(f){
+  const b = String(f?.beneficiaire||"").trim();
+  if(b) return b;
+  const n = String(f?.notes||"").split(" · ")[0].trim();
+  return n || t("finance.surgeonUnknown");
+}
+// Note libre : quand la colonne est renseignée, on retire des notes l'éventuel
+// préfixe hérité (« Nom · », « Nom | » de journal, ou le nom seul) pour ne pas
+// afficher le nom en double.
+function surgeonNoteOf(f){
+  const notes = String(f?.notes||"");
+  const b = String(f?.beneficiaire||"").trim();
+  if(b){
+    if(notes.trim()===b) return "";
+    if(notes.startsWith(b+" · ")) return notes.slice(b.length+3);
+    if(notes.startsWith(b+" | ")) return notes.slice(b.length+3);
+    return notes;
+  }
+  const parts = notes.split(" · ");
+  return parts.slice(1).join(" · ");
+}
 function isSurgeonFee(f){ return f?.type===FIN_SURGEON_FEE && f?.statut!=="Annulé"; }
 // Un paiement chirurgien COMPTE comme remis si statut "Payé" (ou "Complété").
 // Les anciens enregistrements "À payer" restent visibles mais ne comptent pas comme remis.
@@ -11212,13 +11252,15 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
       await onSave({ patientId:"", type:FIN_SURGEON_PAY, procedure:"",
         montant:m, date:sgPanel.date||todayStr(), statut:"Payé",
         methode:sgPanel.methode||"Espèces", devise:"EUR",
-        notes: sgPanel.note ? `${sgPanel.chir} · ${sgPanel.note}` : sgPanel.chir });
+        beneficiaire:sgPanel.chir, notes:String(sgPanel.note||"") });   // lot 74 : le nom en colonne, la note en note
       try{ logIA(user.id,"confirmed", sgPanel.full?"surgeon_mark_paid":"surgeon_partial_pay", "finance", sgPanel.chir, "montant", "", String(m)); }catch(e){}
     }catch(e){}
     setSgPanel(null); setSgBusy(false);
   };
-  // Modifie un mouvement chirurgien (honoraires ou paiement) en PRÉSERVANT le
-  // nom du chirurgien dans notes ("Chir · note").
+  // Modifie un mouvement chirurgien (honoraires ou paiement). Lot 74 : le nom
+  // vit dans la colonne beneficiaire ; une ligne à l'ancien format est migrée
+  // vers la colonne à sa première édition. Rappel maison : un champ vidé est
+  // CONSERVÉ par la couche update — surgeonNoteOf masque le préfixe hérité.
   const sgSubmitEdit = async ()=>{
     if(!sgEdit || sgBusy) return;
     const m = Math.abs(Number(sgEdit.montant)||0);
@@ -11227,7 +11269,8 @@ function Finances({user, finances, patients, rdvs, onAdd, onDelete, onUpdate, on
     try{
       const rec = finances.find(x=>x.id===sgEdit.id); if(rec){
         const upd = { ...rec, montant:m, date:sgEdit.date||rec.date,
-          notes: sgEdit.note ? `${sgEdit.chir} · ${sgEdit.note}` : sgEdit.chir };
+          beneficiaire: sgEdit.chir || rec.beneficiaire || "",
+          notes: String(sgEdit.note||"") };
         if(!sgEdit.isFee){ upd.methode = sgEdit.methode||rec.methode||"Espèces"; upd.statut = sgEdit.statut||rec.statut||"Payé"; }
         await onUpdate(upd);
         try{ logIA(user.id,"confirmed","surgeon_edit_pay","finance", sgEdit.chir, sgEdit.isFee?"honoraires":"paiement", String(rec.montant), String(m)); }catch(e){}
@@ -12948,7 +12991,7 @@ function ModalCommAdvance({init, commerciaux, defaultYear, dueOf, onCreate, onEd
 // · Honoraires  → type "Honoraires chirurgien", montant = DÛ, pas de statut saisi
 // · Paiement    → type "Paiement chirurgien", statut "Payé" (argent réellement remis),
 //                 remis par = utilisateur connecté (creePar)
-// · notes = "Chirurgien · note libre" (colonne existante, migration Phase B)
+// · beneficiaire = nom du chirurgien (colonne dédiée depuis le lot 74) · notes = note libre
 function SurgeonPayForm({onSave, docOpts, patients, tt}){
   const [kind,setKind] = useState("fee"); // fee | pay
   const [f,setF] = useState({chir:"",patientId:"",procedure:"",montant:"",date:todayStr(),note:""});
@@ -12959,12 +13002,12 @@ function SurgeonPayForm({onSave, docOpts, patients, tt}){
     if(!f.chir||!f.montant){ alert(tt("finance.amountRequired")); return; }
     if(!onSave) return;
     setBusy(true);
-    const notes = f.note ? `${f.chir} · ${f.note}` : f.chir;
     await onSave({
       patientId:f.patientId||"", type: kind==="fee"?FIN_SURGEON_FEE:FIN_SURGEON_PAY,
       procedure:f.procedure, montant:Math.abs(Number(f.montant)||0), date:f.date,
       statut: kind==="fee" ? "" : "Payé",   // paiement = argent remis · honoraires = pas de statut (calculé)
-      methode: kind==="fee" ? "" : "Espèces", devise:"EUR", notes
+      methode: kind==="fee" ? "" : "Espèces", devise:"EUR",
+      beneficiaire:f.chir, notes:String(f.note||"")   // lot 74 : le nom en colonne
     });
     setF({chir:"",patientId:"",procedure:"",montant:"",date:todayStr(),note:""});
     setBusy(false);
@@ -13843,7 +13886,7 @@ function Medecins({user, patients, rdvs, finances, medecins, setMedecins}) {
     if(!n) return false;
     return (rdvs||[]).some(r=>r.medecin===n)
         || (patients||[]).some(p=>p.medecin===n)
-        || (finances||[]).some(f=>FIN_SURGEON_TYPES.indexOf(f.type)>=0 && String(f.notes||"").split(" · ")[0].trim()===n);
+        || (finances||[]).some(f=>FIN_SURGEON_TYPES.indexOf(f.type)>=0 && surgeonOf(f)===n);   // lot 74 : colonne beneficiaire d'abord, notes en repli
   };
   const MED_FIELD_LABELS = { prenom:"Prénom", nom:"Nom", spec:"Spécialité", sousSpecs:"Sous-spécialités",
     hopital:"Hôpital", hopitauxSecondaires:"Hôpitaux secondaires", tel:"Téléphone", email:"E-mail",
@@ -18695,7 +18738,7 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
       montant:String(m), date:f.date||todayStr(), statut:"Payé", methode:"Espèces",
       devise: f.devise==="EUR" ? "EUR" : "TRY",
       lieu:"caisse", sens:"sortie",
-      notes: f.note ? `${nomBenef} · ${f.note}` : nomBenef,   // même format que l'existant : « Nom · note »
+      beneficiaire:nomBenef, notes:String(f.note||""),   // lot 74 : le nom en colonne, plus jamais dans les notes
     });
   };
   const saveChange = async ()=>{
@@ -18761,7 +18804,7 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
     if(mv.sens==="remise") return tt("caisse.actRendu");
     const p = getP(mv.patientId);
     if(mv.sens==="entree") return p ? `${p.prenom} ${p.nom}` : (mv.type||"—");
-    const benef = String(mv.notes||"").split(" · ")[0].trim();
+    const benef = String(mv.beneficiaire||"").trim() || String(mv.notes||"").split(" · ")[0].trim();
     return benef || mv.type || "—";
   };
   const mvIcone = (mv)=> mv.sens==="change" ? "🔁" : mv.sens==="remise" ? "🏦" : mv.sens==="entree" ? (mv.lieu==="compte"?"🏦":"💶") : "💸";
@@ -19342,15 +19385,20 @@ function App() {
   const syncPost = async (type, action, record) => {
     setSyncing(true);
     setSaveStatus("saving");
+    let ok = false;
     try {
-      await api.post(type, action, record);
-      setSaveStatus("saved");
+      // Lot 74 : api.post remonte désormais {ok:false} (update introuvable, erreur
+      // serveur…) au lieu d'avaler. Un échec reste affiché « non enregistré »
+      // jusqu'à la prochaine écriture réussie — plus de faux « saved » après 5 s.
+      const r = await api.post(type, action, record);
+      ok = !(r && r.ok===false);
+      setSaveStatus(ok ? "saved" : "unsaved");
     } catch(e) {
       console.error("Sync error:", e);
       setSaveStatus("unsaved");
     }
     setSyncing(false);
-    setTimeout(()=>setSaveStatus("saved"), 5000);
+    if(ok) setTimeout(()=>setSaveStatus("saved"), 5000);
   };
 
   // Manual sync - reload from Google Sheets
