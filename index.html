@@ -1562,6 +1562,9 @@ const I18N = {
     "wa.stFailed": "échec",
     "wa.memeNumero": "Numéro de la fiche {n}",
     "wa.aRepondre": "Dernier message entrant sans réponse",
+    "wa.ficheInvisible": "Rattachée à une fiche hors de votre visibilité",
+    "wa.dejaRattachee": "Cette conversation est déjà rattachée à une autre fiche.",
+    "wa.echecJournal": "La conversation est rattachée, mais le journal de la fiche n'a pas pu être vérifié — rouvrez la fiche pour contrôler.",
     "common.loadingSheets": "Chargement depuis Google Sheets…",
     "surgeon.readOnly": "Lecture seule",
     "surgeon.limited": "Accès limité — informations médicales uniquement",
@@ -2897,6 +2900,9 @@ const I18N = {
     "wa.stFailed": "failed",
     "wa.memeNumero": "Number of record {n}",
     "wa.aRepondre": "Last inbound message not answered yet",
+    "wa.ficheInvisible": "Linked to a record outside your visibility",
+    "wa.dejaRattachee": "This conversation is already linked to another record.",
+    "wa.echecJournal": "The conversation is linked, but the record's journal could not be verified — open the record to check.",
     "common.loadingSheets": "Loading from Google Sheets…",
     "surgeon.readOnly": "Read-only",
     "surgeon.limited": "Restricted access — medical information only",
@@ -4232,6 +4238,9 @@ const I18N = {
     "wa.stFailed": "başarısız",
     "wa.memeNumero": "{n} dosyasının numarası",
     "wa.aRepondre": "Son gelen mesaj henüz yanıtlanmadı",
+    "wa.ficheInvisible": "Görünürlüğünüz dışındaki bir dosyaya bağlı",
+    "wa.dejaRattachee": "Bu konuşma zaten başka bir dosyaya bağlı.",
+    "wa.echecJournal": "Konuşma bağlandı ancak dosya günlüğü doğrulanamadı — kontrol için dosyayı açın.",
     "common.loadingSheets": "Google Sheets'ten yükleniyor…",
     "surgeon.readOnly": "Salt görüntüleme",
     "surgeon.limited": "Sınırlı erişim — yalnızca tıbbi bilgiler",
@@ -5567,6 +5576,9 @@ const I18N = {
     "wa.stFailed": "fallido",
     "wa.memeNumero": "Número de la ficha {n}",
     "wa.aRepondre": "Último mensaje entrante sin respuesta",
+    "wa.ficheInvisible": "Vinculada a una ficha fuera de su visibilidad",
+    "wa.dejaRattachee": "Esta conversación ya está vinculada a otra ficha.",
+    "wa.echecJournal": "La conversación está vinculada, pero el registro de la ficha no pudo verificarse — abra la ficha para comprobar.",
     "common.loadingSheets": "Cargando desde Google Sheets…",
     "surgeon.readOnly": "Solo lectura",
     "surgeon.limited": "Acceso limitado — solo información médica",
@@ -15811,9 +15823,10 @@ function GestionUtilisateurs({user, onApplied, permVer}) {
             const sel = {padding:"8px 10px",border:`1.5px solid ${C.border}`,borderRadius:9,fontSize:12,background:C.white,minWidth:0};
             const uA = USERS.find(x=>x.id===cmpA), uB = USERS.find(x=>x.id===cmpB);
             const src = (u2)=>{ const ov=userOverride(u2); return (ov&&ov.perms&&Object.keys(ov.perms).length>0) ? tt("team.cmpCustom") : `${tt("team.role")} : ${roleLabel(u2.role)||u2.role}`; };
-            // La caisse s'accorde par hasCaisse (rôle coordinatrice/admin ou coche),
-            // pas par can() seul : le diagnostic doit refléter l'accès réel.
-            const viewOf = (u2,k)=> k==="caisse" ? hasCaisse(u2) : can(u2,k,"view");
+            // La caisse et les messages s'accordent par hasCaisse/hasMessages
+            // (rôle en dur ou coche), pas par can() seul : le diagnostic doit
+            // refléter l'accès réel.
+            const viewOf = (u2,k)=> k==="caisse" ? hasCaisse(u2) : k==="messages" ? hasMessages(u2) : can(u2,k,"view");
             const rows = (uA&&uB) ? PERM_MODULES.map(m=>{
               const a=viewOf(uA,m.k), b=viewOf(uB,m.k);
               return {k:m.k, icon:m.icon, label:moduleLabel(m.k)||m.l, a, b, diff:a!==b};
@@ -19326,8 +19339,8 @@ const waNormNum = (v) => {
   return /^\+[0-9]{8,15}$/.test(s) ? s : "";
 };
 // Heures affichées et journalisées en heure d'ISTANBUL, quel que soit l'appareil.
-function waFmtHeure(ts){ try{ return new Intl.DateTimeFormat("fr-FR",{timeZone:WA_TZ,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(ts)); }catch(e){ return ""; } }
-function waFmtJour(ts){ try{ return new Intl.DateTimeFormat("fr-FR",{timeZone:WA_TZ,day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(ts)); }catch(e){ return ""; } }
+function waFmtHeure(ts){ try{ return new Intl.DateTimeFormat(localeForLang(),{timeZone:WA_TZ,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(ts)); }catch(e){ return ""; } }
+function waFmtJour(ts){ try{ return new Intl.DateTimeFormat(localeForLang(),{timeZone:WA_TZ,day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(ts)); }catch(e){ return ""; } }
 function waIstanbulParts(){
   try{
     const parts = new Intl.DateTimeFormat("fr-CA",{timeZone:WA_TZ,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date());
@@ -19335,32 +19348,47 @@ function waIstanbulParts(){
     return { date:`${g("year")}-${g("month")}-${g("day")}`, heure:`${g("hour")}:${g("minute")}` };
   }catch(e){ return nowParts(); }
 }
+// Ordre chronologique robuste : par epoch (les représentations « avec/sans
+// fraction de seconde » se comparent mal en texte), départagé par id.
+function waCmp(a,b){
+  const ta = Date.parse((a&&a.horodatage)||"")||0, tb = Date.parse((b&&b.horodatage)||"")||0;
+  if(ta!==tb) return ta-tb;
+  return (Number(a&&a.id)||0)-(Number(b&&b.id)||0);
+}
 // Une conversation = un numero_patient (colonne générée : elle ne peut pas mentir).
+// `liens` = index numero → patientId chargé À PART (les lignes estampillées
+// peuvent sortir de la fenêtre des 2000 messages les plus récents : le
+// rattachement, lui, ne doit jamais disparaître de l'écran).
 // Nom affiché : la fiche si rattachée, sinon la fiche au même numéro (suggestion,
 // jamais un rattachement implicite), sinon nom_profil, sinon le numéro.
-function waConversations(messages, patients){
+function waConversations(messages, patients, liens){
   const parNum = {};
   (messages||[]).forEach(m=>{ if(m && m.numero_patient){ (parNum[m.numero_patient]=parNum[m.numero_patient]||[]).push(m); } });
   const parTel = {};
   (patients||[]).forEach(p=>{ const n=waNormNum(p && p.tel); if(n && !parTel[n]) parTel[n]=p; });
   return Object.keys(parNum).map(numero=>{
-    const msgs = parNum[numero].slice().sort((a,b)=>String(a.horodatage||"").localeCompare(String(b.horodatage||"")));
+    const msgs = parNum[numero].slice().sort(waCmp);
     const dernier = msgs[msgs.length-1];
-    let pid=""; for(let i=msgs.length-1;i>=0;i--){ if(msgs[i].patientId){ pid=String(msgs[i].patientId); break; } }
+    let pid = String((liens||{})[numero]||"");
+    if(!pid){ for(let i=msgs.length-1;i>=0;i--){ if(msgs[i].patientId){ pid=String(msgs[i].patientId); break; } } }
     const fiche = pid ? (patients||[]).find(p=>String(p.id)===pid)||null : null;
-    const suggestion = fiche ? null : (parTel[numero]||null);
+    // pid posé mais fiche introuvable = fiche hors du périmètre de visibilité de
+    // l'utilisateur : la conversation reste RATTACHÉE (jamais « Inconnue »,
+    // jamais re-rattachable), seule la fiche ne s'affiche pas.
+    const ficheInvisible = !!pid && !fiche;
+    const suggestion = pid ? null : (parTel[numero]||null);
     let profil=""; for(let i=msgs.length-1;i>=0;i--){ if(msgs[i].nom_profil){ profil=String(msgs[i].nom_profil); break; } }
     const nomFiche = (p)=>`${p.prenom||""} ${p.nom||""}`.trim();
     const nom = fiche ? (nomFiche(fiche)||numero) : (suggestion ? (nomFiche(suggestion)||numero) : (profil || numero));
     let dernierEntrant = null; msgs.forEach(m=>{ if(m.direction==="entrant") dernierEntrant = m; });
     return {
-      numero, msgs, dernier, fiche, suggestion, profil, nom,
-      rattachee: !!fiche,
+      numero, msgs, dernier, pid, fiche, ficheInvisible, suggestion, profil, nom,
+      rattachee: !!pid,
       aRepondre: !!dernier && dernier.direction==="entrant",
       // Fenêtre Meta : 24 h après le DERNIER message entrant (même s'il est seul).
       fenetreFin: dernierEntrant ? (new Date(dernierEntrant.horodatage).getTime() + 24*3600*1000) : null,
     };
-  }).sort((a,b)=>String((b.dernier||{}).horodatage||"").localeCompare(String((a.dernier||{}).horodatage||"")));
+  }).sort((a,b)=>waCmp(b.dernier, a.dernier));
 }
 function waFenetre(fenetreFin){
   if(!fenetreFin || !isFinite(fenetreFin)) return { ouverte:false };
@@ -19376,7 +19404,7 @@ const waExtrait = (m, tt)=>{
 };
 const WA_ST = { sent:{ic:"✓",k:"wa.stSent",c:null}, delivered:{ic:"✓✓",k:"wa.stDelivered",c:null}, read:{ic:"✓✓",k:"wa.stRead",c:"#1D73C9"}, failed:{ic:"⚠",k:"wa.stFailed",c:"#DC2626"} };
 
-function WaMessages({user, patients, messages, chargement, onRecharger, onRattacher, onDetacher, onOpenPatient}){
+function WaMessages({user, patients, messages, liens, chargement, onRecharger, onRattacher, onDetacher, onOpenPatient}){
   const tt = t;
   const [sel,setSel] = useState(null);        // numero_patient sélectionné
   const [q,setQ] = useState("");
@@ -19399,8 +19427,13 @@ function WaMessages({user, patients, messages, chargement, onRecharger, onRattac
   const [,setTic] = useState(0);
   useEffect(()=>{ const iv=setInterval(()=>setTic(x=>x+1), 30000); return ()=>clearInterval(iv); },[]);
 
-  const convs = waConversations(messages, patients);
+  const convs = waConversations(messages, patients, liens);
   const convSel = sel ? convs.find(c=>c.numero===sel)||null : null;
+  // À l'ouverture d'un fil, on part du BAS (les derniers messages) — le fil
+  // défile avec la page, comme WhatsApp.
+  useEffect(()=>{
+    if(sel && convSel){ setTimeout(()=>{ try{ window.scrollTo({top:document.documentElement.scrollHeight}); }catch(e){} }, 60); }
+  },[sel]);
   const visibles = convs.filter(c=>{
     if(filtre==="liees" && !c.rattachee) return false;
     if(filtre==="inconnues" && c.rattachee) return false;
@@ -19486,10 +19519,16 @@ function WaMessages({user, patients, messages, chargement, onRecharger, onRattac
             <div className="num" style={{fontSize:11.5,color:C.muted,fontFamily:"monospace"}}>{convSel.numero}</div>
           </div>
           {convSel.rattachee ? (
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              <button onClick={()=>onOpenPatient(convSel.fiche.id)} style={{minHeight:34,padding:"7px 11px",border:"none",borderRadius:9,background:C.navy,color:C.white,cursor:"pointer",fontWeight:800,fontSize:11.5}}>👤 {tt("wa.ouvrirFiche")}</button>
-              <button onClick={faireDetacher} disabled={occupe} style={{minHeight:34,padding:"7px 11px",border:`1px solid ${C.border}`,borderRadius:9,background:C.white,color:C.muted,cursor:"pointer",fontWeight:700,fontSize:11.5}}>{tt("wa.detacher")}</button>
-            </div>
+            convSel.fiche ? (
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                <button onClick={()=>onOpenPatient(convSel.fiche.id)} style={{minHeight:34,padding:"7px 11px",border:"none",borderRadius:9,background:C.navy,color:C.white,cursor:"pointer",fontWeight:800,fontSize:11.5}}>👤 {tt("wa.ouvrirFiche")}</button>
+                <button onClick={faireDetacher} disabled={occupe} style={{minHeight:34,padding:"7px 11px",border:`1px solid ${C.border}`,borderRadius:9,background:C.white,color:C.muted,cursor:"pointer",fontWeight:700,fontSize:11.5}}>{tt("wa.detacher")}</button>
+              </div>
+            ) : (
+              // Rattachée à une fiche hors du périmètre de visibilité : ni lien,
+              // ni détachement, ni re-rattachement — on le dit, c'est tout.
+              <span style={{fontSize:11,fontWeight:700,color:C.muted,background:C.bg,border:`1px solid ${C.border}`,borderRadius:99,padding:"5px 11px"}}>🔒 {tt("wa.ficheInvisible")}</span>
+            )
           ) : (
             <button onClick={()=>setRattacheOuvert(true)} style={{minHeight:34,padding:"7px 11px",border:"none",borderRadius:9,background:C.gold,color:C.white,cursor:"pointer",fontWeight:800,fontSize:11.5}}>🔗 {tt("wa.rattacher")}</button>
           )}
@@ -19547,7 +19586,7 @@ function WaMessages({user, patients, messages, chargement, onRecharger, onRattac
   return (
     <div style={{paddingBottom:80,minWidth:0}}>
       {mobile
-        ? (sel ? filPanel : listePanel)
+        ? (sel && convSel ? filPanel : listePanel)   // conversation disparue du jeu chargé → retour liste, jamais d'impasse
         : <div style={{display:"grid",gridTemplateColumns:"340px minmax(0,1fr)",gap:14,alignItems:"start"}}>{listePanel}{filPanel}</div>}
 
       {/* Feuille de rattachement — par le NUMÉRO, la recherche ne sert qu'à trouver la fiche */}
@@ -19560,7 +19599,7 @@ function WaMessages({user, patients, messages, chargement, onRecharger, onRattac
             {convSel.suggestion && (
               <button onClick={()=>faireRattacher(convSel.suggestion)} disabled={occupe}
                 style={{width:"100%",textAlign:"left",padding:"11px 13px",marginBottom:10,border:`1.5px solid ${C.blue}55`,borderRadius:12,background:C.blue+"0e",cursor:"pointer",fontWeight:800,fontSize:13.5,color:C.navy}}>
-                💡 {`${convSel.suggestion.prenom||""} ${convSel.suggestion.nom||""}`.trim()} <span style={{fontWeight:500,fontSize:11,color:C.muted}}>· {tt("wa.memeNumero").replace("{n}","").replace(" ","")}{waNormNum(convSel.suggestion.tel)}</span>
+                💡 {`${convSel.suggestion.prenom||""} ${convSel.suggestion.nom||""}`.trim()} <span style={{fontWeight:500,fontSize:11,color:C.muted}}>· {tt("wa.memeNumero").replace("{n}", waNormNum(convSel.suggestion.tel)||convSel.numero)}</span>
               </button>
             )}
             <CaissePatientPick patients={patients} value={""} onPick={(pid)=>{ const p=(patients||[]).find(x=>String(x.id)===String(pid)); if(p) faireRattacher(p); }}/>
@@ -19640,6 +19679,7 @@ function App() {
   const [caisseRefsReady,setCaisseRefsReady] = useState(()=>!!cache.load("nw_devis"));
   // Messages WhatsApp (wa_messages) — lecture seule + rattachement.
   const [waMessages,setWaMessages] = useState(()=>cache.load("wa_messages")||[]);
+  const [waLiens,setWaLiens] = useState(()=>cache.load("wa_liens")||{});   // numero → patientId (survit à la fenêtre des 2000)
   const [waLoading,setWaLoading] = useState(false);
   const [taches,setTaches] = useState(()=>cache.load("taches")||[]);
   const [medecins,setMedecins] = useState(()=>cache.load("medecins")||[]);
@@ -19788,14 +19828,31 @@ function App() {
   // L'application n'INSÈRE jamais dans cette table : webhook = entrants,
   // whatsapp-send (à venir) = sortants. Ici on lit, et on pose le rattachement.
   const waLoadedRef = React.useRef(false);
+  // Jeton d'ordre : une réponse partie AVANT un rattachement ne doit jamais
+  // écraser l'état plus frais (rattacherWa/detacherWa invalident les lectures en vol).
+  const waSeqRef = React.useRef(0);
   const chargerWa = async () => {
+    const seq = ++waSeqRef.current;
     try{
       if(!sbClient) return;
-      const { data, error } = await sbClient.from("wa_messages")
-        .select("id,wa_message_id,direction,numero_de,numero_vers,numero_patient,patientId,nom_profil,type,texte,media_id,horodatage,statut,created_at,updated_at")
-        .order("horodatage",{ascending:false}).limit(2000);
-      if(error) throw error;
-      if(Array.isArray(data)){ setWaMessages(data); cache.save("wa_messages", data); waLoadedRef.current = true; }
+      const [msgs, liens] = await Promise.all([
+        sbClient.from("wa_messages")
+          .select("id,wa_message_id,direction,numero_de,numero_vers,numero_patient,patientId,nom_profil,type,texte,media_id,horodatage,statut,created_at,updated_at")
+          .order("horodatage",{ascending:false}).limit(2000),
+        // Index des rattachements : les lignes estampillées peuvent sortir des
+        // 2000 messages récents — le rattachement, lui, ne disparaît jamais.
+        sbClient.from("wa_messages").select("numero_patient,patientId")
+          .not("patientId","is",null).neq("patientId","").limit(5000),
+      ]);
+      if(msgs.error) throw msgs.error;
+      if(liens.error) throw liens.error;
+      if(seq !== waSeqRef.current) return;   // une écriture est passée entre-temps : réponse périmée
+      if(Array.isArray(msgs.data)){
+        setWaMessages(msgs.data); cache.save("wa_messages", msgs.data);
+        const idx = {}; (liens.data||[]).forEach(l=>{ if(l && l.numero_patient && l.patientId) idx[l.numero_patient]=String(l.patientId); });
+        setWaLiens(idx); cache.save("wa_liens", idx);
+        waLoadedRef.current = true;
+      }
     }catch(e){ console.error("wa_messages:", e); }
   };
   const ensureWa = async () => {
@@ -20085,42 +20142,72 @@ function App() {
   // une insertion — wa_messages n'a qu'un écrivain automatique par porte), pose
   // le numéro sur la fiche si elle n'en a pas, et journalise dans
   // patients.historique (heure d'Istanbul), comme toute écriture de dossier.
+  const WA_MOTIF_RATTACHE = "Conversation WhatsApp rattachee a la fiche depuis l'ecran Messages.";
+  const WA_MOTIF_DETACHE  = "Conversation WhatsApp detachee de la fiche depuis l'ecran Messages.";
   const rattacherWa = async (numero, p) => {
     try{
       if(!sbClient || !p) return false;
-      const { error } = await sbClient.from("wa_messages")
+      // Défense : jamais d'écrasement d'un rattachement existant vers une AUTRE
+      // fiche (l'UI ne propose pas ce chemin ; s'il arrive, on refuse).
+      const pidActuel = String((waLiens||{})[numero]||"") ||
+        String(((waMessages||[]).find(m=>m.numero_patient===numero && m.patientId)||{}).patientId||"");
+      if(pidActuel && pidActuel!==String(p.id)){ alert(t("wa.dejaRattachee")); return false; }
+      const { data:touchees, error } = await sbClient.from("wa_messages")
         .update({ patientId:String(p.id), updated_at:new Date().toISOString() })   // aucun trigger : updated_at à la main
-        .eq("numero_patient", numero);
+        .eq("numero_patient", numero).select("id");
       if(error) throw error;
+      if(!touchees || !touchees.length) return false;   // 0 ligne touchée (RLS, session) : rien ne s'est passé
+      waSeqRef.current++;   // invalide toute lecture partie avant cette écriture
       setWaMessages(ms=>{ const nm=(ms||[]).map(m=>m.numero_patient===numero?{...m, patientId:String(p.id)}:m); cache.save("wa_messages",nm); return nm; });
+      setWaLiens(lx=>{ const nl={...lx,[numero]:String(p.id)}; cache.save("wa_liens",nl); return nl; });
+      // Journal de la fiche (heure d'Istanbul), ajouté comme les autres entrées.
+      // Si le numéro est posé sur la fiche (elle n'en avait AUCUN), l'écriture du
+      // tel reçoit SA PROPRE entrée : c'est elle que le détachement relira pour
+      // savoir qu'il a le droit de retirer le numéro.
       const { date, heure } = waIstanbulParts();
-      const entree = { u:user.id, date, heure, champ:"whatsapp", ancien:"", nouveau:numero,
-        motif:"Conversation WhatsApp rattachee a la fiche depuis l'ecran Messages." };
-      const historique = JSON.stringify([...parseHist(p.historique), entree]);
-      // Le numéro ne s'écrit sur la fiche QUE si elle n'en a aucun — on ne
-      // remplace jamais un numéro existant, même non international.
-      const majFiche = { id:p.id, historique, ...(String(p.tel||"").trim() ? {} : { tel:numero }) };
-      await savePatient(majFiche);   // savePatient respecte l'historique fourni (aucun doublon)
+      const poseTel = !String(p.tel||"").trim();
+      const entrees = [{ u:user.id, date, heure, champ:"whatsapp", ancien:"", nouveau:numero, motif:WA_MOTIF_RATTACHE }];
+      if(poseTel) entrees.push({ u:user.id, date, heure, champ:"tel", ancien:String(p.tel||""), nouveau:numero, motif:WA_MOTIF_RATTACHE });
+      const historique = JSON.stringify([...parseHist(p.historique), ...entrees]);
+      await savePatient({ id:p.id, historique, ...(poseTel ? { tel:numero } : {}) });   // savePatient respecte l'historique fourni
+      // La couche de synchro avale les échecs : on RELIT la fiche pour vérifier
+      // que le journal est bien en base — sinon on le dit, sans mentir.
+      try{
+        const { data:verif } = await sbClient.from("patients").select("historique").eq("id", p.id).maybeSingle();
+        const ok = verif && String(verif.historique||"").includes(WA_MOTIF_RATTACHE) && String(verif.historique||"").includes(numero);
+        if(!ok) alert(t("wa.echecJournal"));
+      }catch(e){ alert(t("wa.echecJournal")); }
       return true;
     }catch(e){ console.error("rattacherWa:", e); return false; }
   };
   // Le détachement défait, avec sa propre trace : patientId retiré des lignes,
-  // le numéro retiré de la fiche UNIQUEMENT s'il est celui qu'on y avait posé,
-  // et l'entrée de journal inverse. On corrige avec trace, on n'efface pas.
+  // le numéro retiré de la fiche UNIQUEMENT si c'est l'écran qui l'y avait posé
+  // (l'entrée de journal champ:"tel" du rattachement en fait foi — jamais une
+  // simple égalité, qui effacerait un numéro saisi par quelqu'un d'autre).
   const detacherWa = async (numero, p) => {
     try{
       if(!sbClient || !p) return false;
-      const { error } = await sbClient.from("wa_messages")
+      const { data:touchees, error } = await sbClient.from("wa_messages")
         .update({ patientId:"", updated_at:new Date().toISOString() })
-        .eq("numero_patient", numero);
+        .eq("numero_patient", numero).select("id");
       if(error) throw error;
+      if(!touchees || !touchees.length) return false;
+      waSeqRef.current++;
       setWaMessages(ms=>{ const nm=(ms||[]).map(m=>m.numero_patient===numero?{...m, patientId:""}:m); cache.save("wa_messages",nm); return nm; });
+      setWaLiens(lx=>{ const nl={...lx}; delete nl[numero]; cache.save("wa_liens",nl); return nl; });
+      const histAvant = parseHist(p.historique);
+      const poseParEcran = histAvant.some(e=>e && e.champ==="tel" && e.nouveau===numero && e.motif===WA_MOTIF_RATTACHE);
+      const retireTel = poseParEcran && waNormNum(p.tel)===numero;
       const { date, heure } = waIstanbulParts();
-      const entree = { u:user.id, date, heure, champ:"whatsapp", ancien:numero, nouveau:"",
-        motif:"Conversation WhatsApp detachee de la fiche depuis l'ecran Messages." };
-      const historique = JSON.stringify([...parseHist(p.historique), entree]);
-      const majFiche = { id:p.id, historique, ...(waNormNum(p.tel)===numero ? { tel:LOG_CLEAR } : {}) };
-      await savePatient(majFiche);
+      const entrees = [{ u:user.id, date, heure, champ:"whatsapp", ancien:numero, nouveau:"", motif:WA_MOTIF_DETACHE }];
+      if(retireTel) entrees.push({ u:user.id, date, heure, champ:"tel", ancien:numero, nouveau:"", motif:WA_MOTIF_DETACHE });
+      const historique = JSON.stringify([...histAvant, ...entrees]);
+      await savePatient({ id:p.id, historique, ...(retireTel ? { tel:LOG_CLEAR } : {}) });
+      try{
+        const { data:verif } = await sbClient.from("patients").select("historique").eq("id", p.id).maybeSingle();
+        const ok = verif && String(verif.historique||"").includes(WA_MOTIF_DETACHE);
+        if(!ok) alert(t("wa.echecJournal"));
+      }catch(e){ alert(t("wa.echecJournal")); }
       return true;
     }catch(e){ console.error("detacherWa:", e); return false; }
   };
@@ -20372,7 +20459,7 @@ function App() {
           {/* Caisse (lot 73) : finances NON filtrées — le solde a besoin de TOUS les
               mouvements (paiements chirurgien compris). Accès verrouillé par hasCaisse. */}
           {activeView==="caisse"&&hasCaisse(userFull)&&<Caisse user={userFull} patients={vPatients} finances={finances} arretes={caisseArretes} nwDevis={nwDevis} nwFactures={nwFactures} medecins={medecins} hopitaux={hopitaux} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onSave={saveFinance} onUpdate={updateFinance} onSaveArrete={saveArrete}/>}
-          {activeView==="messages"&&hasMessages(userFull)&&<WaMessages user={userFull} patients={vPatients} messages={waMessages} chargement={waLoading} onRecharger={chargerWa} onRattacher={rattacherWa} onDetacher={detacherWa} onOpenPatient={openPatientById}/>}
+          {activeView==="messages"&&hasMessages(userFull)&&<WaMessages user={userFull} patients={vPatients} messages={waMessages} liens={waLiens} chargement={waLoading} onRecharger={chargerWa} onRattacher={rattacherWa} onDetacher={detacherWa} onOpenPatient={openPatientById}/>}
           {activeView==="hopitaux"&&<Hopitaux user={userFull} patients={patients} rdvs={rdvs} hopitaux={hopitaux} setHopitaux={setHopitaux} syncing={syncing} setSyncing={setSyncing}/>}
           {activeView==="equipe"&&<VueEquipe patients={patients} rdvs={rdvs} taches={taches} finances={finances}/>}
           {activeView==="medecins"&&<Medecins user={userFull} patients={patients} rdvs={rdvs} finances={finances} medecins={medecins} setMedecins={setMedecins}/>}
