@@ -9,7 +9,7 @@
 //    sur une ancienne version, sans aucune action de l'utilisateur.
 //    Aucune boucle possible : "activate" ne s'exécute qu'UNE fois par version
 //    du SW, et ne se redéclenche qu'au prochain déploiement d'un sw.js différent.
-const CACHE = "clinic-nobel-v3";
+const CACHE = "clinic-nobel-v4";
 const FILES = ["./index.html"];
 
 self.addEventListener("install", e => {
