@@ -187,7 +187,7 @@ if("serviceWorker" in navigator){
       les échecs transitoires de CDN, exactement le symptôme constaté) ;
    3) si le second essai échoue aussi → message d'erreur clair + bouton Recharger. */
 (function(){
-  window.__CRM_VERSION = "v7.4 — Bénéficiaire en colonne + update strict, lot 74 (2026-08-30)";
+  window.__CRM_VERSION = "v7.5 — Messages WhatsApp (2026-08-31)";
   /* SAS localStorage : toute clé applicative (cn_*) illisible en JSON est supprimée
      INDIVIDUELLEMENT avant le démarrage de React. Un stockage corrompu ne peut donc
      jamais empêcher le boot, et on ne perd que la clé abîmée — jamais tout. */
@@ -1531,6 +1531,37 @@ const I18N = {
     "patient.quoteChecking": "Budget verrouillé — vérification du devis…",
     "patient.quoteIsTruth": "Le devis {n} fait foi : ce montant n'est plus saisi à la main.",
     "patient.quoteConflict": "Fiche et devis divergent — Veys tranche, rien n'est corrigé automatiquement.",
+    "nav.messages": "Messages",
+    "title.messages": "Messages WhatsApp",
+    "wa.recherche": "Rechercher un nom ou un numéro…",
+    "wa.fToutes": "Toutes",
+    "wa.fLiees": "Rattachées",
+    "wa.fInconnues": "Inconnues",
+    "wa.aucune": "Aucune conversation.",
+    "wa.chargement": "Chargement des conversations…",
+    "wa.choisir": "Sélectionnez une conversation.",
+    "wa.retour": "Conversations",
+    "wa.ouvrirFiche": "Ouvrir la fiche",
+    "wa.rattacher": "Rattacher à une fiche",
+    "wa.detacher": "Détacher de la fiche",
+    "wa.detacherConfirm": "Détacher cette conversation de la fiche ? L'action sera journalisée dans le dossier de la patiente.",
+    "wa.rattacheOk": "Conversation rattachée à {n}",
+    "wa.detacheOk": "Conversation détachée de la fiche",
+    "wa.echec": "Échec de l'enregistrement — vérifiez la connexion et réessayez.",
+    "wa.fenetreOuverte": "Fenêtre ouverte — encore {t}",
+    "wa.fenetreFermee": "Fenêtre fermée — modèle obligatoire",
+    "wa.fenetreInfo": "WhatsApp n'autorise l'écriture libre que 24 h après le dernier message de la patiente ; ensuite, seuls les modèles approuvés par Meta peuvent partir.",
+    "wa.envoiBientot": "Envoi bientôt disponible — cet écran est en lecture pour l'instant.",
+    "wa.ecrire": "Écrire un message…",
+    "wa.modelesBientot": "Sélecteur de modèles Meta — bientôt disponible.",
+    "wa.testMeta": "Test Meta",
+    "wa.pj": "Pièce jointe",
+    "wa.stSent": "envoyé",
+    "wa.stDelivered": "distribué",
+    "wa.stRead": "lu",
+    "wa.stFailed": "échec",
+    "wa.memeNumero": "Numéro de la fiche {n}",
+    "wa.aRepondre": "Dernier message entrant sans réponse",
     "common.loadingSheets": "Chargement depuis Google Sheets…",
     "surgeon.readOnly": "Lecture seule",
     "surgeon.limited": "Accès limité — informations médicales uniquement",
@@ -2835,6 +2866,37 @@ const I18N = {
     "patient.quoteChecking": "Budget locked — checking the quote…",
     "patient.quoteIsTruth": "Quote {n} rules: this amount is no longer typed by hand.",
     "patient.quoteConflict": "Sheet and quote differ — Veys decides, nothing is fixed automatically.",
+    "nav.messages": "Messages",
+    "title.messages": "WhatsApp messages",
+    "wa.recherche": "Search a name or a number…",
+    "wa.fToutes": "All",
+    "wa.fLiees": "Linked",
+    "wa.fInconnues": "Unknown",
+    "wa.aucune": "No conversation.",
+    "wa.chargement": "Loading conversations…",
+    "wa.choisir": "Select a conversation.",
+    "wa.retour": "Conversations",
+    "wa.ouvrirFiche": "Open the record",
+    "wa.rattacher": "Link to a record",
+    "wa.detacher": "Unlink from the record",
+    "wa.detacherConfirm": "Unlink this conversation from the record? The action is journaled in the patient file.",
+    "wa.rattacheOk": "Conversation linked to {n}",
+    "wa.detacheOk": "Conversation unlinked from the record",
+    "wa.echec": "Save failed — check the connection and try again.",
+    "wa.fenetreOuverte": "Window open — {t} left",
+    "wa.fenetreFermee": "Window closed — template required",
+    "wa.fenetreInfo": "WhatsApp only allows free-form replies for 24 h after the patient's last message; after that, only Meta-approved templates can be sent.",
+    "wa.envoiBientot": "Sending coming soon — this screen is read-only for now.",
+    "wa.ecrire": "Write a message…",
+    "wa.modelesBientot": "Meta template picker — coming soon.",
+    "wa.testMeta": "Meta test",
+    "wa.pj": "Attachment",
+    "wa.stSent": "sent",
+    "wa.stDelivered": "delivered",
+    "wa.stRead": "read",
+    "wa.stFailed": "failed",
+    "wa.memeNumero": "Number of record {n}",
+    "wa.aRepondre": "Last inbound message not answered yet",
     "common.loadingSheets": "Loading from Google Sheets…",
     "surgeon.readOnly": "Read-only",
     "surgeon.limited": "Restricted access — medical information only",
@@ -4139,6 +4201,37 @@ const I18N = {
     "patient.quoteChecking": "Bütçe kilitli — teklif kontrol ediliyor…",
     "patient.quoteIsTruth": "{n} numaralı teklif geçerli: bu tutar artık elle girilmez.",
     "patient.quoteConflict": "Dosya ile teklif farklı — Veys karar verir, hiçbir şey otomatik düzeltilmez.",
+    "nav.messages": "Mesajlar",
+    "title.messages": "WhatsApp mesajları",
+    "wa.recherche": "İsim veya numara ara…",
+    "wa.fToutes": "Tümü",
+    "wa.fLiees": "Bağlı",
+    "wa.fInconnues": "Bilinmeyen",
+    "wa.aucune": "Konuşma yok.",
+    "wa.chargement": "Konuşmalar yükleniyor…",
+    "wa.choisir": "Bir konuşma seçin.",
+    "wa.retour": "Konuşmalar",
+    "wa.ouvrirFiche": "Dosyayı aç",
+    "wa.rattacher": "Bir dosyaya bağla",
+    "wa.detacher": "Dosyadan ayır",
+    "wa.detacherConfirm": "Bu konuşma dosyadan ayrılsın mı? İşlem hasta dosyasına kaydedilir.",
+    "wa.rattacheOk": "Konuşma {n} dosyasına bağlandı",
+    "wa.detacheOk": "Konuşma dosyadan ayrıldı",
+    "wa.echec": "Kaydedilemedi — bağlantıyı kontrol edip yeniden deneyin.",
+    "wa.fenetreOuverte": "Pencere açık — {t} kaldı",
+    "wa.fenetreFermee": "Pencere kapalı — şablon zorunlu",
+    "wa.fenetreInfo": "WhatsApp, hastanın son mesajından sonra yalnızca 24 saat serbest yazmaya izin verir; sonrasında yalnızca Meta onaylı şablonlar gönderilebilir.",
+    "wa.envoiBientot": "Gönderim yakında — bu ekran şimdilik salt okunur.",
+    "wa.ecrire": "Mesaj yaz…",
+    "wa.modelesBientot": "Meta şablon seçici — yakında.",
+    "wa.testMeta": "Meta testi",
+    "wa.pj": "Ek dosya",
+    "wa.stSent": "gönderildi",
+    "wa.stDelivered": "iletildi",
+    "wa.stRead": "okundu",
+    "wa.stFailed": "başarısız",
+    "wa.memeNumero": "{n} dosyasının numarası",
+    "wa.aRepondre": "Son gelen mesaj henüz yanıtlanmadı",
     "common.loadingSheets": "Google Sheets'ten yükleniyor…",
     "surgeon.readOnly": "Salt görüntüleme",
     "surgeon.limited": "Sınırlı erişim — yalnızca tıbbi bilgiler",
@@ -5443,6 +5536,37 @@ const I18N = {
     "patient.quoteChecking": "Presupuesto bloqueado — comprobando el presupuesto…",
     "patient.quoteIsTruth": "Manda el presupuesto {n}: este importe ya no se teclea a mano.",
     "patient.quoteConflict": "Ficha y presupuesto difieren — decide Veys, nada se corrige automáticamente.",
+    "nav.messages": "Mensajes",
+    "title.messages": "Mensajes de WhatsApp",
+    "wa.recherche": "Buscar un nombre o un número…",
+    "wa.fToutes": "Todas",
+    "wa.fLiees": "Vinculadas",
+    "wa.fInconnues": "Desconocidas",
+    "wa.aucune": "Ninguna conversación.",
+    "wa.chargement": "Cargando conversaciones…",
+    "wa.choisir": "Seleccione una conversación.",
+    "wa.retour": "Conversaciones",
+    "wa.ouvrirFiche": "Abrir la ficha",
+    "wa.rattacher": "Vincular a una ficha",
+    "wa.detacher": "Desvincular de la ficha",
+    "wa.detacherConfirm": "¿Desvincular esta conversación de la ficha? La acción quedará registrada en el expediente.",
+    "wa.rattacheOk": "Conversación vinculada a {n}",
+    "wa.detacheOk": "Conversación desvinculada de la ficha",
+    "wa.echec": "No se pudo guardar — compruebe la conexión y vuelva a intentarlo.",
+    "wa.fenetreOuverte": "Ventana abierta — quedan {t}",
+    "wa.fenetreFermee": "Ventana cerrada — plantilla obligatoria",
+    "wa.fenetreInfo": "WhatsApp solo permite escribir libremente durante 24 h tras el último mensaje de la paciente; después, solo pueden enviarse plantillas aprobadas por Meta.",
+    "wa.envoiBientot": "Envío disponible pronto — esta pantalla es de solo lectura por ahora.",
+    "wa.ecrire": "Escribir un mensaje…",
+    "wa.modelesBientot": "Selector de plantillas Meta — próximamente.",
+    "wa.testMeta": "Prueba Meta",
+    "wa.pj": "Adjunto",
+    "wa.stSent": "enviado",
+    "wa.stDelivered": "entregado",
+    "wa.stRead": "leído",
+    "wa.stFailed": "fallido",
+    "wa.memeNumero": "Número de la ficha {n}",
+    "wa.aRepondre": "Último mensaje entrante sin respuesta",
     "common.loadingSheets": "Cargando desde Google Sheets…",
     "surgeon.readOnly": "Solo lectura",
     "surgeon.limited": "Acceso limitado — solo información médica",
@@ -5551,7 +5675,7 @@ function permissionActionLabel(value){
 }
 function moduleLabel(value){
   const map = {dashboard:"nav.dashboard", equipe:"nav.equipe", patients:"nav.patients", rdvs:"nav.rdvs", taches:"nav.taches", agenda:"nav.agenda", finances:"nav.finances", analyses:"nav.analyses", messagerie:"nav.messagerie", notifications:"nav.notifications", recherche:"nav.recherche", hopitaux:"nav.hopitaux", medecins:"nav.medecins", utilisateurs:"nav.utilisateurs",
-    bloc:"team.mod.bloc", ventes:"team.mod.ventes", devis:"team.mod.devis", factures:"team.mod.factures", paiements:"team.mod.paiements", parametres:"team.mod.parametres", financesAdmin:"team.mod.financesAdmin", commissions:"team.mod.commissions", caisse:"nav.caisse"};
+    bloc:"team.mod.bloc", ventes:"team.mod.ventes", devis:"team.mod.devis", factures:"team.mod.factures", paiements:"team.mod.paiements", parametres:"team.mod.parametres", financesAdmin:"team.mod.financesAdmin", commissions:"team.mod.commissions", caisse:"nav.caisse", messages:"nav.messages"};
   const key = map[value];
   return key ? t(key) : value;
 }
@@ -5709,6 +5833,7 @@ const PERM_MODULES = [
   {k:"factures",      l:"Factures",                 icon:"🧾", view:null,            scoped:true},
   {k:"finances",      l:"Finances",                 icon:"💳", view:"finances",      scoped:true},
   {k:"caisse",        l:"Caisse",                   icon:"💰", view:"caisse",        scoped:false},
+  {k:"messages",      l:"Messages",                 icon:"📲", view:"messages",      scoped:false},
   {k:"financesAdmin", l:"Finances Administrateur",  icon:"🔐", view:null,            scoped:false},
   {k:"commissions",   l:"Commissions",              icon:"🤝", view:null,            scoped:false},
   {k:"paiements",     l:"Paiements",                icon:"💶", view:null,            scoped:true},
@@ -5905,7 +6030,7 @@ function effPermsObj(user){
 // Ces règles priment sur toute permission cochée par erreur dans la matrice RBAC.
 const isSurgeon = (u) => u?.role === "chirurgien";
 const canViewSensitivePatientData = (u) => !isSurgeon(u);
-const SURGEON_BLOCKED_MODULES = ["finances","financesAdmin","commissions","caisse","analyses","utilisateurs","equipe","messagerie","ventes","devis","factures","paiements"];
+const SURGEON_BLOCKED_MODULES = ["finances","financesAdmin","commissions","caisse","messages","analyses","utilisateurs","equipe","messagerie","ventes","devis","factures","paiements"];
 
 // ═══ PERMISSION INDÉPENDANTE « ACCÈS FINANCES ADMINISTRATEUR » ═══════════════
 // Donne accès aux onglets sensibles (Finances Administrateur, Paiements
@@ -5933,6 +6058,20 @@ function hasCaisse(user){
   if(user.role==="coordinatrice") return true;    // Ceyda : par rôle
   const p = effPermsObj(user);
   return !!(p.caisse && p.caisse.view);
+}
+
+// ═══ PERMISSION « MESSAGES WHATSAPP » ════════════════════════════════════════
+// Miroir de la RLS wa_messages_staff : tout le personnel SAUF chirurgien (et
+// anonyme). Rôles testés en dur (l'override serveur remplace intégralement les
+// perms du rôle — cf. effPermsObj) ; la coche « messages.view » de la matrice
+// reste un octroi possible pour un profil hors liste (ex. invité).
+function hasMessages(user){
+  if(!user) return false;
+  if(isSurgeon(user)) return false;               // jamais — comme la RLS
+  if(isFullRole(user.role)) return true;
+  if(["coordinatrice","commerciale","assistante","comptabilite"].indexOf(user.role)>=0) return true;
+  const p = effPermsObj(user);
+  return !!(p.messages && p.messages.view);
 }
 
 // ═══ PERMISSION INDÉPENDANTE « COMMISSIONS » (A1) ════════════════════════════
@@ -19162,6 +19301,279 @@ function Caisse({user, patients, finances, arretes, nwDevis, nwFactures, medecin
   );
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// MESSAGES WHATSAPP — les conversations du numéro principal, dans le CRM.
+// Le jour du basculement vers l'API Meta, cet écran devient le SEUL endroit
+// d'où la clinique parle à ses patientes.
+// Doctrine :
+//  · wa_messages est la seule table, et l'application n'y INSÈRE jamais une
+//    ligne de message : le webhook écrit les entrants, la future fonction
+//    whatsapp-send écrira les sortants (un seul écrivain automatique par porte —
+//    la leçon des 7 080 € de sorties fantômes). L'écran ne fait que lire, et
+//    poser/défaire le rattachement (patientId) — jamais créer, jamais supprimer.
+//  · Le jeton Meta n'existe nulle part ici : l'envoi passera par whatsapp-send.
+//    Tant qu'elle n'existe pas : lecture seule, zone de rédaction inactive.
+//  · Le rattachement se fait par le NUMÉRO, jamais par le nom (nom_profil est
+//    déclaratif), et s'écrit dans patients.historique — avec trace, détachable.
+//  · Fenêtre de 24 h : règle Meta, affichée en clair, jamais contournée.
+// ══════════════════════════════════════════════════════════════════════════════
+const WA_TZ = "Europe/Istanbul";
+// Normalisation d'un numéro au format international « +905465863469 ».
+// Renvoie "" si le numéro n'est pas international (pas de rattachement possible).
+const waNormNum = (v) => {
+  let s = String(v==null?"":v).replace(/[^0-9+]/g,"");
+  if(s.slice(0,2)==="00") s = "+"+s.slice(2);
+  return /^\+[0-9]{8,15}$/.test(s) ? s : "";
+};
+// Heures affichées et journalisées en heure d'ISTANBUL, quel que soit l'appareil.
+function waFmtHeure(ts){ try{ return new Intl.DateTimeFormat("fr-FR",{timeZone:WA_TZ,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(ts)); }catch(e){ return ""; } }
+function waFmtJour(ts){ try{ return new Intl.DateTimeFormat("fr-FR",{timeZone:WA_TZ,day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(ts)); }catch(e){ return ""; } }
+function waIstanbulParts(){
+  try{
+    const parts = new Intl.DateTimeFormat("fr-CA",{timeZone:WA_TZ,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date());
+    const g = t => (parts.find(x=>x.type===t)||{}).value||"";
+    return { date:`${g("year")}-${g("month")}-${g("day")}`, heure:`${g("hour")}:${g("minute")}` };
+  }catch(e){ return nowParts(); }
+}
+// Une conversation = un numero_patient (colonne générée : elle ne peut pas mentir).
+// Nom affiché : la fiche si rattachée, sinon la fiche au même numéro (suggestion,
+// jamais un rattachement implicite), sinon nom_profil, sinon le numéro.
+function waConversations(messages, patients){
+  const parNum = {};
+  (messages||[]).forEach(m=>{ if(m && m.numero_patient){ (parNum[m.numero_patient]=parNum[m.numero_patient]||[]).push(m); } });
+  const parTel = {};
+  (patients||[]).forEach(p=>{ const n=waNormNum(p && p.tel); if(n && !parTel[n]) parTel[n]=p; });
+  return Object.keys(parNum).map(numero=>{
+    const msgs = parNum[numero].slice().sort((a,b)=>String(a.horodatage||"").localeCompare(String(b.horodatage||"")));
+    const dernier = msgs[msgs.length-1];
+    let pid=""; for(let i=msgs.length-1;i>=0;i--){ if(msgs[i].patientId){ pid=String(msgs[i].patientId); break; } }
+    const fiche = pid ? (patients||[]).find(p=>String(p.id)===pid)||null : null;
+    const suggestion = fiche ? null : (parTel[numero]||null);
+    let profil=""; for(let i=msgs.length-1;i>=0;i--){ if(msgs[i].nom_profil){ profil=String(msgs[i].nom_profil); break; } }
+    const nomFiche = (p)=>`${p.prenom||""} ${p.nom||""}`.trim();
+    const nom = fiche ? (nomFiche(fiche)||numero) : (suggestion ? (nomFiche(suggestion)||numero) : (profil || numero));
+    let dernierEntrant = null; msgs.forEach(m=>{ if(m.direction==="entrant") dernierEntrant = m; });
+    return {
+      numero, msgs, dernier, fiche, suggestion, profil, nom,
+      rattachee: !!fiche,
+      aRepondre: !!dernier && dernier.direction==="entrant",
+      // Fenêtre Meta : 24 h après le DERNIER message entrant (même s'il est seul).
+      fenetreFin: dernierEntrant ? (new Date(dernierEntrant.horodatage).getTime() + 24*3600*1000) : null,
+    };
+  }).sort((a,b)=>String((b.dernier||{}).horodatage||"").localeCompare(String((a.dernier||{}).horodatage||"")));
+}
+function waFenetre(fenetreFin){
+  if(!fenetreFin || !isFinite(fenetreFin)) return { ouverte:false };
+  const reste = fenetreFin - Date.now();
+  if(reste <= 0) return { ouverte:false };
+  const h = Math.floor(reste/3600000), mn = Math.floor((reste%3600000)/60000);
+  return { ouverte:true, texte:`${h} h ${String(mn).padStart(2,"0")}` };
+}
+const waExtrait = (m, tt)=>{
+  if(!m) return "";
+  if(m.type && m.type!=="text") return `📎 ${tt("wa.pj")} (${m.type})`;
+  return String(m.texte||"").replace(/\s+/g," ").trim();
+};
+const WA_ST = { sent:{ic:"✓",k:"wa.stSent",c:null}, delivered:{ic:"✓✓",k:"wa.stDelivered",c:null}, read:{ic:"✓✓",k:"wa.stRead",c:"#1D73C9"}, failed:{ic:"⚠",k:"wa.stFailed",c:"#DC2626"} };
+
+function WaMessages({user, patients, messages, chargement, onRecharger, onRattacher, onDetacher, onOpenPatient}){
+  const tt = t;
+  const [sel,setSel] = useState(null);        // numero_patient sélectionné
+  const [q,setQ] = useState("");
+  const [filtre,setFiltre] = useState("toutes"); // toutes | liees | inconnues
+  const [rattacheOuvert,setRattacheOuvert] = useState(false);
+  const [occupe,setOccupe] = useState(false);
+  const [toast,setToast] = useState("");
+  const flash = (m)=>{ setToast(m); setTimeout(()=>setToast(""),2600); };
+  // Ceyda travaille au téléphone : en dessous de 900 px, liste OU fil, jamais les deux.
+  const [mobile,setMobile] = useState(()=>{ try{ return window.matchMedia("(max-width:899px)").matches; }catch(e){ return true; } });
+  useEffect(()=>{
+    try{
+      const mq = window.matchMedia("(max-width:899px)");
+      const h = e=>setMobile(e.matches);
+      mq.addEventListener ? mq.addEventListener("change",h) : mq.addListener(h);
+      return ()=>{ mq.removeEventListener ? mq.removeEventListener("change",h) : mq.removeListener(h); };
+    }catch(e){}
+  },[]);
+  // Le compte à rebours de la fenêtre se rafraîchit tout seul.
+  const [,setTic] = useState(0);
+  useEffect(()=>{ const iv=setInterval(()=>setTic(x=>x+1), 30000); return ()=>clearInterval(iv); },[]);
+
+  const convs = waConversations(messages, patients);
+  const convSel = sel ? convs.find(c=>c.numero===sel)||null : null;
+  const visibles = convs.filter(c=>{
+    if(filtre==="liees" && !c.rattachee) return false;
+    if(filtre==="inconnues" && c.rattachee) return false;
+    const s = q.trim().toLowerCase();
+    if(!s) return true;
+    return c.nom.toLowerCase().includes(s) || c.numero.includes(s.replace(/[^0-9+]/g,"")||s) || (c.profil||"").toLowerCase().includes(s);
+  });
+
+  const inp = {width:"100%",padding:"10px 12px",border:`1.5px solid ${C.border}`,borderRadius:10,fontSize:14,outline:"none",background:C.white,boxSizing:"border-box"};
+  const chip = (actif)=>({padding:"7px 13px",minHeight:34,border:`1.5px solid ${actif?C.navy:C.border}`,borderRadius:99,background:actif?C.navy+"12":C.white,color:actif?C.navy:C.muted,fontWeight:800,fontSize:12,cursor:"pointer",whiteSpace:"nowrap"});
+
+  const faireRattacher = async (p)=>{
+    if(!convSel || occupe) return;
+    setOccupe(true);
+    try{
+      const ok = await onRattacher(convSel.numero, p);
+      if(ok){ flash("✅ "+tt("wa.rattacheOk").replace("{n}", `${p.prenom||""} ${p.nom||""}`.trim())); setRattacheOuvert(false); }
+      else alert(tt("wa.echec"));
+    } finally { setOccupe(false); }
+  };
+  const faireDetacher = async ()=>{
+    if(!convSel || !convSel.fiche || occupe) return;
+    if(!window.confirm(tt("wa.detacherConfirm"))) return;
+    setOccupe(true);
+    try{
+      const ok = await onDetacher(convSel.numero, convSel.fiche);
+      if(ok) flash("↩️ "+tt("wa.detacheOk"));
+      else alert(tt("wa.echec"));
+    } finally { setOccupe(false); }
+  };
+
+  // ── Panneau gauche : la liste ──
+  const listePanel = (
+    <div style={{display:"flex",flexDirection:"column",gap:8,minWidth:0}}>
+      <input value={q} onChange={e=>setQ(e.target.value)} placeholder={tt("wa.recherche")} style={inp}/>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        {[["toutes",tt("wa.fToutes")],["liees",tt("wa.fLiees")],["inconnues",tt("wa.fInconnues")]].map(([id,l])=>(
+          <button key={id} onClick={()=>setFiltre(id)} style={chip(filtre===id)}>{l}</button>
+        ))}
+      </div>
+      {chargement && <div style={{fontSize:12.5,color:C.muted,padding:"8px 2px"}}>⏳ {tt("wa.chargement")}</div>}
+      {!chargement && visibles.length===0 && <Card><div style={{fontSize:13,color:C.muted}}>{tt("wa.aucune")}</div></Card>}
+      <div style={{display:"flex",flexDirection:"column",gap:6,overflowY:"auto"}}>
+        {visibles.map(c=>(
+          <Card key={c.numero} onClick={()=>setSel(c.numero)} style={{padding:"11px 13px",marginBottom:0,cursor:"pointer",border:`1px solid ${sel===c.numero?C.navy:C.border}`}}>
+            <div style={{display:"flex",alignItems:"center",gap:9,minWidth:0}}>
+              <div style={{width:38,height:38,borderRadius:12,background:(c.rattachee?C.green:C.muted)+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{c.rattachee?"👤":"❔"}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,minWidth:0}}>
+                  <span style={{fontWeight:800,fontSize:13.5,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.nom}</span>
+                  {c.aRepondre && <span title={tt("wa.aRepondre")} style={{width:9,height:9,borderRadius:99,background:C.green,flexShrink:0}}/>}
+                </div>
+                <div style={{fontSize:11.5,color:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {c.dernier && c.dernier.direction==="sortant" ? "↗ " : ""}{waExtrait(c.dernier, tt)||"—"}
+                </div>
+              </div>
+              <div style={{textAlign:"right",flexShrink:0}}>
+                <div style={{fontSize:10.5,color:C.muted,whiteSpace:"nowrap"}}>{c.dernier?waFmtHeure(c.dernier.horodatage):""}</div>
+                <div style={{fontSize:9.5,color:C.muted,whiteSpace:"nowrap"}}>{c.dernier?waFmtJour(c.dernier.horodatage):""}</div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+
+  // ── Panneau droit : le fil ──
+  const filPanel = !convSel ? (
+    <Card style={{minHeight:200,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{fontSize:13,color:C.muted}}>{tt("wa.choisir")}</div>
+    </Card>
+  ) : (()=>{
+    const fen = waFenetre(convSel.fenetreFin);
+    return (
+    <div style={{display:"flex",flexDirection:"column",gap:8,minWidth:0}}>
+      {/* En-tête du fil */}
+      <Card style={{padding:"12px 14px",marginBottom:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+          {mobile && <button onClick={()=>setSel(null)} style={{minHeight:34,padding:"6px 10px",border:`1px solid ${C.border}`,borderRadius:9,background:C.white,cursor:"pointer",fontWeight:700,fontSize:12,color:C.navy,flexShrink:0}}>← {tt("wa.retour")}</button>}
+          <div style={{flex:1,minWidth:140}}>
+            <div style={{fontWeight:800,fontSize:14.5,color:C.text}}>{convSel.nom}</div>
+            <div className="num" style={{fontSize:11.5,color:C.muted,fontFamily:"monospace"}}>{convSel.numero}</div>
+          </div>
+          {convSel.rattachee ? (
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              <button onClick={()=>onOpenPatient(convSel.fiche.id)} style={{minHeight:34,padding:"7px 11px",border:"none",borderRadius:9,background:C.navy,color:C.white,cursor:"pointer",fontWeight:800,fontSize:11.5}}>👤 {tt("wa.ouvrirFiche")}</button>
+              <button onClick={faireDetacher} disabled={occupe} style={{minHeight:34,padding:"7px 11px",border:`1px solid ${C.border}`,borderRadius:9,background:C.white,color:C.muted,cursor:"pointer",fontWeight:700,fontSize:11.5}}>{tt("wa.detacher")}</button>
+            </div>
+          ) : (
+            <button onClick={()=>setRattacheOuvert(true)} style={{minHeight:34,padding:"7px 11px",border:"none",borderRadius:9,background:C.gold,color:C.white,cursor:"pointer",fontWeight:800,fontSize:11.5}}>🔗 {tt("wa.rattacher")}</button>
+          )}
+        </div>
+        {convSel.suggestion && !convSel.rattachee && (
+          <div style={{marginTop:8,fontSize:11.5,color:C.navy,background:C.blue+"0e",border:`1px solid ${C.blue}33`,borderRadius:9,padding:"6px 10px"}}>
+            💡 {tt("wa.memeNumero").replace("{n}", `${convSel.suggestion.prenom||""} ${convSel.suggestion.nom||""}`.trim())}
+          </div>
+        )}
+        {/* La fenêtre de 24 h — la règle Meta, en clair */}
+        <div title={tt("wa.fenetreInfo")} style={{marginTop:8,display:"inline-block",padding:"5px 11px",borderRadius:99,fontSize:11.5,fontWeight:800,
+          background:(fen.ouverte?C.green:C.amber)+"16", color:fen.ouverte?C.green:"#92400E", border:`1px solid ${(fen.ouverte?C.green:C.amber)}44`}}>
+          {fen.ouverte ? "🟢 "+tt("wa.fenetreOuverte").replace("{t}", fen.texte) : "🔒 "+tt("wa.fenetreFermee")}
+        </div>
+      </Card>
+      {/* Les bulles */}
+      <div style={{display:"flex",flexDirection:"column",gap:6,overflowY:"auto",padding:"2px 0",minHeight:120}}>
+        {convSel.msgs.map((m,i)=>{
+          const sortant = m.direction==="sortant";
+          const jourNouveau = i===0 || waFmtJour(m.horodatage)!==waFmtJour(convSel.msgs[i-1].horodatage);
+          const st = sortant ? WA_ST[m.statut] : null;
+          return (
+            <React.Fragment key={m.id||m.wa_message_id||i}>
+              {jourNouveau && <div style={{textAlign:"center",fontSize:10.5,color:C.muted,margin:"6px 0 2px"}}>{waFmtJour(m.horodatage)}</div>}
+              <div style={{display:"flex",justifyContent:sortant?"flex-end":"flex-start"}}>
+                <div style={{maxWidth:"78%",background:sortant?C.navy:C.white,color:sortant?C.white:C.text,
+                  border:`1px solid ${sortant?C.navy:C.border}`,borderRadius:sortant?"14px 14px 4px 14px":"14px 14px 14px 4px",
+                  padding:"8px 12px",fontSize:13.5,lineHeight:1.45,overflowWrap:"break-word",wordBreak:"break-word",minWidth:0}}>
+                  {m.type && m.type!=="text"
+                    ? <div style={{fontStyle:"italic",opacity:0.85}}>📎 {tt("wa.pj")} · {m.type}{m.texte?` — ${m.texte}`:""}</div>
+                    : <div style={{whiteSpace:"pre-wrap"}}>{m.texte||""}</div>}
+                  <div style={{display:"flex",gap:6,justifyContent:"flex-end",alignItems:"center",marginTop:3,fontSize:10,opacity:sortant?0.75:1,color:sortant?C.white:C.muted}}>
+                    {m.statut==="test_meta" && <span style={{background:C.purple+"22",color:sortant?C.white:C.purple,padding:"0 6px",borderRadius:99,fontWeight:700}}>{tt("wa.testMeta")}</span>}
+                    <span>{waFmtHeure(m.horodatage)}</span>
+                    {st && <span style={{color:st.c||(sortant?C.white:C.muted),fontWeight:700}}>{st.ic} {tt(st.k)}</span>}
+                  </div>
+                </div>
+              </div>
+            </React.Fragment>
+          );
+        })}
+      </div>
+      {/* Zone de rédaction — INACTIVE tant que whatsapp-send n'existe pas. Aucun envoi simulé. */}
+      <Card style={{padding:"10px 12px",marginBottom:0,background:C.bg}}>
+        {fen.ouverte ? (
+          <textarea disabled placeholder={tt("wa.ecrire")} style={{...inp,minHeight:44,resize:"none",background:"#EDF1F7",color:C.muted,cursor:"not-allowed"}}/>
+        ) : (
+          <div style={{...inp,background:"#EDF1F7",color:C.muted,minHeight:44,display:"flex",alignItems:"center",cursor:"not-allowed"}}>🔒 {tt("wa.modelesBientot")}</div>
+        )}
+        <div style={{fontSize:11,color:C.muted,marginTop:6}}>⏳ {tt("wa.envoiBientot")}{!fen.ouverte ? " · "+tt("wa.fenetreFermee") : ""}</div>
+      </Card>
+    </div>
+    ); })();
+
+  return (
+    <div style={{paddingBottom:80,minWidth:0}}>
+      {mobile
+        ? (sel ? filPanel : listePanel)
+        : <div style={{display:"grid",gridTemplateColumns:"340px minmax(0,1fr)",gap:14,alignItems:"start"}}>{listePanel}{filPanel}</div>}
+
+      {/* Feuille de rattachement — par le NUMÉRO, la recherche ne sert qu'à trouver la fiche */}
+      {rattacheOuvert && convSel && (
+        <div onClick={()=>{ if(!occupe) setRattacheOuvert(false); }} style={{position:"fixed",inset:0,background:"rgba(11,31,58,0.6)",zIndex:1200,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(4px)"}}>
+          <div onClick={e=>e.stopPropagation()} className="slide-up" style={{background:C.white,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:520,maxHeight:"92vh",overflowY:"auto",padding:"0 18px calc(18px + env(safe-area-inset-bottom))"}}>
+            <div style={{width:36,height:4,borderRadius:99,background:C.border,margin:"12px auto 14px"}}/>
+            <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:4}}>🔗 {tt("wa.rattacher")}</div>
+            <div className="num" style={{fontSize:12,color:C.muted,marginBottom:12,fontFamily:"monospace"}}>{convSel.numero}</div>
+            {convSel.suggestion && (
+              <button onClick={()=>faireRattacher(convSel.suggestion)} disabled={occupe}
+                style={{width:"100%",textAlign:"left",padding:"11px 13px",marginBottom:10,border:`1.5px solid ${C.blue}55`,borderRadius:12,background:C.blue+"0e",cursor:"pointer",fontWeight:800,fontSize:13.5,color:C.navy}}>
+                💡 {`${convSel.suggestion.prenom||""} ${convSel.suggestion.nom||""}`.trim()} <span style={{fontWeight:500,fontSize:11,color:C.muted}}>· {tt("wa.memeNumero").replace("{n}","").replace(" ","")}{waNormNum(convSel.suggestion.tel)}</span>
+              </button>
+            )}
+            <CaissePatientPick patients={patients} value={""} onPick={(pid)=>{ const p=(patients||[]).find(x=>String(x.id)===String(pid)); if(p) faireRattacher(p); }}/>
+            <div style={{height:14}}/>
+          </div>
+        </div>
+      )}
+
+      {toast && <div style={{position:"fixed",bottom:90,left:"50%",transform:"translateX(-50%)",background:C.navy,color:C.white,padding:"10px 20px",borderRadius:99,fontSize:13,fontWeight:700,zIndex:1300,boxShadow:"0 4px 20px rgba(0,0,0,0.25)",whiteSpace:"nowrap"}}>{toast}</div>}
+    </div>
+  );
+}
+
 function App() {
   /* CORRECTIF SESSION (13 août 2026) — l'initialiseur ne décide plus rien.
      Il lisait le jeton d'accès stocké et, s'il était expiré (durée : 1 h),
@@ -19226,6 +19638,9 @@ function App() {
   // « Jamais chargé » ≠ « chargé vide » : le verrou du budget et l'arrêté ne
   // doivent pas se décider sur une liste simplement pas encore arrivée.
   const [caisseRefsReady,setCaisseRefsReady] = useState(()=>!!cache.load("nw_devis"));
+  // Messages WhatsApp (wa_messages) — lecture seule + rattachement.
+  const [waMessages,setWaMessages] = useState(()=>cache.load("wa_messages")||[]);
+  const [waLoading,setWaLoading] = useState(false);
   const [taches,setTaches] = useState(()=>cache.load("taches")||[]);
   const [medecins,setMedecins] = useState(()=>cache.load("medecins")||[]);
   const [hopitaux,setHopitaux] = useState(()=>{
@@ -19366,6 +19781,26 @@ function App() {
       if(Array.isArray(nd) && Array.isArray(nf) && Array.isArray(ca)) setCaisseRefsReady(true);
       else caisseRefsRef.current = false;
     } catch(e){ caisseRefsRef.current = false; }
+  };
+
+  // ── Messages WhatsApp : lecture directe de wa_messages, SANS la colonne brut
+  // (la charge utile Meta n'a rien à faire dans le navigateur ni dans le cache).
+  // L'application n'INSÈRE jamais dans cette table : webhook = entrants,
+  // whatsapp-send (à venir) = sortants. Ici on lit, et on pose le rattachement.
+  const waLoadedRef = React.useRef(false);
+  const chargerWa = async () => {
+    try{
+      if(!sbClient) return;
+      const { data, error } = await sbClient.from("wa_messages")
+        .select("id,wa_message_id,direction,numero_de,numero_vers,numero_patient,patientId,nom_profil,type,texte,media_id,horodatage,statut,created_at,updated_at")
+        .order("horodatage",{ascending:false}).limit(2000);
+      if(error) throw error;
+      if(Array.isArray(data)){ setWaMessages(data); cache.save("wa_messages", data); waLoadedRef.current = true; }
+    }catch(e){ console.error("wa_messages:", e); }
+  };
+  const ensureWa = async () => {
+    if(waLoadedRef.current) return;
+    setWaLoading(true); await chargerWa(); setWaLoading(false);
   };
 
   // loadAll(showLoad) : showLoad=true seulement pour "Synchroniser maintenant".
@@ -19645,6 +20080,51 @@ function App() {
     await syncPost("finances","delete",{id});
   };
 
+  // ── Rattachement d'une conversation WhatsApp à une fiche — par le NUMÉRO ──
+  // Écrit patientId sur toutes les lignes du numero_patient (mise à jour, jamais
+  // une insertion — wa_messages n'a qu'un écrivain automatique par porte), pose
+  // le numéro sur la fiche si elle n'en a pas, et journalise dans
+  // patients.historique (heure d'Istanbul), comme toute écriture de dossier.
+  const rattacherWa = async (numero, p) => {
+    try{
+      if(!sbClient || !p) return false;
+      const { error } = await sbClient.from("wa_messages")
+        .update({ patientId:String(p.id), updated_at:new Date().toISOString() })   // aucun trigger : updated_at à la main
+        .eq("numero_patient", numero);
+      if(error) throw error;
+      setWaMessages(ms=>{ const nm=(ms||[]).map(m=>m.numero_patient===numero?{...m, patientId:String(p.id)}:m); cache.save("wa_messages",nm); return nm; });
+      const { date, heure } = waIstanbulParts();
+      const entree = { u:user.id, date, heure, champ:"whatsapp", ancien:"", nouveau:numero,
+        motif:"Conversation WhatsApp rattachee a la fiche depuis l'ecran Messages." };
+      const historique = JSON.stringify([...parseHist(p.historique), entree]);
+      // Le numéro ne s'écrit sur la fiche QUE si elle n'en a aucun — on ne
+      // remplace jamais un numéro existant, même non international.
+      const majFiche = { id:p.id, historique, ...(String(p.tel||"").trim() ? {} : { tel:numero }) };
+      await savePatient(majFiche);   // savePatient respecte l'historique fourni (aucun doublon)
+      return true;
+    }catch(e){ console.error("rattacherWa:", e); return false; }
+  };
+  // Le détachement défait, avec sa propre trace : patientId retiré des lignes,
+  // le numéro retiré de la fiche UNIQUEMENT s'il est celui qu'on y avait posé,
+  // et l'entrée de journal inverse. On corrige avec trace, on n'efface pas.
+  const detacherWa = async (numero, p) => {
+    try{
+      if(!sbClient || !p) return false;
+      const { error } = await sbClient.from("wa_messages")
+        .update({ patientId:"", updated_at:new Date().toISOString() })
+        .eq("numero_patient", numero);
+      if(error) throw error;
+      setWaMessages(ms=>{ const nm=(ms||[]).map(m=>m.numero_patient===numero?{...m, patientId:""}:m); cache.save("wa_messages",nm); return nm; });
+      const { date, heure } = waIstanbulParts();
+      const entree = { u:user.id, date, heure, champ:"whatsapp", ancien:numero, nouveau:"",
+        motif:"Conversation WhatsApp detachee de la fiche depuis l'ecran Messages." };
+      const historique = JSON.stringify([...parseHist(p.historique), entree]);
+      const majFiche = { id:p.id, historique, ...(waNormNum(p.tel)===numero ? { tel:LOG_CLEAR } : {}) };
+      await savePatient(majFiche);
+      return true;
+    }catch(e){ console.error("detacherWa:", e); return false; }
+  };
+
   const navUser = USERS.find(u2=>u2.id===user?.id)||user;
   const NAV_ITEMS = [
     {id:"dashboard",label:t("nav.dashboard"),icon:"🏠"},
@@ -19655,6 +20135,7 @@ function App() {
     {id:"agenda",label:t("nav.agenda"),icon:"🗓️"},
     {id:"finances",label:t("nav.finances"),icon:"💳"},
     {id:"caisse",label:t("nav.caisse"),icon:"💰"},
+    {id:"messages",label:t("nav.messages"),icon:"📲"},
     {id:"analyses",label:t("nav.analyses"),icon:"📈"},
     {id:"messagerie",label:t("nav.messagerie"),icon:"💬"},
     {id:"notifications",label:t("nav.notifications"),icon:"🔔"},
@@ -19663,7 +20144,7 @@ function App() {
     {id:"medecins",label:t("nav.medecins"),icon:"🩺"},
     {id:"utilisateurs",label:t("nav.utilisateurs"),icon:"🔐"},
     {id:"knowledge-graph",label:t("kg.title"),icon:"🕸"},
-  ].filter(n=> n.id==="dashboard" || (n.id==="knowledge-graph" ? (navUser && aiCan(navUser,"ai_admin")) : n.id==="caisse" ? (navUser && hasCaisse(navUser)) : (navUser && can(navUser, n.id, "view"))));
+  ].filter(n=> n.id==="dashboard" || (n.id==="knowledge-graph" ? (navUser && aiCan(navUser,"ai_admin")) : n.id==="caisse" ? (navUser && hasCaisse(navUser)) : n.id==="messages" ? (navUser && hasMessages(navUser)) : (navUser && can(navUser, n.id, "view"))));
 
   const goTo = v => { setView(v); setSelected(null); setMenuOpen(false); };
   const logout = () => {
@@ -19702,7 +20183,16 @@ function App() {
   useEffect(()=>{ if(user && (activeView==="dashboard"||activeView==="agenda"||activeView==="finances"||activeView==="analyses"||activeView==="caisse")) ensureFinances(); },[activeView, user]);
   // La caisse et la fiche patiente ont besoin des références NobelWorld (devis fait foi).
   useEffect(()=>{ if(user && (activeView==="caisse"||activeView==="fiche")) ensureCaisseRefs(); },[activeView, user]);
-  const TITLES = {dashboard:t("title.dashboard"),equipe:t("title.equipe")+" — Veys Turan "+t("role.pdg"),patients:t("title.patients"),rdvs:t("title.rdvs"),taches:t("title.taches"),agenda:t("title.agenda"),analyses:t("title.analyses"),finances:t("title.finances"),caisse:t("title.caisse"),hopitaux:t("title.hopitaux"),medecins:t("title.medecins"),messagerie:t("title.messagerie"),notifications:t("title.notifications"),recherche:t("title.recherche"),utilisateurs:t("title.utilisateurs"),devis:t("devis.title")};
+  // Messages : chargement à l'ouverture + rafraîchissement toutes les 60 s tant
+  // que l'écran est affiché (pas de realtime dans l'application).
+  useEffect(()=>{
+    if(user && activeView==="messages"){
+      ensureWa();
+      const iv = setInterval(chargerWa, 60000);
+      return ()=>clearInterval(iv);
+    }
+  },[activeView, user]);
+  const TITLES = {dashboard:t("title.dashboard"),equipe:t("title.equipe")+" — Veys Turan "+t("role.pdg"),patients:t("title.patients"),rdvs:t("title.rdvs"),taches:t("title.taches"),agenda:t("title.agenda"),analyses:t("title.analyses"),finances:t("title.finances"),caisse:t("title.caisse"),messages:t("title.messages"),hopitaux:t("title.hopitaux"),medecins:t("title.medecins"),messagerie:t("title.messagerie"),notifications:t("title.notifications"),recherche:t("title.recherche"),utilisateurs:t("title.utilisateurs"),devis:t("devis.title")};
 
   // Prioritaire sur l'écran de connexion : on arrive ici avec une session ouverte
   // par le lien de récupération, mais l'ancien mot de passe est encore actif.
@@ -19737,7 +20227,7 @@ function App() {
 
   // ── Garde d'accès aux vues ──
   const viewKey = activeView==="fiche" ? "patients" : activeView;
-  const viewAllowed = activeView==="dashboard" || (activeView==="knowledge-graph" && aiCan(userFull,"ai_admin")) || (activeView==="caisse" ? hasCaisse(userFull) : can(userFull, viewKey, "view"));
+  const viewAllowed = activeView==="dashboard" || (activeView==="knowledge-graph" && aiCan(userFull,"ai_admin")) || (activeView==="caisse" ? hasCaisse(userFull) : activeView==="messages" ? hasMessages(userFull) : can(userFull, viewKey, "view"));
   const AccessDenied = () => (
     <div style={{textAlign:"center",padding:"60px 20px",color:C.muted}}>
       <div style={{fontSize:42,marginBottom:12}}>🔒</div>
@@ -19882,6 +20372,7 @@ function App() {
           {/* Caisse (lot 73) : finances NON filtrées — le solde a besoin de TOUS les
               mouvements (paiements chirurgien compris). Accès verrouillé par hasCaisse. */}
           {activeView==="caisse"&&hasCaisse(userFull)&&<Caisse user={userFull} patients={vPatients} finances={finances} arretes={caisseArretes} nwDevis={nwDevis} nwFactures={nwFactures} medecins={medecins} hopitaux={hopitaux} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onSave={saveFinance} onUpdate={updateFinance} onSaveArrete={saveArrete}/>}
+          {activeView==="messages"&&hasMessages(userFull)&&<WaMessages user={userFull} patients={vPatients} messages={waMessages} chargement={waLoading} onRecharger={chargerWa} onRattacher={rattacherWa} onDetacher={detacherWa} onOpenPatient={openPatientById}/>}
           {activeView==="hopitaux"&&<Hopitaux user={userFull} patients={patients} rdvs={rdvs} hopitaux={hopitaux} setHopitaux={setHopitaux} syncing={syncing} setSyncing={setSyncing}/>}
           {activeView==="equipe"&&<VueEquipe patients={patients} rdvs={rdvs} taches={taches} finances={finances}/>}
           {activeView==="medecins"&&<Medecins user={userFull} patients={patients} rdvs={rdvs} finances={finances} medecins={medecins} setMedecins={setMedecins}/>}
