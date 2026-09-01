@@ -187,7 +187,7 @@ if("serviceWorker" in navigator){
       les échecs transitoires de CDN, exactement le symptôme constaté) ;
    3) si le second essai échoue aussi → message d'erreur clair + bouton Recharger. */
 (function(){
-  window.__CRM_VERSION = "v7.5 — Messages WhatsApp (2026-08-31)";
+  window.__CRM_VERSION = "v7.6 — File d'alerte À faire (2026-09-01)";
   /* SAS localStorage : toute clé applicative (cn_*) illisible en JSON est supprimée
      INDIVIDUELLEMENT avant le démarrage de React. Un stockage corrompu ne peut donc
      jamais empêcher le boot, et on ne perd que la clé abîmée — jamais tout. */
@@ -1565,6 +1565,44 @@ const I18N = {
     "wa.ficheInvisible": "Rattachée à une fiche hors de votre visibilité",
     "wa.dejaRattachee": "Cette conversation est déjà rattachée à une autre fiche.",
     "wa.echecJournal": "La conversation est rattachée, mais le journal de la fiche n'a pas pu être vérifié — rouvrez la fiche pour contrôler.",
+    "nav.afaire": "À faire",
+    "title.afaire": "À faire",
+    "af.alerte": "dossiers dans la file d'alerte",
+    "af.g1": "Opère dans les 14 jours",
+    "af.g2": "Opérée, dossier jamais clôturé",
+    "af.g3": "Opère dans les 45 jours",
+    "af.g4": "Confirmée, sans date d'opération",
+    "af.g5": "Devis envoyé, sans réponse",
+    "af.g6": "Prospect à contacter",
+    "af.g7": "Opération plus lointaine",
+    "af.g8": "Clôturé ou en veille",
+    "af.avert1": "Cet écran dit ce que le système sait, pas ce qui s'est passé. Un « encaissé : 0 € » peut vouloir dire qu'une patiente n'a rien payé — ou que son paiement est passé par Ceyda et n'a pas encore été saisi.",
+    "af.avert2": "Les six colonnes de suivi du séjour (passeport, vol, hôtel, traducteur, validation chirurgien, documents) sont vides sur toutes les fiches : ce tableau ne peut rien dire de la préparation des séjours.",
+    "af.sansNumero": "fiches sans numéro",
+    "af.sommeRestes": "de restes dus (groupes 1–4)",
+    "af.encaisse": "Encaissé",
+    "af.convenu": "Convenu",
+    "af.reste": "Reste",
+    "af.dansJours": "dans {n} j",
+    "af.ilYA": "il y a {n} j",
+    "af.aujourdhui": "aujourd'hui",
+    "af.prochaineAction": "Prochaine action",
+    "af.mTel": "aucun numéro",
+    "af.mDate": "pas de date d'opération",
+    "af.mBudget": "pas de montant convenu",
+    "af.mDevis": "aucun devis en base",
+    "af.mEncaissement": "aucun encaissement",
+    "af.mArrivee": "pas de date d'arrivée",
+    "af.mChirurgien": "pas de chirurgien",
+    "af.a1": "Vérifier que {reste} sont bien encaissés ou attendus à l'arrivée.",
+    "af.a2": "Solder le dossier : {reste} n'apparaissent nulle part. Puis clôturer.",
+    "af.a3": "Retrouver son numéro · planifier le solde de {reste} · fixer la date d'arrivée.",
+    "af.a4": "Appeler pour fixer la date opératoire. Relance quotidienne tant qu'elle n'est pas posée.",
+    "af.a5": "Relancer sur le devis. Trois tentatives, puis mise en veille un mois.",
+    "af.a6": "Premier contact.",
+    "af.chargement": "Chargement des données financières…",
+    "af.vide": "Aucun dossier dans ce groupe.",
+    "af.horsEuro": "entrées hors € non comptées",
     "common.loadingSheets": "Chargement depuis Google Sheets…",
     "surgeon.readOnly": "Lecture seule",
     "surgeon.limited": "Accès limité — informations médicales uniquement",
@@ -2903,6 +2941,44 @@ const I18N = {
     "wa.ficheInvisible": "Linked to a record outside your visibility",
     "wa.dejaRattachee": "This conversation is already linked to another record.",
     "wa.echecJournal": "The conversation is linked, but the record's journal could not be verified — open the record to check.",
+    "nav.afaire": "To do",
+    "title.afaire": "To do",
+    "af.alerte": "files in the alert queue",
+    "af.g1": "Operates within 14 days",
+    "af.g2": "Operated, file never closed",
+    "af.g3": "Operates within 45 days",
+    "af.g4": "Confirmed, no surgery date",
+    "af.g5": "Quote sent, no reply",
+    "af.g6": "Prospect to contact",
+    "af.g7": "Surgery further out",
+    "af.g8": "Closed or dormant",
+    "af.avert1": "This screen shows what the system knows, not what happened. A \"collected: €0\" can mean the patient paid nothing — or that her payment went through Ceyda and has not been entered yet.",
+    "af.avert2": "The six stay-tracking columns (passport, flight, hotel, translator, surgeon validation, documents) are empty on every record: this board can say nothing about stay preparation.",
+    "af.sansNumero": "records without a phone number",
+    "af.sommeRestes": "outstanding balances (groups 1–4)",
+    "af.encaisse": "Collected",
+    "af.convenu": "Agreed",
+    "af.reste": "Remaining",
+    "af.dansJours": "in {n} d",
+    "af.ilYA": "{n} d ago",
+    "af.aujourdhui": "today",
+    "af.prochaineAction": "Next action",
+    "af.mTel": "no phone number",
+    "af.mDate": "no surgery date",
+    "af.mBudget": "no agreed amount",
+    "af.mDevis": "no quote on file",
+    "af.mEncaissement": "nothing collected",
+    "af.mArrivee": "no arrival date",
+    "af.mChirurgien": "no surgeon",
+    "af.a1": "Check that {reste} is collected or expected on arrival.",
+    "af.a2": "Settle the file: {reste} appears nowhere. Then close it.",
+    "af.a3": "Find her number · plan the balance of {reste} · set the arrival date.",
+    "af.a4": "Call to set the surgery date. Daily follow-up until it is set.",
+    "af.a5": "Follow up on the quote. Three attempts, then dormant for a month.",
+    "af.a6": "First contact.",
+    "af.chargement": "Loading financial data…",
+    "af.vide": "No file in this group.",
+    "af.horsEuro": "non-€ entries not counted",
     "common.loadingSheets": "Loading from Google Sheets…",
     "surgeon.readOnly": "Read-only",
     "surgeon.limited": "Restricted access — medical information only",
@@ -4241,6 +4317,44 @@ const I18N = {
     "wa.ficheInvisible": "Görünürlüğünüz dışındaki bir dosyaya bağlı",
     "wa.dejaRattachee": "Bu konuşma zaten başka bir dosyaya bağlı.",
     "wa.echecJournal": "Konuşma bağlandı ancak dosya günlüğü doğrulanamadı — kontrol için dosyayı açın.",
+    "nav.afaire": "Yapılacaklar",
+    "title.afaire": "Yapılacaklar",
+    "af.alerte": "dosya uyarı kuyruğunda",
+    "af.g1": "14 gün içinde ameliyat",
+    "af.g2": "Ameliyat oldu, dosya hiç kapatılmadı",
+    "af.g3": "45 gün içinde ameliyat",
+    "af.g4": "Onaylandı, ameliyat tarihi yok",
+    "af.g5": "Teklif gönderildi, yanıt yok",
+    "af.g6": "Aranacak aday",
+    "af.g7": "Ameliyat daha ileride",
+    "af.g8": "Kapalı veya beklemede",
+    "af.avert1": "Bu ekran olanı değil, sistemin bildiğini gösterir. « Tahsil edilen: 0 € » hastanın hiç ödemediği anlamına gelebilir — ya da ödemesi Ceyda'dan geçti ve henüz girilmedi.",
+    "af.avert2": "Altı konaklama takip sütunu (pasaport, uçuş, otel, tercüman, cerrah onayı, belgeler) tüm dosyalarda boş: bu tablo konaklama hazırlığı hakkında hiçbir şey söyleyemez.",
+    "af.sansNumero": "numarasız dosya",
+    "af.sommeRestes": "kalan bakiye (grup 1–4)",
+    "af.encaisse": "Tahsil edilen",
+    "af.convenu": "Anlaşılan",
+    "af.reste": "Kalan",
+    "af.dansJours": "{n} gün sonra",
+    "af.ilYA": "{n} gün önce",
+    "af.aujourdhui": "bugün",
+    "af.prochaineAction": "Sıradaki adım",
+    "af.mTel": "numara yok",
+    "af.mDate": "ameliyat tarihi yok",
+    "af.mBudget": "anlaşılan tutar yok",
+    "af.mDevis": "kayıtlı teklif yok",
+    "af.mEncaissement": "hiç tahsilat yok",
+    "af.mArrivee": "varış tarihi yok",
+    "af.mChirurgien": "cerrah yok",
+    "af.a1": "{reste} tutarının tahsil edildiğini veya varışta beklendiğini doğrula.",
+    "af.a2": "Dosyayı kapat: {reste} hiçbir yerde görünmüyor. Sonra kapanış yap.",
+    "af.a3": "Numarasını bul · {reste} kalanını planla · varış tarihini belirle.",
+    "af.a4": "Ameliyat tarihini belirlemek için ara. Tarih konana kadar her gün takip.",
+    "af.a5": "Teklif için tekrar ara. Üç deneme, sonra bir ay beklemeye al.",
+    "af.a6": "İlk temas.",
+    "af.chargement": "Finansal veriler yükleniyor…",
+    "af.vide": "Bu grupta dosya yok.",
+    "af.horsEuro": "€ dışı girişler sayılmadı",
     "common.loadingSheets": "Google Sheets'ten yükleniyor…",
     "surgeon.readOnly": "Salt görüntüleme",
     "surgeon.limited": "Sınırlı erişim — yalnızca tıbbi bilgiler",
@@ -5579,6 +5693,44 @@ const I18N = {
     "wa.ficheInvisible": "Vinculada a una ficha fuera de su visibilidad",
     "wa.dejaRattachee": "Esta conversación ya está vinculada a otra ficha.",
     "wa.echecJournal": "La conversación está vinculada, pero el registro de la ficha no pudo verificarse — abra la ficha para comprobar.",
+    "nav.afaire": "Pendientes",
+    "title.afaire": "Pendientes",
+    "af.alerte": "expedientes en la cola de alerta",
+    "af.g1": "Se opera en 14 días",
+    "af.g2": "Operada, expediente nunca cerrado",
+    "af.g3": "Se opera en 45 días",
+    "af.g4": "Confirmada, sin fecha de operación",
+    "af.g5": "Presupuesto enviado, sin respuesta",
+    "af.g6": "Prospecto por contactar",
+    "af.g7": "Operación más lejana",
+    "af.g8": "Cerrado o en espera",
+    "af.avert1": "Esta pantalla dice lo que el sistema sabe, no lo que ocurrió. Un « cobrado: 0 € » puede significar que la paciente no pagó nada — o que su pago pasó por Ceyda y aún no se ha registrado.",
+    "af.avert2": "Las seis columnas de seguimiento de la estancia (pasaporte, vuelo, hotel, traductor, validación del cirujano, documentos) están vacías en todas las fichas: este tablero no puede decir nada de la preparación de las estancias.",
+    "af.sansNumero": "fichas sin número",
+    "af.sommeRestes": "de saldos pendientes (grupos 1–4)",
+    "af.encaisse": "Cobrado",
+    "af.convenu": "Convenido",
+    "af.reste": "Pendiente",
+    "af.dansJours": "en {n} d",
+    "af.ilYA": "hace {n} d",
+    "af.aujourdhui": "hoy",
+    "af.prochaineAction": "Próxima acción",
+    "af.mTel": "sin número",
+    "af.mDate": "sin fecha de operación",
+    "af.mBudget": "sin importe convenido",
+    "af.mDevis": "sin presupuesto registrado",
+    "af.mEncaissement": "nada cobrado",
+    "af.mArrivee": "sin fecha de llegada",
+    "af.mChirurgien": "sin cirujano",
+    "af.a1": "Verificar que {reste} estén cobrados o esperados a la llegada.",
+    "af.a2": "Saldar el expediente: {reste} no aparecen en ninguna parte. Luego cerrarlo.",
+    "af.a3": "Recuperar su número · planificar el saldo de {reste} · fijar la fecha de llegada.",
+    "af.a4": "Llamar para fijar la fecha de operación. Seguimiento diario hasta que esté fijada.",
+    "af.a5": "Insistir sobre el presupuesto. Tres intentos, luego en espera un mes.",
+    "af.a6": "Primer contacto.",
+    "af.chargement": "Cargando datos financieros…",
+    "af.vide": "Ningún expediente en este grupo.",
+    "af.horsEuro": "entradas fuera de € no contadas",
     "common.loadingSheets": "Cargando desde Google Sheets…",
     "surgeon.readOnly": "Solo lectura",
     "surgeon.limited": "Acceso limitado — solo información médica",
@@ -5687,7 +5839,7 @@ function permissionActionLabel(value){
 }
 function moduleLabel(value){
   const map = {dashboard:"nav.dashboard", equipe:"nav.equipe", patients:"nav.patients", rdvs:"nav.rdvs", taches:"nav.taches", agenda:"nav.agenda", finances:"nav.finances", analyses:"nav.analyses", messagerie:"nav.messagerie", notifications:"nav.notifications", recherche:"nav.recherche", hopitaux:"nav.hopitaux", medecins:"nav.medecins", utilisateurs:"nav.utilisateurs",
-    bloc:"team.mod.bloc", ventes:"team.mod.ventes", devis:"team.mod.devis", factures:"team.mod.factures", paiements:"team.mod.paiements", parametres:"team.mod.parametres", financesAdmin:"team.mod.financesAdmin", commissions:"team.mod.commissions", caisse:"nav.caisse", messages:"nav.messages"};
+    bloc:"team.mod.bloc", ventes:"team.mod.ventes", devis:"team.mod.devis", factures:"team.mod.factures", paiements:"team.mod.paiements", parametres:"team.mod.parametres", financesAdmin:"team.mod.financesAdmin", commissions:"team.mod.commissions", caisse:"nav.caisse", messages:"nav.messages", afaire:"nav.afaire"};
   const key = map[value];
   return key ? t(key) : value;
 }
@@ -5846,6 +5998,7 @@ const PERM_MODULES = [
   {k:"finances",      l:"Finances",                 icon:"💳", view:"finances",      scoped:true},
   {k:"caisse",        l:"Caisse",                   icon:"💰", view:"caisse",        scoped:false},
   {k:"messages",      l:"Messages",                 icon:"📲", view:"messages",      scoped:false},
+  {k:"afaire",        l:"À faire",                  icon:"🚨", view:"afaire",        scoped:false},
   {k:"financesAdmin", l:"Finances Administrateur",  icon:"🔐", view:null,            scoped:false},
   {k:"commissions",   l:"Commissions",              icon:"🤝", view:null,            scoped:false},
   {k:"paiements",     l:"Paiements",                icon:"💶", view:null,            scoped:true},
@@ -6042,7 +6195,7 @@ function effPermsObj(user){
 // Ces règles priment sur toute permission cochée par erreur dans la matrice RBAC.
 const isSurgeon = (u) => u?.role === "chirurgien";
 const canViewSensitivePatientData = (u) => !isSurgeon(u);
-const SURGEON_BLOCKED_MODULES = ["finances","financesAdmin","commissions","caisse","messages","analyses","utilisateurs","equipe","messagerie","ventes","devis","factures","paiements"];
+const SURGEON_BLOCKED_MODULES = ["finances","financesAdmin","commissions","caisse","messages","afaire","analyses","utilisateurs","equipe","messagerie","ventes","devis","factures","paiements"];
 
 // ═══ PERMISSION INDÉPENDANTE « ACCÈS FINANCES ADMINISTRATEUR » ═══════════════
 // Donne accès aux onglets sensibles (Finances Administrateur, Paiements
@@ -6084,6 +6237,21 @@ function hasMessages(user){
   if(["coordinatrice","commerciale","assistante","comptabilite"].indexOf(user.role)>=0) return true;
   const p = effPermsObj(user);
   return !!(p.messages && p.messages.view);
+}
+
+// ═══ PERMISSION « À FAIRE » (file d'alerte, chapitre 8 règle 7) ═══════════════
+// L'écran montre des montants (encaissé / reste) : il suit les droits finances.
+// Chirurgien jamais ; admin/pdg et coordinatrice toujours (rôles en dur — les
+// overrides remplacent intégralement les perms du rôle) ; sinon finances.view
+// ou la coche « afaire » de la matrice.
+function hasAFaire(user){
+  if(!user) return false;
+  if(isSurgeon(user)) return false;
+  if(isFullRole(user.role)) return true;
+  if(user.role==="coordinatrice") return true;
+  if(can(user,"finances","view")) return true;
+  const p = effPermsObj(user);
+  return !!(p.afaire && p.afaire.view);
 }
 
 // ═══ PERMISSION INDÉPENDANTE « COMMISSIONS » (A1) ════════════════════════════
@@ -15826,7 +15994,7 @@ function GestionUtilisateurs({user, onApplied, permVer}) {
             // La caisse et les messages s'accordent par hasCaisse/hasMessages
             // (rôle en dur ou coche), pas par can() seul : le diagnostic doit
             // refléter l'accès réel.
-            const viewOf = (u2,k)=> k==="caisse" ? hasCaisse(u2) : k==="messages" ? hasMessages(u2) : can(u2,k,"view");
+            const viewOf = (u2,k)=> k==="caisse" ? hasCaisse(u2) : k==="messages" ? hasMessages(u2) : k==="afaire" ? hasAFaire(u2) : can(u2,k,"view");
             const rows = (uA&&uB) ? PERM_MODULES.map(m=>{
               const a=viewOf(uA,m.k), b=viewOf(uB,m.k);
               return {k:m.k, icon:m.icon, label:moduleLabel(m.k)||m.l, a, b, diff:a!==b};
@@ -19613,6 +19781,198 @@ function WaMessages({user, patients, messages, liens, chargement, onRecharger, o
   );
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// À FAIRE — la file d'alerte qui se recalcule seule (chapitre 8, règle 7 :
+// « un dossier sans prochaine action prévue doit remonter dans une file
+// d'alerte visible, pas se perdre en silence »).
+// Doctrine :
+//  · L'écran LIT, CLASSE, AFFICHE. Aucune écriture, dans aucune table.
+//  · Rien n'est stocké : tout se recalcule à chaque rendu — un dossier dont la
+//    date passe change de groupe tout seul.
+//  · Aucune donnée manquante n'est inventée ni masquée : un budget vide
+//    s'affiche « — » et reste visible, c'est précisément lui qu'il faut voir.
+//  · Les règles reproduisent EXACTEMENT la mesure du 31/08/2026 (48 en file
+//    d'alerte, 4/5/6/21/12, 174 270 € de restes sur les groupes 1–4).
+// ══════════════════════════════════════════════════════════════════════════════
+// Montant texte → nombre : espaces (fines et insécables comprises) retirés,
+// virgule décimale acceptée ; une ligne illisible est IGNORÉE, jamais une erreur.
+function afMontant(v){
+  const s = String(v==null?"":v).replace(/[\s  ]/g,"");
+  if(!/^-?[0-9]+([.,][0-9]+)?$/.test(s)) return null;
+  const n = parseFloat(s.replace(",", "."));
+  return isFinite(n) ? n : null;
+}
+// Encaissé par patiente : sens = entrée, statut ≠ Annulé (les « En attente »
+// comptent — c'est la règle de la mesure de référence).
+function afEncaissements(finances){
+  const out = {}; const horsEuro = {};
+  (finances||[]).forEach(f=>{
+    if(!f || f.sens!=="entree" || f.statut==="Annulé") return;
+    const pid = String(f.patientId||""); if(!pid) return;
+    // Deux devises ne s'additionnent jamais : une entrée hors euro ne compte
+    // pas dans le total, elle se SIGNALE sur la ligne de la patiente.
+    if(financeCurrencyCode(f.devise)!=="EUR"){ horsEuro[pid]=true; return; }
+    const m = afMontant(f.montant); if(m===null) return;
+    out[pid] = (out[pid]||0) + m;
+  });
+  return { sommes: out, horsEuro };
+}
+// Même contrat de lecture que le reste du code (normalizeDate accepte ISO+heure,
+// JJ/MM/AAAA, sérialisations Sheets) + rejet des dates impossibles (2026-13-01) :
+// une date illisible redevient une date ABSENTE — le dossier remonte en groupe 4
+// avec son manque, il ne disparaît pas en silence.
+const afDateOp = (p)=>{ const d = normalizeDate((p&&p.dateOperation)||""); return (d && isRealIsoDate(d)) ? d : null; };
+const afJours = (dop, refStr)=> Math.round((Date.parse(dop+"T12:00:00") - Date.parse(refStr+"T12:00:00"))/86400000);
+const AF_GROUPES = [1,2,3,4,5,6,7,8];
+// Le classement — huit groupes, LE PREMIER TEST QUI RÉPOND GAGNE.
+function afGroupe(p, dop, jours){
+  if(dop!==null && jours>=0 && jours<=14) return 1;
+  if(dop!==null && jours<0 && p.stade!=="Clôturé ✓" && p.stade!=="Post-opératoire") return 2;
+  if(dop!==null && jours>=0 && jours<=45) return 3;
+  if(p.stade==="Confirmé" && dop===null) return 4;
+  if(p.stade==="Devis envoyé") return 5;
+  if(p.stade==="Nouveau") return 6;
+  if(dop!==null && jours>45) return 7;
+  return 8;
+}
+function afClasser(patients, finances, nwDevis, refStr){
+  const enc = afEncaissements(finances);
+  const aDevis = {};   (nwDevis||[]).forEach(d=>{ if(d && d.patient_id) aDevis[String(d.patient_id)]=true; });
+  const lignes = (patients||[]).map(p=>{
+    const dop = afDateOp(p);
+    const jours = dop!==null ? afJours(dop, refStr) : null;
+    const g = afGroupe(p, dop, jours);
+    const encaisse = enc.sommes[String(p.id)]||0;
+    const horsEuro = !!enc.horsEuro[String(p.id)];
+    // Même nettoyage que les montants de finances (espaces fines et insécables,
+    // virgule décimale) ; un budget négatif ou illisible reste « — ».
+    const bNet = afMontant(p.budget);
+    const budget = (bNet!==null && bNet>=0) ? bNet : null;
+    const reste = budget!==null ? budget - encaisse : null;
+    // Ce qui manque — calculé, jamais saisi. Rien n'est inventé.
+    const manques = [];
+    if(!String(p.tel||"").trim()) manques.push("af.mTel");
+    if(p.stade==="Confirmé" && dop===null) manques.push("af.mDate");
+    if(budget===null && (p.stade==="Confirmé"||p.stade==="Devis envoyé")) manques.push("af.mBudget");
+    if(p.stade==="Devis envoyé" && !aDevis[String(p.id)]) manques.push("af.mDevis");
+    if(p.stade==="Confirmé" && encaisse===0) manques.push("af.mEncaissement");
+    if(dop!==null && !String(p.dateArrivee||"").trim()) manques.push("af.mArrivee");
+    if(dop!==null && !String(p.medecin||"").trim()) manques.push("af.mChirurgien");
+    return { p, g, dop, jours, encaisse, horsEuro, budget, reste, manques };
+  });
+  // Tri : par date d'opération quand le groupe en a une, sinon par dernier
+  // contact (la plus ancienne relance d'abord), le nom en départage.
+  const cle = (l)=> (l.g===1||l.g===2||l.g===3||l.g===7)
+    ? (l.dop||"9999") : (String(l.p.dernierContact||"").trim()||"9999");
+  lignes.sort((a,b)=> a.g-b.g || String(cle(a)).localeCompare(String(cle(b))) || String(a.p.nom||"").localeCompare(String(b.p.nom||"")));
+  const parGroupe = {}; AF_GROUPES.forEach(g=>parGroupe[g]=[]);
+  lignes.forEach(l=>parGroupe[l.g].push(l));
+  return {
+    lignes, parGroupe,
+    alerte: lignes.filter(l=>l.g>=1&&l.g<=5).length,
+    sansNumero: lignes.filter(l=>!String(l.p.tel||"").trim()).length,
+    sommeRestes14: Math.round(lignes.filter(l=>l.g>=1&&l.g<=4&&l.reste!==null).reduce((a,l)=>a+l.reste,0)*100)/100,
+    // Convention maison (logIsUnset) : la sentinelle « Non renseigné » et toute
+    // valeur inconnue comptent comme une ABSENCE d'information — le bandeau ne
+    // s'éteint que devant une vraie donnée de séjour.
+    sejourVide: (patients||[]).length>0 && (patients||[]).every(p=>
+      ["passeportStatut","volStatut","hotelStatut","traducteurStatut","validationChirurgienStatut","documentsStatut"]
+        .every(c=>logIsUnset(p,c))),
+  };
+}
+const afFmtEur = (n)=> n===null||n===undefined ? "—" : (Math.round(n*100)/100).toLocaleString("fr-FR")+" €";
+
+function AFaire({user, patients, finances, nwDevis, pret, onOpenPatient}){
+  const tt = t;
+  const ref = todayStr();   // recalculé à chaque rendu : la date qui passe reclasse toute seule
+  const R = afClasser(patients, finances, nwDevis, ref);
+  const AF_COULEURS = {1:"#DC2626", 2:"#B45309", 3:"#D97706", 4:"#7C3AED", 5:"#1D73C9", 6:"#0891B2", 7:"#7B8BA5", 8:"#7B8BA5"};
+  const quand = (l)=> l.jours===null ? "" : l.jours===0 ? tt("af.aujourdhui")
+    : l.jours>0 ? tt("af.dansJours").replace("{n}", String(l.jours))
+    : tt("af.ilYA").replace("{n}", String(-l.jours));
+  const action = (l)=>{
+    if(l.g>6) return null;
+    return tt("af.a"+l.g).replace("{reste}", afFmtEur(l.reste));
+  };
+  return (
+    <div style={{paddingBottom:80,minWidth:0}}>
+      {/* L'avertissement — non masquable, sinon le tableau ment par omission */}
+      <div style={{background:C.amber+"14",border:`1px solid ${C.amber}55`,borderRadius:12,padding:"10px 14px",marginBottom:10,fontSize:12.5,color:"#92400E",lineHeight:1.5}}>
+        ⚠️ {tt("af.avert1")}
+      </div>
+      {/* Second avertissement : VÉRIFIÉ sur les données à chaque rendu — il
+          disparaît tout seul le jour où les colonnes de séjour se remplissent. */}
+      {R.sejourVide && (
+        <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:12,padding:"9px 14px",marginBottom:10,fontSize:12,color:C.muted,lineHeight:1.5}}>
+          {tt("af.avert2")}
+        </div>
+      )}
+      {!pret ? (
+        <Card><div style={{fontSize:13,color:C.muted}}>⏳ {tt("af.chargement")}</div></Card>
+      ) : (
+      <React.Fragment>
+      {/* Le compteur de la file d'alerte, en haut */}
+      <Card style={{textAlign:"center",padding:"18px 14px"}}>
+        <div style={{fontSize:40,fontWeight:900,color:C.red,lineHeight:1}}>{R.alerte}</div>
+        <div style={{fontSize:12.5,fontWeight:700,color:C.text,marginTop:4}}>{tt("af.alerte")}</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"center",marginTop:10}}>
+          {[1,2,3,4,5].map(g=>(
+            <span key={g} style={{fontSize:10.5,fontWeight:800,color:AF_COULEURS[g],background:AF_COULEURS[g]+"14",border:`1px solid ${AF_COULEURS[g]}44`,borderRadius:99,padding:"3px 10px"}}>
+              {R.parGroupe[g].length} · {tt("af.g"+g)}
+            </span>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap",marginTop:10,fontSize:11.5,color:C.muted}}>
+          <span><b style={{color:C.text}}>{R.sansNumero}</b> {tt("af.sansNumero")}</span>
+          <span><b style={{color:C.text}}>{afFmtEur(R.sommeRestes14)}</b> {tt("af.sommeRestes")}</span>
+        </div>
+      </Card>
+      {AF_GROUPES.map(g=>(
+        <div key={g} style={{marginTop:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <span style={{width:10,height:10,borderRadius:99,background:AF_COULEURS[g],flexShrink:0}}/>
+            <span style={{fontWeight:800,fontSize:14,color:C.text}}>{g}. {tt("af.g"+g)}</span>
+            <Badge text={String(R.parGroupe[g].length)} color={AF_COULEURS[g]} small/>
+          </div>
+          {R.parGroupe[g].length===0 && <div style={{fontSize:11.5,color:C.muted,margin:"0 0 4px 18px"}}>{tt("af.vide")}</div>}
+          {R.parGroupe[g].map(l=>(
+            <Card key={l.p.id} onClick={onOpenPatient?()=>onOpenPatient(l.p.id):undefined} style={{padding:"11px 13px",borderLeft:`3px solid ${AF_COULEURS[g]}`,cursor:onOpenPatient?"pointer":"default"}}>
+              <div style={{display:"flex",alignItems:"baseline",gap:8,flexWrap:"wrap"}}>
+                <span style={{fontWeight:800,fontSize:13.5,color:C.text}}>{`${l.p.prenom||""} ${l.p.nom||""}`.trim()||"—"}</span>
+                <Badge text={stageLabel(l.p.stade)} color={SC[l.p.stade]||C.muted} small/>
+                {l.dop && <span style={{fontSize:11.5,color:C.muted}}>🔪 {fmtJour(l.dop)} <b style={{color:l.g===1||l.g===2?C.red:C.text}}>({quand(l)})</b></span>}
+              </div>
+              <div style={{display:"flex",gap:12,flexWrap:"wrap",marginTop:5,fontSize:11.5,color:C.muted}}>
+                <span>📞 {String(l.p.tel||"").trim()||"—"}</span>
+                {l.p.pays && <span>{l.p.pays}</span>}
+                {l.p.medecin && <span>🩺 {l.p.medecin}</span>}
+              </div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:6,fontSize:11.5}}>
+                <span style={{color:C.muted}}>{tt("af.convenu")} <b style={{color:C.text}}>{afFmtEur(l.budget)}</b></span>
+                <span style={{color:C.muted}}>{tt("af.encaisse")} <b style={{color:l.encaisse>0?C.green:C.text}}>{afFmtEur(l.encaisse)}</b></span>
+                <span style={{color:C.muted}}>{tt("af.reste")} <b style={{color:l.reste!==null&&l.reste>0.009?"#B45309":C.text}}>{afFmtEur(l.reste)}</b></span>
+              </div>
+              {(l.manques.length>0 || l.horsEuro) && (
+                <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:6}}>
+                  {l.manques.map(m=><Badge key={m} text={tt(m)} color={C.red} small/>)}
+                  {l.horsEuro && <Badge text={tt("af.horsEuro")} color={C.amber} small/>}
+                </div>
+              )}
+              {action(l) && (
+                <div style={{marginTop:7,fontSize:12,color:C.navy,background:C.gold+"14",border:`1px solid ${C.gold}33`,borderRadius:9,padding:"6px 10px"}}>
+                  <b>{tt("af.prochaineAction")} :</b> {action(l)}
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+      ))}
+      </React.Fragment>
+      )}
+    </div>
+  );
+}
+
 function App() {
   /* CORRECTIF SESSION (13 août 2026) — l'initialiseur ne décide plus rien.
      Il lisait le jeton d'accès stocké et, s'il était expiré (durée : 1 h),
@@ -20223,6 +20583,7 @@ function App() {
     {id:"finances",label:t("nav.finances"),icon:"💳"},
     {id:"caisse",label:t("nav.caisse"),icon:"💰"},
     {id:"messages",label:t("nav.messages"),icon:"📲"},
+    {id:"afaire",label:t("nav.afaire"),icon:"🚨"},
     {id:"analyses",label:t("nav.analyses"),icon:"📈"},
     {id:"messagerie",label:t("nav.messagerie"),icon:"💬"},
     {id:"notifications",label:t("nav.notifications"),icon:"🔔"},
@@ -20231,7 +20592,7 @@ function App() {
     {id:"medecins",label:t("nav.medecins"),icon:"🩺"},
     {id:"utilisateurs",label:t("nav.utilisateurs"),icon:"🔐"},
     {id:"knowledge-graph",label:t("kg.title"),icon:"🕸"},
-  ].filter(n=> n.id==="dashboard" || (n.id==="knowledge-graph" ? (navUser && aiCan(navUser,"ai_admin")) : n.id==="caisse" ? (navUser && hasCaisse(navUser)) : n.id==="messages" ? (navUser && hasMessages(navUser)) : (navUser && can(navUser, n.id, "view"))));
+  ].filter(n=> n.id==="dashboard" || (n.id==="knowledge-graph" ? (navUser && aiCan(navUser,"ai_admin")) : n.id==="caisse" ? (navUser && hasCaisse(navUser)) : n.id==="messages" ? (navUser && hasMessages(navUser)) : n.id==="afaire" ? (navUser && hasAFaire(navUser)) : (navUser && can(navUser, n.id, "view"))));
 
   const goTo = v => { setView(v); setSelected(null); setMenuOpen(false); };
   const logout = () => {
@@ -20267,9 +20628,9 @@ function App() {
   // Déclarés ici, avant tout return conditionnel, comme l'exige la règle des hooks.
   const [pwdRecovery, setPwdRecovery] = useState(()=>pwdRecoveryIs());
   useEffect(()=>pwdRecoverySubscribe(setPwdRecovery),[]);
-  useEffect(()=>{ if(user && (activeView==="dashboard"||activeView==="agenda"||activeView==="finances"||activeView==="analyses"||activeView==="caisse")) ensureFinances(); },[activeView, user]);
-  // La caisse et la fiche patiente ont besoin des références NobelWorld (devis fait foi).
-  useEffect(()=>{ if(user && (activeView==="caisse"||activeView==="fiche")) ensureCaisseRefs(); },[activeView, user]);
+  useEffect(()=>{ if(user && (activeView==="dashboard"||activeView==="agenda"||activeView==="finances"||activeView==="analyses"||activeView==="caisse"||activeView==="afaire")) ensureFinances(); },[activeView, user]);
+  // La caisse, la fiche patiente et « À faire » ont besoin des références NobelWorld.
+  useEffect(()=>{ if(user && (activeView==="caisse"||activeView==="fiche"||activeView==="afaire")) ensureCaisseRefs(); },[activeView, user]);
   // Messages : chargement à l'ouverture + rafraîchissement toutes les 60 s tant
   // que l'écran est affiché (pas de realtime dans l'application).
   useEffect(()=>{
@@ -20279,7 +20640,7 @@ function App() {
       return ()=>clearInterval(iv);
     }
   },[activeView, user]);
-  const TITLES = {dashboard:t("title.dashboard"),equipe:t("title.equipe")+" — Veys Turan "+t("role.pdg"),patients:t("title.patients"),rdvs:t("title.rdvs"),taches:t("title.taches"),agenda:t("title.agenda"),analyses:t("title.analyses"),finances:t("title.finances"),caisse:t("title.caisse"),messages:t("title.messages"),hopitaux:t("title.hopitaux"),medecins:t("title.medecins"),messagerie:t("title.messagerie"),notifications:t("title.notifications"),recherche:t("title.recherche"),utilisateurs:t("title.utilisateurs"),devis:t("devis.title")};
+  const TITLES = {dashboard:t("title.dashboard"),equipe:t("title.equipe")+" — Veys Turan "+t("role.pdg"),patients:t("title.patients"),rdvs:t("title.rdvs"),taches:t("title.taches"),agenda:t("title.agenda"),analyses:t("title.analyses"),finances:t("title.finances"),caisse:t("title.caisse"),messages:t("title.messages"),afaire:t("title.afaire"),hopitaux:t("title.hopitaux"),medecins:t("title.medecins"),messagerie:t("title.messagerie"),notifications:t("title.notifications"),recherche:t("title.recherche"),utilisateurs:t("title.utilisateurs"),devis:t("devis.title")};
 
   // Prioritaire sur l'écran de connexion : on arrive ici avec une session ouverte
   // par le lien de récupération, mais l'ancien mot de passe est encore actif.
@@ -20314,7 +20675,7 @@ function App() {
 
   // ── Garde d'accès aux vues ──
   const viewKey = activeView==="fiche" ? "patients" : activeView;
-  const viewAllowed = activeView==="dashboard" || (activeView==="knowledge-graph" && aiCan(userFull,"ai_admin")) || (activeView==="caisse" ? hasCaisse(userFull) : activeView==="messages" ? hasMessages(userFull) : can(userFull, viewKey, "view"));
+  const viewAllowed = activeView==="dashboard" || (activeView==="knowledge-graph" && aiCan(userFull,"ai_admin")) || (activeView==="caisse" ? hasCaisse(userFull) : activeView==="messages" ? hasMessages(userFull) : activeView==="afaire" ? hasAFaire(userFull) : can(userFull, viewKey, "view"));
   const AccessDenied = () => (
     <div style={{textAlign:"center",padding:"60px 20px",color:C.muted}}>
       <div style={{fontSize:42,marginBottom:12}}>🔒</div>
@@ -20460,6 +20821,16 @@ function App() {
               mouvements (paiements chirurgien compris). Accès verrouillé par hasCaisse. */}
           {activeView==="caisse"&&hasCaisse(userFull)&&<Caisse user={userFull} patients={vPatients} finances={finances} arretes={caisseArretes} nwDevis={nwDevis} nwFactures={nwFactures} medecins={medecins} hopitaux={hopitaux} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onSave={saveFinance} onUpdate={updateFinance} onSaveArrete={saveArrete}/>}
           {activeView==="messages"&&hasMessages(userFull)&&<WaMessages user={userFull} patients={vPatients} messages={waMessages} liens={waLiens} chargement={waLoading} onRecharger={chargerWa} onRattacher={rattacherWa} onDetacher={detacherWa} onOpenPatient={openPatientById}/>}
+          {/* À faire : lecture seule — lit, classe, affiche. Aucune écriture.
+              Les finances ne passent PAS par le scope « own » (les encaissés par
+              patiente n'ont de sens qu'avec TOUS les mouvements — un total
+              partiel serait un mensonge) ; seules les gardes de types sensibles
+              (chirurgien/commissions) s'appliquent — les entrées patientes ne
+              sont jamais de ces types. */}
+          {activeView==="afaire"&&hasAFaire(userFull)&&(()=>{ const afFin = finances
+            .filter(f=> hasFinancesAdmin(userFull) || FIN_SURGEON_TYPES.indexOf(f.type)<0)
+            .filter(f=> hasCommissions(userFull) || FIN_COMMISSION_TYPES.indexOf(f.type)<0);
+            return <AFaire user={userFull} patients={vPatients} finances={afFin} nwDevis={nwDevis} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onOpenPatient={openPatientById}/>; })()}
           {activeView==="hopitaux"&&<Hopitaux user={userFull} patients={patients} rdvs={rdvs} hopitaux={hopitaux} setHopitaux={setHopitaux} syncing={syncing} setSyncing={setSyncing}/>}
           {activeView==="equipe"&&<VueEquipe patients={patients} rdvs={rdvs} taches={taches} finances={finances}/>}
           {activeView==="medecins"&&<Medecins user={userFull} patients={patients} rdvs={rdvs} finances={finances} medecins={medecins} setMedecins={setMedecins}/>}
