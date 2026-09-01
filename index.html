@@ -1630,6 +1630,7 @@ const I18N = {
     "ar.echec": "La lecture des montants a échoué — « Synchroniser maintenant » réessaie.",
     "ar.perime": "relecture échouée — montants de la lecture précédente",
     "ar.encaisseDivergent": "encaissé selon la caisse : {v} — selon la règle de l'écran (sans « Annulé », € seul) : {c}",
+    "ar.annonce": "annoncé, pas encore encaissé",
     "pc.titre": "Parcours en 8 étapes",
     "pc.e1": "Savoir ce qu'elle demande",
     "pc.e2": "Questionnaire et PHOTOS",
@@ -3064,6 +3065,7 @@ const I18N = {
     "ar.echec": "Loading the amounts failed — “Sync now” retries.",
     "ar.perime": "refresh failed — amounts from the previous read",
     "ar.encaisseDivergent": "collected per the cash ledger: {v} — per the screen's rule (no “Cancelled”, € only): {c}",
+    "ar.annonce": "announced, not yet collected",
     "pc.titre": "8-step journey",
     "pc.e1": "Know what she is asking for",
     "pc.e2": "Questionnaire and PHOTOS",
@@ -4498,6 +4500,7 @@ const I18N = {
     "ar.echec": "Tutarlar okunamadı — « Şimdi eşitle » yeniden dener.",
     "ar.perime": "yenileme başarısız — önceki okumanın tutarları",
     "ar.encaisseDivergent": "kasaya göre tahsilat: {v} — ekran kuralına göre (« İptal » hariç, yalnız €): {c}",
+    "ar.annonce": "bildirildi, henüz tahsil edilmedi",
     "pc.titre": "8 adımlı yolculuk",
     "pc.e1": "Ne istediğini öğren",
     "pc.e2": "Anket ve FOTOĞRAFLAR",
@@ -5932,6 +5935,7 @@ const I18N = {
     "ar.echec": "La lectura de los importes falló — « Sincronizar ahora » reintenta.",
     "ar.perime": "actualización fallida — importes de la lectura anterior",
     "ar.encaisseDivergent": "cobrado según la caja: {v} — según la regla de la pantalla (sin « Anulado », solo €): {c}",
+    "ar.annonce": "anunciado, aún no cobrado",
     "pc.titre": "Recorrido en 8 etapas",
     "pc.e1": "Saber qué pide",
     "pc.e2": "Cuestionario y FOTOS",
@@ -20525,11 +20529,14 @@ function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, arge
                 const rd = a ? arNum(a.reste_du) : null;
                 const de = a ? arNum(a.devis_envoye) : null;
                 const vueEnc = a ? (arNum(a.encaisse)||0) : null;
-                // Deux règles d'encaissement coexistent : la vue somme les
-                // entrées telles quelles, l'écran exclut « Annulé » et le
-                // hors-euro (mesure du 31/08). Une divergence est un CONSTAT :
-                // affichée en clair, jamais masquée, jamais corrigée.
-                const divergent = a && (l.horsEuro || Math.abs(vueEnc - l.encaisse) > 0.009);
+                // Correction Veys du 01/09 : la vue ne compte que les entrées
+                // COMPLÉTÉES en € ; l'annoncé-pas-reçu vit dans sa propre
+                // colonne (entrees_en_attente) et ne s'additionne JAMAIS à
+                // l'encaissé. La règle de l'écran (≠ Annulé, € seul) vaut donc
+                // encaisse + entrees_en_attente : si les deux ne se recoupent
+                // pas, c'est un CONSTAT — affiché, jamais masqué, jamais corrigé.
+                const enAtt = a ? (arNum(a.entrees_en_attente)||0) : 0;
+                const divergent = a && Math.abs((vueEnc + enAtt) - l.encaisse) > 0.009;
                 return (
                 <React.Fragment>
                 <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:6,fontSize:11.5}}>
@@ -20540,6 +20547,10 @@ function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, arge
                       ? <span style={{color:C.muted}}>⏳ {tt("ar.enAttente")} <b style={{color:C.text}}>{afFmtEur(de)}</b></span>
                       : <span style={{color:C.muted,fontStyle:"italic"}}>{tt("ar.pasDeDevis")}</span>)}
                   <span style={{color:C.muted}}>{tt("af.encaisse")} <b style={{color:(a?vueEnc:l.encaisse)>0 && !divergent ? C.green : C.text}}>{afFmtEur(a ? vueEnc : l.encaisse)}</b></span>
+                  {/* L'annoncé-pas-reçu, en gris : visible, jamais additionné. */}
+                  {argentPret && a && enAtt>0 && (
+                    <span style={{color:C.muted}}>⏳ <b style={{color:C.muted}}>{afFmtEur(enAtt)}</b> {tt("ar.annonce")}</span>
+                  )}
                   {/* Un solde négatif n'est pas une créance négative : il ne
                       porte JAMAIS l'étiquette « reste à régler » — l'anomalie
                       grise dit le fait. Le zéro, lui, est vrai : affiché. */}
