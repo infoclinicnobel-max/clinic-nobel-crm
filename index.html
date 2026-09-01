@@ -1632,6 +1632,8 @@ const I18N = {
     "pc.complets": "parcours au complet",
     "pc.chargement": "Chargement du parcours…",
     "pc.faiteLe": "le",
+    "pc.lectureSeule": "Fiche en lecture seule pour toi — la coche est réservée à qui peut modifier ce dossier.",
+    "pc.majEcran": "Étape enregistrée, mais l'affichage n'a pas pu être rafraîchi — il se mettra à jour au prochain passage.",
     "common.loadingSheets": "Chargement depuis Google Sheets…",
     "surgeon.readOnly": "Lecture seule",
     "surgeon.limited": "Accès limité — informations médicales uniquement",
@@ -3037,6 +3039,8 @@ const I18N = {
     "pc.complets": "journeys complete",
     "pc.chargement": "Loading the journey…",
     "pc.faiteLe": "on",
+    "pc.lectureSeule": "This record is read-only for you — ticking is reserved for those who can edit it.",
+    "pc.majEcran": "Step saved, but the display could not be refreshed — it will update on your next visit.",
     "common.loadingSheets": "Loading from Google Sheets…",
     "surgeon.readOnly": "Read-only",
     "surgeon.limited": "Restricted access — medical information only",
@@ -4442,6 +4446,8 @@ const I18N = {
     "pc.complets": "yolculuk tamam",
     "pc.chargement": "Yolculuk yükleniyor…",
     "pc.faiteLe": "tarihinde",
+    "pc.lectureSeule": "Bu dosya senin için salt okunur — işaretleme, dosyayı düzenleyebilenlere ayrılmıştır.",
+    "pc.majEcran": "Adım kaydedildi ancak ekran yenilenemedi — bir sonraki geçişte güncellenecek.",
     "common.loadingSheets": "Google Sheets'ten yükleniyor…",
     "surgeon.readOnly": "Salt görüntüleme",
     "surgeon.limited": "Sınırlı erişim — yalnızca tıbbi bilgiler",
@@ -5847,6 +5853,8 @@ const I18N = {
     "pc.complets": "recorridos completos",
     "pc.chargement": "Cargando el recorrido…",
     "pc.faiteLe": "el",
+    "pc.lectureSeule": "Esta ficha es de solo lectura para ti — marcar está reservado a quien puede modificarla.",
+    "pc.majEcran": "Etapa guardada, pero la pantalla no pudo actualizarse — se actualizará en el próximo paso.",
     "common.loadingSheets": "Cargando desde Google Sheets…",
     "surgeon.readOnly": "Solo lectura",
     "surgeon.limited": "Acceso limitado — solo información médica",
@@ -9582,7 +9590,7 @@ function LogistiquePatient({ p, user, onSavePatient, tt }){
   );
 }
 
-function FichePatient({user, patient, patients, rdvs, finances, taches, nwDevis, parcoursVue, parcoursLignes, onCocherParcours, onEdit, onDelete, onStageChange, onBack, onSavePatient, onUpdateRdv}) {
+function FichePatient({user, patient, patients, rdvs, finances, taches, nwDevis, parcoursVue, parcoursLignes, parcoursPret, onCocherParcours, onEdit, onDelete, onStageChange, onBack, onSavePatient, onUpdateRdv}) {
   if(isSurgeon(user)){
     return (
       <div style={{textAlign:"center",padding:50}}>
@@ -9646,7 +9654,7 @@ function FichePatient({user, patient, patients, rdvs, finances, taches, nwDevis,
       </div>
       {/* Le parcours en 8 étapes — sous l'en-tête, des preuves, pas des déclarations */}
       <ParcoursBandeau user={user} patient={p} vp={(parcoursVue||[]).find(v=>String(v.id)===String(p.id))||null}
-        lignes={parcoursLignes} nwDevis={nwDevis} finances={finances} onCocher={onCocherParcours}/>
+        lignes={parcoursLignes} nwDevis={nwDevis} finances={finances} pret={parcoursPret} onCocher={onCocherParcours}/>
       {/* Lot 73 — provenance du montant convenu */}
       {convenu.source==="devis" && (
         <div style={{background:C.blue+"0e",border:`1px solid ${C.blue}33`,borderRadius:12,padding:"8px 12px",marginBottom:12,fontSize:11.5,color:C.navy}}>
@@ -20077,7 +20085,9 @@ function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, pret
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
               <span style={{fontSize:16}}>🧭</span>
               <span style={{fontWeight:800,fontSize:14,color:C.text}}>{tt("pc.gardienTitre")}</span>
-              <Badge text={String(rows.length)} color={C.navy} small/>
+              {/* Le compte n'est affirmé qu'une fois la vue lue : pas de faux
+                  « 0 » (ni de compte périmé du cache) à côté du chargement. */}
+              {parcoursPret && <Badge text={String(rows.length)} color={C.navy} small/>}
             </div>
             <div style={{fontSize:11,color:C.muted,margin:"0 0 8px 24px"}}>{tt("pc.gardienNote")}</div>
             {!parcoursPret ? (
@@ -20170,6 +20180,15 @@ function pcDerniereLigne(lignes, pid, etape){
   });
   return best;
 }
+// fait_le est un instant UTC : le JOUR affiché est celui d'Istanbul, comme le
+// journal de la fiche — sinon pastille et journal divergent autour de minuit.
+function pcJourIstanbul(ts){
+  try{
+    const d = new Date(ts);
+    if(isNaN(d)) return String(ts||"").slice(0,10);
+    return new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+  }catch(e){ return String(ts||"").slice(0,10); }
+}
 // La preuve d'une étape faite, en une ligne — MÊMES sources que vue_parcours.
 // Une pastille qui ne sait pas dire pourquoi elle est verte ne sert à rien.
 function pcPreuve(n, p, vp, lignes, nwDevis, finances){
@@ -20177,7 +20196,7 @@ function pcPreuve(n, p, vp, lignes, nwDevis, finances){
   if(n===2||n===3||n===5){
     const l = pcDerniereLigne(lignes, p.id, n);
     if(!l) return "";
-    const d = l.fait_le ? `${t("pc.faiteLe")} ${fmtJour(String(l.fait_le).slice(0,10))}` : "";
+    const d = l.fait_le ? `${t("pc.faiteLe")} ${fmtJour(pcJourIstanbul(l.fait_le))}` : "";
     return [String(l.detail||"").trim(), d].filter(Boolean).join(" — ");
   }
   if(n===4){
@@ -20201,20 +20220,33 @@ function pcPreuve(n, p, vp, lignes, nwDevis, finances){
   return "";
 }
 
-function ParcoursBandeau({user, patient, vp, lignes, nwDevis, finances, onCocher}){
+function ParcoursBandeau({user, patient, vp, lignes, nwDevis, finances, pret, onCocher}){
   const tt = t;
   const [sheet,setSheet] = useState(null);   // 2, 3 ou 5
   const [note,setNote] = useState("");
   const [occupe,setOccupe] = useState(false);
   const [toast,setToast] = useState("");
   const flash = (m)=>{ setToast(m); setTimeout(()=>setToast(""),2800); };
-  if(!vp) return null;   // fiche hors parcours (clôturée, opérée…) : pas de bandeau
+  if(!vp){
+    // « Pas encore chargé » et « hors parcours » ne doivent pas se ressembler.
+    if(!pret) return (
+      <Card style={{marginBottom:12,padding:"12px 14px"}}>
+        <div style={{fontSize:12.5,color:C.muted}}>⏳ {tt("pc.chargement")}</div>
+      </Card>
+    );
+    return null;   // fiche hors parcours (clôturée, opérée…) : pas de bandeau
+  }
   const sautees = Array.isArray(vp.etapes_sautees) ? vp.etapes_sautees : [];
   const etat = (n)=> vp["e"+n] ? "faite" : (vp.prochaine_etape===n ? "prochaine" : (sautees.indexOf(n)>=0 ? "sautee" : "avenir"));
+  // Même garde que les autres écritures de la fiche (date d'intervention…) :
+  // voir n'est pas modifier — sans elle, ce bandeau serait le seul chemin
+  // d'écriture ouvert aux rôles en lecture seule.
+  const peutEcrire = canEditRecord(user, "patients", patient);
   const clic = (n)=>{
-    if(PC_COCHABLES.indexOf(n)>=0){ setNote(""); setSheet(n); return; }
-    // Non cochable : on explique en une phrase plutôt que de ne rien faire.
+    if(PC_COCHABLES.indexOf(n)>=0 && peutEcrire){ setNote(""); setSheet(n); return; }
+    // Non cochable (ou lecture seule) : on explique plutôt que de ne rien faire.
     if(etat(n)==="faite") flash("✔ "+(pcPreuve(n, patient, vp, lignes, nwDevis, finances)||tt("pc.e"+n)));
+    else if(PC_COCHABLES.indexOf(n)>=0) flash("🔒 "+tt("pc.lectureSeule"));
     else flash("ℹ️ "+tt("pc.nonCliquable"));
   };
   const enregistrer = async (n, fait)=>{
@@ -20265,13 +20297,16 @@ function ParcoursBandeau({user, patient, vp, lignes, nwDevis, finances, onCocher
           <div onClick={e=>e.stopPropagation()} className="slide-up" style={{background:C.white,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:520,maxHeight:"92vh",overflowY:"auto",padding:"0 18px calc(18px + env(safe-area-inset-bottom))"}}>
             <div style={{width:36,height:4,borderRadius:99,background:C.border,margin:"12px auto 14px"}}/>
             <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:10}}>{PC_RONDS[sheet]} {tt("pc.e"+sheet)}</div>
+            {/* Étape déjà faite : sa preuve, lisible AU TOUCHER (le survol des
+                pastilles n'existe pas sur téléphone). */}
+            {vp["e"+sheet] && (()=>{ const pr = pcPreuve(sheet, patient, vp, lignes, nwDevis, finances);
+              return pr ? <div style={{fontSize:12.5,color:C.green,fontWeight:700,marginBottom:10}}>✔ {pr}</div> : null; })()}
             {sheet===3 ? (
               <div style={{marginBottom:12}}>
                 <label style={{fontSize:11,fontWeight:800,color:C.muted,textTransform:"uppercase",letterSpacing:"0.05em",display:"block",marginBottom:5}}>{tt("pc.q3")}</label>
                 <textarea autoFocus value={note} onChange={e=>setNote(e.target.value)}
                   placeholder="relâchement abdominal + diastasis → abdominoplastie"
                   style={{width:"100%",minHeight:80,padding:"10px 12px",border:`1.5px solid ${C.border}`,borderRadius:10,fontSize:14,outline:"none",background:C.white,boxSizing:"border-box",resize:"vertical"}}/>
-                {vp.e3 && vp.orientation && <div style={{fontSize:11,color:C.muted,marginTop:5}}>③ {vp.orientation}</div>}
               </div>
             ) : (
               <div style={{marginBottom:12}}>
@@ -20564,10 +20599,20 @@ function App() {
       if(lignes.error) throw lignes.error;
       if(Array.isArray(vue.data)){ setParcoursVue(vue.data); cache.save("vue_parcours", vue.data); }
       if(Array.isArray(lignes.data)){ setParcoursLignes(lignes.data); cache.save("patient_parcours", lignes.data); }
-      if(Array.isArray(vue.data) && Array.isArray(lignes.data)){ setParcoursPret(true); parcoursRef.current = true; }
-    }catch(e){ console.error("parcours:", e); parcoursRef.current = false; }
+      if(Array.isArray(vue.data) && Array.isArray(lignes.data)){ setParcoursPret(true); parcoursRef.current = true; return true; }
+      return false;
+    }catch(e){ console.error("parcours:", e); parcoursRef.current = false; return false; }
   };
-  const ensureParcours = async () => { if(parcoursRef.current) return; parcoursRef.current = true; await chargerParcours(); };
+  // Relu à CHAQUE passage sur la fiche ou « À faire » : la vue vit côté serveur
+  // (acompte encaissé, fiche créée en session…) — une copie « chargée une fois »
+  // mentirait précisément après l'événement le plus important. Seul verrou :
+  // pas deux relectures en même temps.
+  const parcoursBusyRef = React.useRef(false);
+  const ensureParcours = async () => {
+    if(parcoursBusyRef.current) return;
+    parcoursBusyRef.current = true;
+    try{ await chargerParcours(); } finally { parcoursBusyRef.current = false; }
+  };
 
   // loadAll(showLoad) : showLoad=true seulement pour "Synchroniser maintenant".
   // En arrière-plan (showLoad=false) l'écran reste sur le cache, mis à jour à l'arrivée des données.
@@ -20591,6 +20636,9 @@ function App() {
       // une liste locale non vide (protection des données d'abord).
       if(Array.isArray(m)){ setMedecins(prev=>{ const keep=(m.length>0||(prev||[]).length===0)?m.filter(x=>x.id):prev; cache.save("medecins", keep); return keep; }); } else failed++;
       if(Array.isArray(u) && u.length){ mergeServerUsers(u); }
+      // Le parcours suit la règle des finances : une fois consulté dans la
+      // session, « Synchroniser maintenant » le relit aussi.
+      if(parcoursRef.current) await chargerParcours();
       await refreshPermissionsFromServer();   // rôles + overrides : serveur = source de vérité
       setPermVer(v=>v+1);
       if(failed===0){
@@ -20858,6 +20906,9 @@ function App() {
   const cocherParcours = async (p, etape, fait, detail) => {
     try{
       if(!sbClient || !p || PC_COCHABLES.indexOf(Number(etape))<0) return false;
+      // Défense en profondeur : la même garde que le bandeau (la RLS, elle, ne
+      // distingue pas les rôles du CRM).
+      if(!canEditRecord(user, "patients", p)) return false;
       const { error } = await sbClient.from("patient_parcours")
         .insert({ patientId:String(p.id), etape:Number(etape), fait:!!fait, detail:String(detail||""), fait_par:String(user.id||"") });
       if(error) throw error;
@@ -20867,15 +20918,24 @@ function App() {
         ? `Étape ${rond} du parcours notée${detail?` : ${detail}`:"."}`
         : `Étape ${rond} du parcours dételée${detail?` : ${detail}`:"."}`;
       const entree = { u:user.id, date, heure, champ:"parcours", ancien:"", nouveau:`étape ${etape} ${fait?"faite":"non faite"}`, motif };
-      const historique = JSON.stringify([...parseHist(p.historique), entree]);
+      const histAvant = parseHist(p.historique);
+      const historique = JSON.stringify([...histAvant, entree]);
       await savePatient({ id:p.id, historique });   // savePatient respecte l'historique fourni
-      // La couche de synchro peut avaler un échec : on relit la fiche pour
-      // vérifier que le journal est bien en base — sinon on le dit.
+      // La couche de synchro peut avaler un échec : on relit la fiche et on
+      // cherche l'entrée PRÉCISE de CETTE action. Un simple préfixe serait
+      // satisfait par l'entrée d'une action passée sur la même étape — le
+      // journal étant en ajout seul, elle y reste pour toujours. On compte
+      // donc les occurrences exactes (u+date+heure+motif) avant/après.
+      const compte = (arr)=> (arr||[]).filter(h=>h && h.u===entree.u && h.date===entree.date && h.heure===entree.heure && h.motif===entree.motif).length;
       try{
         const { data:verif } = await sbClient.from("patients").select("historique").eq("id", p.id).maybeSingle();
-        if(!(verif && String(verif.historique||"").includes("Étape "+rond+" du parcours"))) alert(t("pc.echecJournal"));
+        if(!(verif && compte(parseHist(verif.historique)) > compte(histAvant))) alert(t("pc.echecJournal"));
       }catch(e){ alert(t("pc.echecJournal")); }
-      await chargerParcours();   // la vue se recalcule côté serveur
+      // La vue se recalcule côté serveur : si sa relecture échoue, la pastille
+      // resterait dans l'ancien état — on le DIT, sinon l'écran invite au
+      // re-clic (ligne et journal dupliqués).
+      const relu = await chargerParcours();
+      if(!relu) alert(t("pc.majEcran"));
       return true;
     }catch(e){ console.error("cocherParcours:", e); return false; }
   };
@@ -21191,7 +21251,7 @@ function App() {
           {activeView==="dashboard"&&<DashboardPersonnel user={userFull} patients={vPatients} rdvs={vRdvs} taches={vTaches} finances={vFinances} financesLoaded={finLoadedRef.current&&!finLoading} onOpenPatient={openPatientById}/>}
           {activeView==="knowledge-graph"&&<KnowledgeGraphAdmin user={userFull}/>}
           {activeView==="patients"&&<Patients user={userFull} patients={vPatients} onSelect={p=>{ if(isSurgeon(userFull)) return; setSelected(p); }} onAdd={()=>setModal({type:"patient"})} onDelete={deletePatient}/>}
-          {activeView==="fiche"&&selected&&<FichePatient user={userFull} patient={selected} patients={vPatients} rdvs={vRdvs} finances={vFinances} taches={vTaches} nwDevis={nwDevis} parcoursVue={parcoursVue} parcoursLignes={parcoursLignes} onCocherParcours={cocherParcours} onEdit={()=>setModal({type:"patient",data:selected})} onDelete={()=>deletePatient(selected.id)} onStageChange={changeStage} onBack={goBack} onSavePatient={savePatient} onUpdateRdv={updateRdv}/>}
+          {activeView==="fiche"&&selected&&<FichePatient user={userFull} patient={selected} patients={vPatients} rdvs={vRdvs} finances={vFinances} taches={vTaches} nwDevis={nwDevis} parcoursVue={parcoursVue} parcoursLignes={parcoursLignes} parcoursPret={parcoursPret} onCocherParcours={cocherParcours} onEdit={()=>setModal({type:"patient",data:selected})} onDelete={()=>deletePatient(selected.id)} onStageChange={changeStage} onBack={goBack} onSavePatient={savePatient} onUpdateRdv={updateRdv}/>}
           {activeView==="rdvs"&&<Rdvs user={userFull} rdvs={vRdvs} patients={vPatients} taches={vTaches} finances={vFinances} setRdvs={setRdvs} setTaches={setTaches} onAdd={()=>setModal({type:"rdv"})} onDelete={deleteRdv} onEdit={(r)=>setModal({type:"rdv",data:r})} onUpdate={(r)=>setModal({type:"rdv",data:r})} onOpenPatient={openPatientById}/>}
           {activeView==="taches"&&<Taches user={userFull} taches={vTaches} setTaches={setTaches} patients={vPatients} rdvs={vRdvs} hopitaux={hopitaux} syncing={syncing} setSyncing={setSyncing}/>}
           {activeView==="agenda"&&<Agenda user={userFull} rdvs={vRdvs} taches={vTaches} patients={vPatients} finances={vFinances} financesLoaded={finLoadedRef.current} onAddRdv={()=>setModal({type:"rdv"})} onSelectPatient={p=>{setSelected(p);setView("patients");}}/>}
@@ -21210,7 +21270,11 @@ function App() {
           {activeView==="afaire"&&hasAFaire(userFull)&&(()=>{ const afFin = finances
             .filter(f=> hasFinancesAdmin(userFull) || FIN_SURGEON_TYPES.indexOf(f.type)<0)
             .filter(f=> hasCommissions(userFull) || FIN_COMMISSION_TYPES.indexOf(f.type)<0);
-            return <AFaire user={userFull} patients={vPatients} finances={afFin} nwDevis={nwDevis} parcours={parcoursVue} parcoursPret={parcoursPret} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onOpenPatient={openPatientById}/>; })()}
+            // Le gardien respecte le même périmètre de visibilité que le reste
+            // de l'écran : vue_parcours réduite aux fiches que vPatients montre.
+            const pcIds = new Set(vPatients.map(p2=>String(p2.id)));
+            const afParcours = (parcoursVue||[]).filter(v=>v && pcIds.has(String(v.id)));
+            return <AFaire user={userFull} patients={vPatients} finances={afFin} nwDevis={nwDevis} parcours={afParcours} parcoursPret={parcoursPret} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onOpenPatient={openPatientById}/>; })()}
           {activeView==="hopitaux"&&<Hopitaux user={userFull} patients={patients} rdvs={rdvs} hopitaux={hopitaux} setHopitaux={setHopitaux} syncing={syncing} setSyncing={setSyncing}/>}
           {activeView==="equipe"&&<VueEquipe patients={patients} rdvs={rdvs} taches={taches} finances={finances}/>}
           {activeView==="medecins"&&<Medecins user={userFull} patients={patients} rdvs={rdvs} finances={finances} medecins={medecins} setMedecins={setMedecins}/>}
