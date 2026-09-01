@@ -1602,6 +1602,7 @@ const I18N = {
     "af.a6": "Premier contact.",
     "af.chargement": "Chargement des données financières…",
     "af.vide": "Aucun dossier dans ce groupe.",
+    "af.horsEuro": "entrées hors € non comptées",
     "common.loadingSheets": "Chargement depuis Google Sheets…",
     "surgeon.readOnly": "Lecture seule",
     "surgeon.limited": "Accès limité — informations médicales uniquement",
@@ -2977,6 +2978,7 @@ const I18N = {
     "af.a6": "First contact.",
     "af.chargement": "Loading financial data…",
     "af.vide": "No file in this group.",
+    "af.horsEuro": "non-€ entries not counted",
     "common.loadingSheets": "Loading from Google Sheets…",
     "surgeon.readOnly": "Read-only",
     "surgeon.limited": "Restricted access — medical information only",
@@ -4352,6 +4354,7 @@ const I18N = {
     "af.a6": "İlk temas.",
     "af.chargement": "Finansal veriler yükleniyor…",
     "af.vide": "Bu grupta dosya yok.",
+    "af.horsEuro": "€ dışı girişler sayılmadı",
     "common.loadingSheets": "Google Sheets'ten yükleniyor…",
     "surgeon.readOnly": "Salt görüntüleme",
     "surgeon.limited": "Sınırlı erişim — yalnızca tıbbi bilgiler",
@@ -5727,6 +5730,7 @@ const I18N = {
     "af.a6": "Primer contacto.",
     "af.chargement": "Cargando datos financieros…",
     "af.vide": "Ningún expediente en este grupo.",
+    "af.horsEuro": "entradas fuera de € no contadas",
     "common.loadingSheets": "Cargando desde Google Sheets…",
     "surgeon.readOnly": "Solo lectura",
     "surgeon.limited": "Acceso limitado — solo información médica",
@@ -15990,7 +15994,7 @@ function GestionUtilisateurs({user, onApplied, permVer}) {
             // La caisse et les messages s'accordent par hasCaisse/hasMessages
             // (rôle en dur ou coche), pas par can() seul : le diagnostic doit
             // refléter l'accès réel.
-            const viewOf = (u2,k)=> k==="caisse" ? hasCaisse(u2) : k==="messages" ? hasMessages(u2) : can(u2,k,"view");
+            const viewOf = (u2,k)=> k==="caisse" ? hasCaisse(u2) : k==="messages" ? hasMessages(u2) : k==="afaire" ? hasAFaire(u2) : can(u2,k,"view");
             const rows = (uA&&uB) ? PERM_MODULES.map(m=>{
               const a=viewOf(uA,m.k), b=viewOf(uB,m.k);
               return {k:m.k, icon:m.icon, label:moduleLabel(m.k)||m.l, a, b, diff:a!==b};
@@ -19801,16 +19805,23 @@ function afMontant(v){
 // Encaissé par patiente : sens = entrée, statut ≠ Annulé (les « En attente »
 // comptent — c'est la règle de la mesure de référence).
 function afEncaissements(finances){
-  const out = {};
+  const out = {}; const horsEuro = {};
   (finances||[]).forEach(f=>{
     if(!f || f.sens!=="entree" || f.statut==="Annulé") return;
     const pid = String(f.patientId||""); if(!pid) return;
+    // Deux devises ne s'additionnent jamais : une entrée hors euro ne compte
+    // pas dans le total, elle se SIGNALE sur la ligne de la patiente.
+    if(financeCurrencyCode(f.devise)!=="EUR"){ horsEuro[pid]=true; return; }
     const m = afMontant(f.montant); if(m===null) return;
     out[pid] = (out[pid]||0) + m;
   });
-  return out;
+  return { sommes: out, horsEuro };
 }
-const afDateOp = (p)=>{ const d = String((p&&p.dateOperation)||"").trim(); return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null; };
+// Même contrat de lecture que le reste du code (normalizeDate accepte ISO+heure,
+// JJ/MM/AAAA, sérialisations Sheets) + rejet des dates impossibles (2026-13-01) :
+// une date illisible redevient une date ABSENTE — le dossier remonte en groupe 4
+// avec son manque, il ne disparaît pas en silence.
+const afDateOp = (p)=>{ const d = normalizeDate((p&&p.dateOperation)||""); return (d && isRealIsoDate(d)) ? d : null; };
 const afJours = (dop, refStr)=> Math.round((Date.parse(dop+"T12:00:00") - Date.parse(refStr+"T12:00:00"))/86400000);
 const AF_GROUPES = [1,2,3,4,5,6,7,8];
 // Le classement — huit groupes, LE PREMIER TEST QUI RÉPOND GAGNE.
@@ -19824,17 +19835,19 @@ function afGroupe(p, dop, jours){
   if(dop!==null && jours>45) return 7;
   return 8;
 }
-function afClasser(patients, finances, nwDevis, nwFactures, refStr){
+function afClasser(patients, finances, nwDevis, refStr){
   const enc = afEncaissements(finances);
   const aDevis = {};   (nwDevis||[]).forEach(d=>{ if(d && d.patient_id) aDevis[String(d.patient_id)]=true; });
-  const aFacture = {}; (nwFactures||[]).forEach(fa=>{ if(fa && fa.patient_id) aFacture[String(fa.patient_id)]=true; });
   const lignes = (patients||[]).map(p=>{
     const dop = afDateOp(p);
     const jours = dop!==null ? afJours(dop, refStr) : null;
     const g = afGroupe(p, dop, jours);
-    const encaisse = enc[String(p.id)]||0;
-    const budgetTxt = String(p.budget==null?"":p.budget).trim();
-    const budget = /^[0-9]+([.,][0-9]+)?$/.test(budgetTxt) ? parseFloat(budgetTxt.replace(",",".")) : null;
+    const encaisse = enc.sommes[String(p.id)]||0;
+    const horsEuro = !!enc.horsEuro[String(p.id)];
+    // Même nettoyage que les montants de finances (espaces fines et insécables,
+    // virgule décimale) ; un budget négatif ou illisible reste « — ».
+    const bNet = afMontant(p.budget);
+    const budget = (bNet!==null && bNet>=0) ? bNet : null;
     const reste = budget!==null ? budget - encaisse : null;
     // Ce qui manque — calculé, jamais saisi. Rien n'est inventé.
     const manques = [];
@@ -19845,7 +19858,7 @@ function afClasser(patients, finances, nwDevis, nwFactures, refStr){
     if(p.stade==="Confirmé" && encaisse===0) manques.push("af.mEncaissement");
     if(dop!==null && !String(p.dateArrivee||"").trim()) manques.push("af.mArrivee");
     if(dop!==null && !String(p.medecin||"").trim()) manques.push("af.mChirurgien");
-    return { p, g, dop, jours, encaisse, budget, reste, manques, facture:!!aFacture[String(p.id)] };
+    return { p, g, dop, jours, encaisse, horsEuro, budget, reste, manques };
   });
   // Tri : par date d'opération quand le groupe en a une, sinon par dernier
   // contact (la plus ancienne relance d'abord), le nom en départage.
@@ -19859,17 +19872,20 @@ function afClasser(patients, finances, nwDevis, nwFactures, refStr){
     alerte: lignes.filter(l=>l.g>=1&&l.g<=5).length,
     sansNumero: lignes.filter(l=>!String(l.p.tel||"").trim()).length,
     sommeRestes14: Math.round(lignes.filter(l=>l.g>=1&&l.g<=4&&l.reste!==null).reduce((a,l)=>a+l.reste,0)*100)/100,
+    // Convention maison (logIsUnset) : la sentinelle « Non renseigné » et toute
+    // valeur inconnue comptent comme une ABSENCE d'information — le bandeau ne
+    // s'éteint que devant une vraie donnée de séjour.
     sejourVide: (patients||[]).length>0 && (patients||[]).every(p=>
       ["passeportStatut","volStatut","hotelStatut","traducteurStatut","validationChirurgienStatut","documentsStatut"]
-        .every(c=>!String(p[c]||"").trim())),
+        .every(c=>logIsUnset(p,c))),
   };
 }
 const afFmtEur = (n)=> n===null||n===undefined ? "—" : (Math.round(n*100)/100).toLocaleString("fr-FR")+" €";
 
-function AFaire({user, patients, finances, nwDevis, nwFactures, pret, onOpenPatient}){
+function AFaire({user, patients, finances, nwDevis, pret, onOpenPatient}){
   const tt = t;
   const ref = todayStr();   // recalculé à chaque rendu : la date qui passe reclasse toute seule
-  const R = afClasser(patients, finances, nwDevis, nwFactures, ref);
+  const R = afClasser(patients, finances, nwDevis, ref);
   const AF_COULEURS = {1:"#DC2626", 2:"#B45309", 3:"#D97706", 4:"#7C3AED", 5:"#1D73C9", 6:"#0891B2", 7:"#7B8BA5", 8:"#7B8BA5"};
   const quand = (l)=> l.jours===null ? "" : l.jours===0 ? tt("af.aujourdhui")
     : l.jours>0 ? tt("af.dansJours").replace("{n}", String(l.jours))
@@ -19936,14 +19952,15 @@ function AFaire({user, patients, finances, nwDevis, nwFactures, pret, onOpenPati
                 <span style={{color:C.muted}}>{tt("af.encaisse")} <b style={{color:l.encaisse>0?C.green:C.text}}>{afFmtEur(l.encaisse)}</b></span>
                 <span style={{color:C.muted}}>{tt("af.reste")} <b style={{color:l.reste!==null&&l.reste>0.009?"#B45309":C.text}}>{afFmtEur(l.reste)}</b></span>
               </div>
-              {l.manques.length>0 && (
+              {(l.manques.length>0 || l.horsEuro) && (
                 <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:6}}>
                   {l.manques.map(m=><Badge key={m} text={tt(m)} color={C.red} small/>)}
+                  {l.horsEuro && <Badge text={tt("af.horsEuro")} color={C.amber} small/>}
                 </div>
               )}
               {action(l) && (
                 <div style={{marginTop:7,fontSize:12,color:C.navy,background:C.gold+"14",border:`1px solid ${C.gold}33`,borderRadius:9,padding:"6px 10px"}}>
-                  → {action(l)}
+                  <b>{tt("af.prochaineAction")} :</b> {action(l)}
                 </div>
               )}
             </Card>
@@ -20804,8 +20821,16 @@ function App() {
               mouvements (paiements chirurgien compris). Accès verrouillé par hasCaisse. */}
           {activeView==="caisse"&&hasCaisse(userFull)&&<Caisse user={userFull} patients={vPatients} finances={finances} arretes={caisseArretes} nwDevis={nwDevis} nwFactures={nwFactures} medecins={medecins} hopitaux={hopitaux} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onSave={saveFinance} onUpdate={updateFinance} onSaveArrete={saveArrete}/>}
           {activeView==="messages"&&hasMessages(userFull)&&<WaMessages user={userFull} patients={vPatients} messages={waMessages} liens={waLiens} chargement={waLoading} onRecharger={chargerWa} onRattacher={rattacherWa} onDetacher={detacherWa} onOpenPatient={openPatientById}/>}
-          {/* À faire : lecture seule — lit, classe, affiche. Aucune écriture. */}
-          {activeView==="afaire"&&hasAFaire(userFull)&&<AFaire user={userFull} patients={vPatients} finances={vFinances} nwDevis={nwDevis} nwFactures={nwFactures} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onOpenPatient={openPatientById}/>}
+          {/* À faire : lecture seule — lit, classe, affiche. Aucune écriture.
+              Les finances ne passent PAS par le scope « own » (les encaissés par
+              patiente n'ont de sens qu'avec TOUS les mouvements — un total
+              partiel serait un mensonge) ; seules les gardes de types sensibles
+              (chirurgien/commissions) s'appliquent — les entrées patientes ne
+              sont jamais de ces types. */}
+          {activeView==="afaire"&&hasAFaire(userFull)&&(()=>{ const afFin = finances
+            .filter(f=> hasFinancesAdmin(userFull) || FIN_SURGEON_TYPES.indexOf(f.type)<0)
+            .filter(f=> hasCommissions(userFull) || FIN_COMMISSION_TYPES.indexOf(f.type)<0);
+            return <AFaire user={userFull} patients={vPatients} finances={afFin} nwDevis={nwDevis} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onOpenPatient={openPatientById}/>; })()}
           {activeView==="hopitaux"&&<Hopitaux user={userFull} patients={patients} rdvs={rdvs} hopitaux={hopitaux} setHopitaux={setHopitaux} syncing={syncing} setSyncing={setSyncing}/>}
           {activeView==="equipe"&&<VueEquipe patients={patients} rdvs={rdvs} taches={taches} finances={finances}/>}
           {activeView==="medecins"&&<Medecins user={userFull} patients={patients} rdvs={rdvs} finances={finances} medecins={medecins} setMedecins={setMedecins}/>}
