@@ -187,7 +187,7 @@ if("serviceWorker" in navigator){
       les échecs transitoires de CDN, exactement le symptôme constaté) ;
    3) si le second essai échoue aussi → message d'erreur clair + bouton Recharger. */
 (function(){
-  window.__CRM_VERSION = "v7.7 — Parcours en 8 étapes et gardien (2026-09-01)";
+  window.__CRM_VERSION = "v7.8 — Copilote de réponse dans Messages (2026-09-01)";
   /* SAS localStorage : toute clé applicative (cn_*) illisible en JSON est supprimée
      INDIVIDUELLEMENT avant le démarrage de React. Un stockage corrompu ne peut donc
      jamais empêcher le boot, et on ne perd que la clé abîmée — jamais tout. */
@@ -1552,6 +1552,20 @@ const I18N = {
     "wa.fenetreFermee": "Fenêtre fermée — modèle obligatoire",
     "wa.fenetreInfo": "WhatsApp n'autorise l'écriture libre que 24 h après le dernier message de la patiente ; ensuite, seuls les modèles approuvés par Meta peuvent partir.",
     "wa.envoiBientot": "Envoi bientôt disponible — cet écran est en lecture pour l'instant.",
+    "cp.titre": "Ce que tu as déjà répondu",
+    "cp.chercher": "Tape la question d'une patiente…",
+    "cp.sesMots": "ses mots",
+    "cp.medical": "référence médicale",
+    "cp.medicalHint": "référence médicale vérifiée — à dire avec tes mots",
+    "cp.aConfirmer": "à confirmer",
+    "cp.copier": "Copier",
+    "cp.copie": "Copié — relis avant de coller.",
+    "cp.copieEchec": "La copie n'a pas fonctionné — sélectionne la réponse et copie-la à la main.",
+    "cp.rien": "Rien de proche dans le savoir pour ce message.",
+    "cp.chargement": "Recherche…",
+    "cp.echec": "La recherche n'a pas répondu — réessaie.",
+    "cp.aucunEntrant": "Pas de message entrant à analyser — tape une question ci-dessus.",
+    "cp.regle": "Le copilote retrouve, il ne rédige pas — un humain relit, colle et envoie.",
     "wa.ecrire": "Écrire un message…",
     "wa.modelesBientot": "Sélecteur de modèles Meta — bientôt disponible.",
     "wa.testMeta": "Test Meta",
@@ -2959,6 +2973,20 @@ const I18N = {
     "wa.fenetreFermee": "Window closed — template required",
     "wa.fenetreInfo": "WhatsApp only allows free-form replies for 24 h after the patient's last message; after that, only Meta-approved templates can be sent.",
     "wa.envoiBientot": "Sending coming soon — this screen is read-only for now.",
+    "cp.titre": "What you have already replied",
+    "cp.chercher": "Type a patient's question…",
+    "cp.sesMots": "his words",
+    "cp.medical": "medical reference",
+    "cp.medicalHint": "verified medical reference — say it in your own words",
+    "cp.aConfirmer": "to confirm",
+    "cp.copier": "Copy",
+    "cp.copie": "Copied — reread before pasting.",
+    "cp.copieEchec": "The copy did not work — select the reply and copy it by hand.",
+    "cp.rien": "Nothing close in the knowledge for this message.",
+    "cp.chargement": "Searching…",
+    "cp.echec": "The search did not respond — try again.",
+    "cp.aucunEntrant": "No incoming message to analyse — type a question above.",
+    "cp.regle": "The copilot retrieves, it does not write — a human rereads, pastes and sends.",
     "wa.ecrire": "Write a message…",
     "wa.modelesBientot": "Meta template picker — coming soon.",
     "wa.testMeta": "Meta test",
@@ -4366,6 +4394,20 @@ const I18N = {
     "wa.fenetreFermee": "Pencere kapalı — şablon zorunlu",
     "wa.fenetreInfo": "WhatsApp, hastanın son mesajından sonra yalnızca 24 saat serbest yazmaya izin verir; sonrasında yalnızca Meta onaylı şablonlar gönderilebilir.",
     "wa.envoiBientot": "Gönderim yakında — bu ekran şimdilik salt okunur.",
+    "cp.titre": "Daha önce ne yanıtladın",
+    "cp.chercher": "Bir hastanın sorusunu yaz…",
+    "cp.sesMots": "onun sözleri",
+    "cp.medical": "tıbbi referans",
+    "cp.medicalHint": "doğrulanmış tıbbi referans — kendi sözlerinle söyle",
+    "cp.aConfirmer": "onay bekliyor",
+    "cp.copier": "Kopyala",
+    "cp.copie": "Kopyalandı — yapıştırmadan önce yeniden oku.",
+    "cp.copieEchec": "Kopyalama çalışmadı — yanıtı seç ve elle kopyala.",
+    "cp.rien": "Bu mesaj için bilgide yakın bir şey yok.",
+    "cp.chargement": "Aranıyor…",
+    "cp.echec": "Arama yanıt vermedi — tekrar dene.",
+    "cp.aucunEntrant": "İncelenecek gelen mesaj yok — yukarıya bir soru yaz.",
+    "cp.regle": "Yardımcı pilot bulur, yazmaz — bir insan okur, yapıştırır ve gönderir.",
     "wa.ecrire": "Mesaj yaz…",
     "wa.modelesBientot": "Meta şablon seçici — yakında.",
     "wa.testMeta": "Meta testi",
@@ -5773,6 +5815,20 @@ const I18N = {
     "wa.fenetreFermee": "Ventana cerrada — plantilla obligatoria",
     "wa.fenetreInfo": "WhatsApp solo permite escribir libremente durante 24 h tras el último mensaje de la paciente; después, solo pueden enviarse plantillas aprobadas por Meta.",
     "wa.envoiBientot": "Envío disponible pronto — esta pantalla es de solo lectura por ahora.",
+    "cp.titre": "Lo que ya has respondido",
+    "cp.chercher": "Escribe la pregunta de una paciente…",
+    "cp.sesMots": "sus palabras",
+    "cp.medical": "referencia médica",
+    "cp.medicalHint": "referencia médica verificada — dilo con tus palabras",
+    "cp.aConfirmer": "por confirmar",
+    "cp.copier": "Copiar",
+    "cp.copie": "Copiado — relee antes de pegar.",
+    "cp.copieEchec": "La copia no funcionó — selecciona la respuesta y cópiala a mano.",
+    "cp.rien": "Nada parecido en el saber para este mensaje.",
+    "cp.chargement": "Buscando…",
+    "cp.echec": "La búsqueda no respondió — inténtalo de nuevo.",
+    "cp.aucunEntrant": "No hay mensaje entrante que analizar — escribe una pregunta arriba.",
+    "cp.regle": "El copiloto encuentra, no redacta — un humano relee, pega y envía.",
     "wa.ecrire": "Escribir un mensaje…",
     "wa.modelesBientot": "Selector de plantillas Meta — próximamente.",
     "wa.testMeta": "Prueba Meta",
@@ -19699,6 +19755,182 @@ const waExtrait = (m, tt)=>{
 };
 const WA_ST = { sent:{ic:"✓",k:"wa.stSent",c:null}, delivered:{ic:"✓✓",k:"wa.stDelivered",c:null}, read:{ic:"✓✓",k:"wa.stRead",c:"#1D73C9"}, failed:{ic:"⚠",k:"wa.stFailed",c:"#DC2626"} };
 
+// ══════════════════════════════════════════════════════════════════════════════
+// LE COPILOTE DE RÉPONSE — « le mieux, c'est que mon IA puisse se servir de
+// tous mes messages WhatsApp pour répondre convenablement » (Veys, 31/08).
+// Le copilote ne rédige pas, il RETROUVE : ia_repondre() rend ce que Veys a
+// déjà répondu à cette question-là — ses mots, fautes comprises, jamais
+// corrigés. Un humain choisit, colle, envoie. Ce panneau ne fait que LIRE
+// (RPC security invoker) : aucune écriture, aucun envoi, aucun pré-remplissage.
+// ══════════════════════════════════════════════════════════════════════════════
+function CopiloteReponse({convSel, mobile}){
+  const tt = t;
+  // Replié par défaut sur mobile : l'écran Messages sert d'abord à lire.
+  const [ouvert,setOuvert] = useState(()=>!mobile);
+  const [qLibre,setQLibre] = useState("");
+  const [resultats,setResultats] = useState(null);   // null = pas encore cherché
+  const [chargement,setChargement] = useState(false);
+  const [echec,setEchec] = useState(false);
+  const [toast,setToast] = useState("");
+  const seqRef = React.useRef(0);   // une réponse en retard n'écrase jamais la dernière demande
+  const flash = (m)=>{ setToast(m); setTimeout(()=>setToast(""),2600); };
+
+  // Le texte de recherche automatique : le DERNIER message entrant qui porte du
+  // texte (une pièce jointe sans légende n'a rien à chercher).
+  const dernierEntrant = (convSel && convSel.msgs ? convSel.msgs : []).slice().reverse()
+    .find(m=>m && m.direction==="entrant" && String(m.texte||"").trim()) || null;
+  const cleEntrant = dernierEntrant ? String(dernierEntrant.id||dernierEntrant.wa_message_id||dernierEntrant.horodatage||"") : "";
+
+  const chercher = async (texte)=>{
+    // Une soumission vide est un non-geste : elle ne vole pas le jeton (une
+    // recherche en vol se terminerait sinon sur un « ⏳ » gelé pour toujours)
+    // et n'efface pas les suggestions affichées.
+    const propre = String(texte||"").trim();
+    if(!propre) return;
+    const seq = ++seqRef.current;
+    setChargement(true); setEchec(false);
+    try{
+      if(!sbClient) throw new Error("hors ligne");
+      // Moins de trois caractères ou charabia : la fonction rend un tableau
+      // vide, pas une erreur — l'écran l'affiche comme « rien de proche ».
+      const { data, error } = await sbClient.rpc("ia_repondre", { texte: propre, n: 5 });
+      if(seq!==seqRef.current) return;
+      if(error) throw error;
+      setResultats(Array.isArray(data)?data:[]);
+    }catch(e){
+      if(seq!==seqRef.current) return;
+      console.error("copilote:", e);
+      setEchec(true); setResultats(null);
+    }finally{
+      if(seq===seqRef.current) setChargement(false);
+    }
+  };
+
+  // À l'ouverture d'une conversation, et à chaque nouveau message entrant :
+  // recherche sur le dernier entrant — il reprend la main sur une recherche
+  // manuelle, c'est lui la question du moment. Trois gardes, aucune cosmétique :
+  //  · toute TRANSITION de fil invalide la réponse en vol (jeton), même quand
+  //    le nouveau fil ne relance rien — sinon les fiches trouvées pour A
+  //    s'affichent sous B, copiables vers la mauvaise patiente ;
+  //  · replié, on n'appelle pas Postgres pour un panneau invisible (mobile :
+  //    replié par défaut) — la recherche part au dépli ;
+  //  · seul un entrant STRICTEMENT plus récent que le dernier traité relance :
+  //    le poll des 2000 messages peut faire « reculer » le dernier entrant par
+  //    glissement de fenêtre sans aucun message nouveau.
+  const vuRef = React.useRef({ num:"", cle:"", ts:-1 });
+  useEffect(()=>{
+    if(!convSel){ seqRef.current++; setResultats(null); setQLibre(""); setChargement(false); setEchec(false); vuRef.current={num:"",cle:"",ts:-1}; return; }
+    const num = String(convSel.numero||"");
+    if(vuRef.current.num !== num){
+      seqRef.current++;   // la réponse en vol appartient au fil précédent
+      setResultats(null); setChargement(false); setEchec(false); setQLibre("");
+      vuRef.current = { num, cle:"", ts:-1 };
+    }
+    if(!ouvert || !dernierEntrant) return;
+    if(vuRef.current.cle === cleEntrant) return;   // déjà traité : une recherche manuelle garde la main
+    const ts = Date.parse(dernierEntrant.horodatage)||0;
+    if(vuRef.current.cle !== "" && ts <= vuRef.current.ts) return;   // recul de fenêtre, pas un nouveau message
+    vuRef.current.cle = cleEntrant; vuRef.current.ts = ts;
+    chercher(dernierEntrant.texte);
+  },[convSel && convSel.numero, cleEntrant, ouvert]);
+
+  const copier = async (texteBrut)=>{
+    // Tel quel, fautes comprises : ces fautes sont l'empreinte de sa voix.
+    const brut = String(texteBrut==null?"":texteBrut);
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(brut); }
+      else{
+        const ta = document.createElement("textarea");
+        ta.value = brut; ta.setAttribute("readonly","");
+        ta.style.position="fixed"; ta.style.opacity="0";
+        document.body.appendChild(ta);
+        ta.select(); try{ ta.setSelectionRange(0, brut.length); }catch(_){}   // iOS : select() seul ne sélectionne rien
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        // execCommand ne lève pas : il rend false. Un faux « ✅ Copié » ferait
+        // coller au réflexe l'ANCIEN contenu du presse-papiers — la réponse
+        // d'une autre patiente.
+        if(!ok) throw new Error("execCommand: copie refusée");
+      }
+      flash("✅ "+tt("cp.copie"));
+    }catch(e){ console.error("copie:", e); alert(tt("cp.copieEchec")); }
+  };
+
+  if(!convSel) return null;
+  const badge = (r)=>{
+    // Une fiche `medical` ne doit JAMAIS passer pour ses mots : badge et
+    // couleur distincts, et l'avertissement au survol.
+    if(r.source==="medical") return (
+      <span title={tt("cp.medicalHint")} style={{fontSize:10,fontWeight:800,letterSpacing:"0.03em",background:C.blue+"18",color:C.blue,border:`1px solid ${C.blue}44`,borderRadius:99,padding:"2px 9px",whiteSpace:"nowrap",cursor:"help"}}>📚 {tt("cp.medical")}</span>
+    );
+    if(r.source==="conversation"||r.source==="veys") return (
+      <span style={{fontSize:10,fontWeight:800,letterSpacing:"0.03em",background:C.gold+"18",color:C.gold,border:`1px solid ${C.gold}44`,borderRadius:99,padding:"2px 9px",whiteSpace:"nowrap"}}>💬 {tt("cp.sesMots")}</span>
+    );
+    // Source inattendue (catalogue, site, valeur future) : l'étiqueter
+    // « ses mots » serait un mensonge — badge neutre, la source telle quelle.
+    return (
+      <span style={{fontSize:10,fontWeight:800,letterSpacing:"0.03em",background:C.muted+"18",color:C.muted,border:`1px solid ${C.muted}44`,borderRadius:99,padding:"2px 9px",whiteSpace:"nowrap"}}>{String(r.source||"?")}</span>
+    );
+  };
+  return (
+    <Card style={{padding:"12px 14px",marginBottom:0}}>
+      <button onClick={()=>setOuvert(o=>!o)}
+        style={{display:"flex",alignItems:"center",gap:8,width:"100%",border:"none",background:"none",padding:0,cursor:"pointer",textAlign:"left"}}>
+        <span style={{fontSize:15}}>🧠</span>
+        <span style={{fontWeight:800,fontSize:13,color:C.text,flex:1}}>{tt("cp.titre")}</span>
+        <span style={{fontSize:11,color:C.muted}}>{ouvert?"▲":"▼"}</span>
+      </button>
+      {ouvert && (
+        <div style={{marginTop:10}}>
+          {/* Recherche libre : pour une question posée de vive voix ou au téléphone. */}
+          <form onSubmit={e=>{ e.preventDefault(); chercher(qLibre); }} style={{display:"flex",gap:6,marginBottom:8}}>
+            <input value={qLibre} onChange={e=>setQLibre(e.target.value)} placeholder={tt("cp.chercher")}
+              style={{flex:1,minWidth:0,padding:"9px 12px",border:`1.5px solid ${C.border}`,borderRadius:10,fontSize:13,outline:"none",background:C.white,boxSizing:"border-box"}}/>
+            <button type="submit" style={{minHeight:38,padding:"7px 13px",border:"none",borderRadius:10,background:C.navy,color:C.white,cursor:"pointer",fontWeight:800,fontSize:12,flexShrink:0}}>🔎</button>
+          </form>
+          {!dernierEntrant && !chargement && resultats===null && !echec && (
+            <div style={{fontSize:12,color:C.muted,padding:"2px 0 6px"}}>{tt("cp.aucunEntrant")}</div>
+          )}
+          {chargement && <div style={{fontSize:12.5,color:C.muted,padding:"4px 0"}}>⏳ {tt("cp.chargement")}</div>}
+          {echec && !chargement && <div style={{fontSize:12.5,color:C.red,padding:"4px 0"}}>⚠ {tt("cp.echec")}</div>}
+          {!chargement && !echec && Array.isArray(resultats) && resultats.length===0 && (
+            <div style={{fontSize:12.5,color:C.muted,padding:"4px 0"}}>{tt("cp.rien")}</div>
+          )}
+          {!chargement && Array.isArray(resultats) && resultats.length>0 && (
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {resultats.map(r=>(
+                <div key={r.id} style={{border:`1px solid ${C.border}`,borderRadius:12,padding:"10px 12px",background:C.bg}}>
+                  <div style={{display:"flex",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
+                    <div style={{fontWeight:800,fontSize:12.5,color:C.text,flex:1,minWidth:150,overflowWrap:"break-word"}}>{r.question||""}</div>
+                    <div style={{display:"flex",gap:5,alignItems:"center",flexShrink:0}}>
+                      {badge(r)}
+                      {r.statut==="a_confirmer" && <span style={{fontSize:10,color:C.muted,fontStyle:"italic",whiteSpace:"nowrap"}}>· {tt("cp.aConfirmer")}</span>}
+                    </div>
+                  </div>
+                  {/* Le texte, TEL QUEL : pas de capitale ajoutée, pas de correction,
+                      pas de reformatage — les fautes sont l'empreinte. */}
+                  <div style={{marginTop:6,fontSize:13,lineHeight:1.5,color:C.text,whiteSpace:"pre-wrap",overflowWrap:"break-word"}}>{String(r.reponse==null?"":r.reponse)}</div>
+                  {/* Au toucher, le survol n'existe pas : l'avertissement médical
+                      est écrit en clair sous la réponse, pas seulement en title. */}
+                  {r.source==="medical" && (
+                    <div style={{marginTop:4,fontSize:10.5,color:C.blue,fontStyle:"italic"}}>📚 {tt("cp.medicalHint")}</div>
+                  )}
+                  <div style={{marginTop:8,display:"flex",justifyContent:"flex-end"}}>
+                    <button onClick={()=>copier(r.reponse)}
+                      style={{minHeight:34,padding:"6px 14px",border:`1px solid ${C.navy}44`,borderRadius:9,background:C.white,color:C.navy,cursor:"pointer",fontWeight:800,fontSize:12}}>📋 {tt("cp.copier")}</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{fontSize:10.5,color:C.muted,marginTop:8}}>{tt("cp.regle")}</div>
+        </div>
+      )}
+      {toast && <div style={{position:"fixed",bottom:90,left:"50%",transform:"translateX(-50%)",background:C.navy,color:C.white,padding:"10px 20px",borderRadius:99,fontSize:12.5,fontWeight:700,zIndex:1300,boxShadow:"0 4px 20px rgba(0,0,0,0.25)",maxWidth:"90vw",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{toast}</div>}
+    </Card>
+  );
+}
+
 function WaMessages({user, patients, messages, liens, chargement, onRecharger, onRattacher, onDetacher, onOpenPatient}){
   const tt = t;
   const [sel,setSel] = useState(null);        // numero_patient sélectionné
@@ -19875,6 +20107,8 @@ function WaMessages({user, patients, messages, liens, chargement, onRecharger, o
         )}
         <div style={{fontSize:11,color:C.muted,marginTop:6}}>⏳ {tt("wa.envoiBientot")}{!fen.ouverte ? " · "+tt("wa.fenetreFermee") : ""}</div>
       </Card>
+      {/* Le copilote de réponse — sous la conversation : il retrouve, il ne rédige pas. */}
+      <CopiloteReponse convSel={convSel} mobile={mobile}/>
     </div>
     ); })();
 
