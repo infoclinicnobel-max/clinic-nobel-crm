@@ -1618,7 +1618,7 @@ const I18N = {
     "ar.devisAccepte": "devis accepté",
     "ar.enAttente": "en attente",
     "ar.reste": "reste à régler",
-    "ar.pasDeDevis": "pas de devis au système",
+    "ar.pasDeDevis": "pas de devis accepté au système",
     "ar.sommeReste": "de reste à régler (devis acceptés, soldes positifs)",
     "ar.actionSansDevis": "Pas de devis accepté au système — établir d'abord le contractuel.",
     "ar.sansAcompteTitre": "Devis signés sans acompte",
@@ -1627,6 +1627,9 @@ const I18N = {
     "ar.confirmeesNote": "C'est un manque de trace, pas un impayé.",
     "ar.aucunContractuel": "aucun montant contractuel",
     "ar.chargement": "Chargement des montants…",
+    "ar.echec": "La lecture des montants a échoué — « Synchroniser maintenant » réessaie.",
+    "ar.perime": "relecture échouée — montants de la lecture précédente",
+    "ar.encaisseDivergent": "encaissé selon la caisse : {v} — selon la règle de l'écran (sans « Annulé », € seul) : {c}",
     "pc.titre": "Parcours en 8 étapes",
     "pc.e1": "Savoir ce qu'elle demande",
     "pc.e2": "Questionnaire et PHOTOS",
@@ -3049,7 +3052,7 @@ const I18N = {
     "ar.devisAccepte": "accepted quote",
     "ar.enAttente": "pending",
     "ar.reste": "left to settle",
-    "ar.pasDeDevis": "no quote in the system",
+    "ar.pasDeDevis": "no accepted quote in the system",
     "ar.sommeReste": "left to settle (accepted quotes, positive balances)",
     "ar.actionSansDevis": "No accepted quote in the system — establish the contract first.",
     "ar.sansAcompteTitre": "Signed quotes without a deposit",
@@ -3058,6 +3061,9 @@ const I18N = {
     "ar.confirmeesNote": "A missing record, not an unpaid bill.",
     "ar.aucunContractuel": "no contractual amount",
     "ar.chargement": "Loading amounts…",
+    "ar.echec": "Loading the amounts failed — “Sync now” retries.",
+    "ar.perime": "refresh failed — amounts from the previous read",
+    "ar.encaisseDivergent": "collected per the cash ledger: {v} — per the screen's rule (no “Cancelled”, € only): {c}",
     "pc.titre": "8-step journey",
     "pc.e1": "Know what she is asking for",
     "pc.e2": "Questionnaire and PHOTOS",
@@ -4480,7 +4486,7 @@ const I18N = {
     "ar.devisAccepte": "kabul edilen teklif",
     "ar.enAttente": "beklemede",
     "ar.reste": "ödenecek kalan",
-    "ar.pasDeDevis": "sistemde teklif yok",
+    "ar.pasDeDevis": "sistemde kabul edilmiş teklif yok",
     "ar.sommeReste": "ödenecek kalan (kabul edilen teklifler, pozitif bakiyeler)",
     "ar.actionSansDevis": "Sistemde kabul edilmiş teklif yok — önce sözleşmeyi oluştur.",
     "ar.sansAcompteTitre": "Kaporasız imzalanan teklifler",
@@ -4489,6 +4495,9 @@ const I18N = {
     "ar.confirmeesNote": "Bu bir iz eksikliği, ödenmemiş borç değil.",
     "ar.aucunContractuel": "sözleşmesel tutar yok",
     "ar.chargement": "Tutarlar yükleniyor…",
+    "ar.echec": "Tutarlar okunamadı — « Şimdi eşitle » yeniden dener.",
+    "ar.perime": "yenileme başarısız — önceki okumanın tutarları",
+    "ar.encaisseDivergent": "kasaya göre tahsilat: {v} — ekran kuralına göre (« İptal » hariç, yalnız €): {c}",
     "pc.titre": "8 adımlı yolculuk",
     "pc.e1": "Ne istediğini öğren",
     "pc.e2": "Anket ve FOTOĞRAFLAR",
@@ -5911,7 +5920,7 @@ const I18N = {
     "ar.devisAccepte": "presupuesto aceptado",
     "ar.enAttente": "en espera",
     "ar.reste": "resta por pagar",
-    "ar.pasDeDevis": "sin presupuesto en el sistema",
+    "ar.pasDeDevis": "sin presupuesto aceptado en el sistema",
     "ar.sommeReste": "por pagar (presupuestos aceptados, saldos positivos)",
     "ar.actionSansDevis": "Sin presupuesto aceptado en el sistema — establecer primero lo contractual.",
     "ar.sansAcompteTitre": "Presupuestos firmados sin anticipo",
@@ -5920,6 +5929,9 @@ const I18N = {
     "ar.confirmeesNote": "Es una falta de registro, no un impago.",
     "ar.aucunContractuel": "sin importe contractual",
     "ar.chargement": "Cargando importes…",
+    "ar.echec": "La lectura de los importes falló — « Sincronizar ahora » reintenta.",
+    "ar.perime": "actualización fallida — importes de la lectura anterior",
+    "ar.encaisseDivergent": "cobrado según la caja: {v} — según la regla de la pantalla (sin « Anulado », solo €): {c}",
     "pc.titre": "Recorrido en 8 etapas",
     "pc.e1": "Saber qué pide",
     "pc.e2": "Cuestionario y FOTOS",
@@ -20288,7 +20300,7 @@ function afClasser(patients, finances, nwDevis, refStr){
 }
 const afFmtEur = (n)=> n===null||n===undefined ? "—" : (Math.round(n*100)/100).toLocaleString("fr-FR")+" €";
 
-function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, argent, argentPret, pret, onOpenPatient}){
+function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, argent, argentPret, argentEchec, pret, onOpenPatient}){
   const tt = t;
   const ref = todayStr();   // recalculé à chaque rendu : la date qui passe reclasse toute seule
   const R = afClasser(patients, finances, nwDevis, ref);
@@ -20316,6 +20328,10 @@ function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, arge
     // mensonge grammaticalement correct : l'action devient « établir le
     // contractuel d'abord ».
     if(rd===null) return tt("ar.actionSansDevis");
+    // Un solde nul ou négatif ne se glisse dans AUCUN gabarit (« vérifier que
+    // −1 600 € sont bien encaissés » ?) : pas de phrase du tout — l'anomalie
+    // de la vue, affichée en gris sur la ligne, dit déjà le fait.
+    if(rd<=0) return null;
     return gab.replace("{reste}", afFmtEur(rd));
   };
   return (
@@ -20353,6 +20369,11 @@ function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, arge
               Rien n'est affirmé avant la lecture de la vue. */}
           {argentPret && <span><b style={{color:C.text}}>{afFmtEur(arResteTotal)}</b> {tt("ar.sommeReste")}</span>}
         </div>
+        {/* La dernière relecture a échoué : les montants affichés datent de la
+            lecture précédente — on le DIT plutôt que de les affirmer actuels. */}
+        {argentPret && argentEchec && (
+          <div style={{marginTop:8,fontSize:11,color:"#92400E"}}>⚠ {tt("ar.perime")}</div>
+        )}
       </Card>
 
       {/* ── L'ARGENT DIT JUSTE — deux groupes nourris par vue_argent. Un budget
@@ -20397,7 +20418,7 @@ function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, arge
               </div>
               <div style={{fontSize:11,color:C.muted,margin:"0 0 8px 24px"}}>{tt("ar.sansAcompteNote")}</div>
               {!argentPret ? (
-                <Card><div style={{fontSize:13,color:C.muted}}>⏳ {tt("ar.chargement")}</div></Card>
+                <Card><div style={{fontSize:13,color:argentEchec?"#92400E":C.muted}}>{argentEchec ? "⚠ "+tt("ar.echec") : "⏳ "+tt("ar.chargement")}</div></Card>
               ) : sansAcompte.length===0 ? (
                 <div style={{fontSize:11.5,color:C.muted,margin:"0 0 4px 24px"}}>{tt("af.vide")}</div>
               ) : sansAcompte.map(v=>ligneArgent(v, true))}
@@ -20411,7 +20432,7 @@ function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, arge
               {/* Pas d'alarme, pas de rouge : un manque de trace, pas un impayé. */}
               <div style={{fontSize:11,color:C.muted,margin:"0 0 8px 24px"}}>{tt("ar.confirmeesNote")}</div>
               {!argentPret ? (
-                <Card><div style={{fontSize:13,color:C.muted}}>⏳ {tt("ar.chargement")}</div></Card>
+                <Card><div style={{fontSize:13,color:argentEchec?"#92400E":C.muted}}>{argentEchec ? "⚠ "+tt("ar.echec") : "⏳ "+tt("ar.chargement")}</div></Card>
               ) : confirmees.length===0 ? (
                 <div style={{fontSize:11.5,color:C.muted,margin:"0 0 4px 24px"}}>{tt("af.vide")}</div>
               ) : confirmees.map(v=>ligneArgent(v, false))}
@@ -20502,17 +20523,34 @@ function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, arge
               {(()=>{ const a = argentPret ? arg[String(l.p.id)] : undefined;
                 const dn = a ? arNum(a.devis_net) : null;
                 const rd = a ? arNum(a.reste_du) : null;
+                const de = a ? arNum(a.devis_envoye) : null;
+                const vueEnc = a ? (arNum(a.encaisse)||0) : null;
+                // Deux règles d'encaissement coexistent : la vue somme les
+                // entrées telles quelles, l'écran exclut « Annulé » et le
+                // hors-euro (mesure du 31/08). Une divergence est un CONSTAT :
+                // affichée en clair, jamais masquée, jamais corrigée.
+                const divergent = a && (l.horsEuro || Math.abs(vueEnc - l.encaisse) > 0.009);
                 return (
+                <React.Fragment>
                 <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:6,fontSize:11.5}}>
                   <span style={{color:C.muted}}>{tt("ar.budgetAnnonce")} <b style={{color:C.text}}>{afFmtEur(l.budget)}</b></span>
                   {argentPret && (dn!==null
                     ? <span style={{color:C.muted}}>{tt("ar.devisAccepte")} <b style={{color:C.text}}>{afFmtEur(dn)}</b></span>
-                    : <span style={{color:C.muted,fontStyle:"italic"}}>{tt("ar.pasDeDevis")}</span>)}
-                  <span style={{color:C.muted}}>{tt("af.encaisse")} <b style={{color:(a?arNum(a.encaisse):l.encaisse)>0?C.green:C.text}}>{afFmtEur(a ? (arNum(a.encaisse)||0) : l.encaisse)}</b></span>
-                  {argentPret && rd!==null && (
+                    : de!==null && de>0
+                      ? <span style={{color:C.muted}}>⏳ {tt("ar.enAttente")} <b style={{color:C.text}}>{afFmtEur(de)}</b></span>
+                      : <span style={{color:C.muted,fontStyle:"italic"}}>{tt("ar.pasDeDevis")}</span>)}
+                  <span style={{color:C.muted}}>{tt("af.encaisse")} <b style={{color:(a?vueEnc:l.encaisse)>0 && !divergent ? C.green : C.text}}>{afFmtEur(a ? vueEnc : l.encaisse)}</b></span>
+                  {/* Un solde négatif n'est pas une créance négative : il ne
+                      porte JAMAIS l'étiquette « reste à régler » — l'anomalie
+                      grise dit le fait. Le zéro, lui, est vrai : affiché. */}
+                  {argentPret && rd!==null && rd>=0 && (
                     <span style={{color:C.muted}}>{tt("ar.reste")} <b style={{color:rd>0.009?"#B45309":C.text}}>{afFmtEur(rd)}</b></span>
                   )}
                 </div>
+                {divergent && (
+                  <div style={{marginTop:5,fontSize:11,color:"#92400E"}}>⚠ {tt("ar.encaisseDivergent").replace("{v}", afFmtEur(vueEnc)).replace("{c}", afFmtEur(l.encaisse))}</div>
+                )}
+                </React.Fragment>
                 ); })()}
               {argentPret && arg[String(l.p.id)] && arg[String(l.p.id)].anomalie && (
                 <div style={{marginTop:5,fontSize:11,color:C.muted}}>{arg[String(l.p.id)].anomalie}</div>
@@ -20789,6 +20827,7 @@ function App() {
   // annoncé / contractuel / encaissé / reste à régler, jamais additionnés.
   const [argentVue,setArgentVue] = useState(()=>cache.load("vue_argent")||[]);
   const [argentPret,setArgentPret] = useState(false);
+  const [argentEchec,setArgentEchec] = useState(false);   // un échec de lecture se DIT, il ne se tait pas
   // Messages WhatsApp (wa_messages) — lecture seule + rattachement.
   const [waMessages,setWaMessages] = useState(()=>cache.load("wa_messages")||[]);
   const [waLiens,setWaLiens] = useState(()=>cache.load("wa_liens")||{});   // numero → patientId (survit à la fenêtre des 2000)
@@ -21003,18 +21042,28 @@ function App() {
 
   // ── vue_argent : mêmes règles que le parcours — la vue vit côté serveur,
   // on la RELIT à chaque passage sur « À faire », on ne la recalcule jamais.
+  // argentRef signifie « consulté cette session » (pas « dernière lecture
+  // réussie ») : un échec ne désarme jamais « Synchroniser maintenant ».
   const argentRef = React.useRef(false);
   const argentBusyRef = React.useRef(false);
+  const argentSeqRef = React.useRef(0);   // dernière lecture partie gagne (même règle que waSeqRef)
   const chargerArgent = async () => {
+    const seq = ++argentSeqRef.current;
     try{
       if(!sbClient) return false;
       const { data, error } = await sbClient.from("vue_argent").select("*");
+      if(seq !== argentSeqRef.current) return true;   // réponse périmée : une lecture plus récente est partie
       if(error) throw error;
-      if(Array.isArray(data)){ setArgentVue(data); cache.save("vue_argent", data); setArgentPret(true); argentRef.current = true; return true; }
+      if(Array.isArray(data)){ setArgentVue(data); cache.save("vue_argent", data); setArgentPret(true); setArgentEchec(false); argentRef.current = true; return true; }
       return false;
-    }catch(e){ console.error("argent:", e); argentRef.current = false; return false; }
+    }catch(e){
+      console.error("argent:", e);
+      if(seq === argentSeqRef.current) setArgentEchec(true);
+      return false;
+    }
   };
   const ensureArgent = async () => {
+    argentRef.current = true;   // consulté : la prochaine synchro relira, échec ou pas
     if(argentBusyRef.current) return;
     argentBusyRef.current = true;
     try{ await chargerArgent(); } finally { argentBusyRef.current = false; }
@@ -21045,7 +21094,9 @@ function App() {
       // Le parcours suit la règle des finances : une fois consulté dans la
       // session, « Synchroniser maintenant » le relit aussi.
       if(parcoursRef.current) await chargerParcours();
-      if(argentRef.current) await chargerArgent();
+      // Un échec de relecture des montants compte comme une synchro PARTIELLE :
+      // « ✅ synchronisé » pendant que vue_argent est restée muette serait un mensonge.
+      if(argentRef.current && !(await chargerArgent())) failed++;
       await refreshPermissionsFromServer();   // rôles + overrides : serveur = source de vérité
       setPermVer(v=>v+1);
       if(failed===0){
@@ -21685,7 +21736,7 @@ function App() {
             const afParcours = (parcoursVue||[]).filter(v=>v && pcIds.has(String(v.id)));
             // vue_argent respecte le même périmètre de visibilité que le reste.
             const afArgent = (argentVue||[]).filter(v=>v && pcIds.has(String(v.id)));
-            return <AFaire user={userFull} patients={vPatients} finances={afFin} nwDevis={nwDevis} parcours={afParcours} parcoursPret={parcoursPret} argent={afArgent} argentPret={argentPret} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onOpenPatient={openPatientById}/>; })()}
+            return <AFaire user={userFull} patients={vPatients} finances={afFin} nwDevis={nwDevis} parcours={afParcours} parcoursPret={parcoursPret} argent={afArgent} argentPret={argentPret} argentEchec={argentEchec} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onOpenPatient={openPatientById}/>; })()}
           {activeView==="hopitaux"&&<Hopitaux user={userFull} patients={patients} rdvs={rdvs} hopitaux={hopitaux} setHopitaux={setHopitaux} syncing={syncing} setSyncing={setSyncing}/>}
           {activeView==="equipe"&&<VueEquipe patients={patients} rdvs={rdvs} taches={taches} finances={finances}/>}
           {activeView==="medecins"&&<Medecins user={userFull} patients={patients} rdvs={rdvs} finances={finances} medecins={medecins} setMedecins={setMedecins}/>}
