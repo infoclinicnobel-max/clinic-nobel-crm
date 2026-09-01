@@ -187,7 +187,7 @@ if("serviceWorker" in navigator){
       les échecs transitoires de CDN, exactement le symptôme constaté) ;
    3) si le second essai échoue aussi → message d'erreur clair + bouton Recharger. */
 (function(){
-  window.__CRM_VERSION = "v7.8 — Copilote de réponse dans Messages (2026-09-01)";
+  window.__CRM_VERSION = "v7.9 — L'argent dit juste dans À faire (2026-09-01)";
   /* SAS localStorage : toute clé applicative (cn_*) illisible en JSON est supprimée
      INDIVIDUELLEMENT avant le démarrage de React. Un stockage corrompu ne peut donc
      jamais empêcher le boot, et on ne perd que la clé abîmée — jamais tout. */
@@ -1593,17 +1593,14 @@ const I18N = {
     "af.avert1": "Cet écran dit ce que le système sait, pas ce qui s'est passé. Un « encaissé : 0 € » peut vouloir dire qu'une patiente n'a rien payé — ou que son paiement est passé par Ceyda et n'a pas encore été saisi.",
     "af.avert2": "Les six colonnes de suivi du séjour (passeport, vol, hôtel, traducteur, validation chirurgien, documents) sont vides sur toutes les fiches : ce tableau ne peut rien dire de la préparation des séjours.",
     "af.sansNumero": "fiches sans numéro",
-    "af.sommeRestes": "de restes dus (groupes 1–4)",
     "af.encaisse": "Encaissé",
-    "af.convenu": "Convenu",
-    "af.reste": "Reste",
     "af.dansJours": "dans {n} j",
     "af.ilYA": "il y a {n} j",
     "af.aujourdhui": "aujourd'hui",
     "af.prochaineAction": "Prochaine action",
     "af.mTel": "aucun numéro",
     "af.mDate": "pas de date d'opération",
-    "af.mBudget": "pas de montant convenu",
+    "af.mBudget": "pas de budget annoncé",
     "af.mDevis": "aucun devis en base",
     "af.mEncaissement": "aucun encaissement",
     "af.mArrivee": "pas de date d'arrivée",
@@ -1617,6 +1614,19 @@ const I18N = {
     "af.chargement": "Chargement des données financières…",
     "af.vide": "Aucun dossier dans ce groupe.",
     "af.horsEuro": "entrées hors € non comptées",
+    "ar.budgetAnnonce": "budget annoncé",
+    "ar.devisAccepte": "devis accepté",
+    "ar.enAttente": "en attente",
+    "ar.reste": "reste à régler",
+    "ar.pasDeDevis": "pas de devis au système",
+    "ar.sommeReste": "de reste à régler (devis acceptés, soldes positifs)",
+    "ar.actionSansDevis": "Pas de devis accepté au système — établir d'abord le contractuel.",
+    "ar.sansAcompteTitre": "Devis signés sans acompte",
+    "ar.sansAcompteNote": "Un devis accepté sans le moindre acompte n'est pas une vente : c'est un accord verbal que rien ne retient.",
+    "ar.confirmeesTitre": "Confirmées sans devis au système",
+    "ar.confirmeesNote": "C'est un manque de trace, pas un impayé.",
+    "ar.aucunContractuel": "aucun montant contractuel",
+    "ar.chargement": "Chargement des montants…",
     "pc.titre": "Parcours en 8 étapes",
     "pc.e1": "Savoir ce qu'elle demande",
     "pc.e2": "Questionnaire et PHOTOS",
@@ -3014,17 +3024,14 @@ const I18N = {
     "af.avert1": "This screen shows what the system knows, not what happened. A \"collected: €0\" can mean the patient paid nothing — or that her payment went through Ceyda and has not been entered yet.",
     "af.avert2": "The six stay-tracking columns (passport, flight, hotel, translator, surgeon validation, documents) are empty on every record: this board can say nothing about stay preparation.",
     "af.sansNumero": "records without a phone number",
-    "af.sommeRestes": "outstanding balances (groups 1–4)",
     "af.encaisse": "Collected",
-    "af.convenu": "Agreed",
-    "af.reste": "Remaining",
     "af.dansJours": "in {n} d",
     "af.ilYA": "{n} d ago",
     "af.aujourdhui": "today",
     "af.prochaineAction": "Next action",
     "af.mTel": "no phone number",
     "af.mDate": "no surgery date",
-    "af.mBudget": "no agreed amount",
+    "af.mBudget": "no declared budget",
     "af.mDevis": "no quote on file",
     "af.mEncaissement": "nothing collected",
     "af.mArrivee": "no arrival date",
@@ -3038,6 +3045,19 @@ const I18N = {
     "af.chargement": "Loading financial data…",
     "af.vide": "No file in this group.",
     "af.horsEuro": "non-€ entries not counted",
+    "ar.budgetAnnonce": "declared budget",
+    "ar.devisAccepte": "accepted quote",
+    "ar.enAttente": "pending",
+    "ar.reste": "left to settle",
+    "ar.pasDeDevis": "no quote in the system",
+    "ar.sommeReste": "left to settle (accepted quotes, positive balances)",
+    "ar.actionSansDevis": "No accepted quote in the system — establish the contract first.",
+    "ar.sansAcompteTitre": "Signed quotes without a deposit",
+    "ar.sansAcompteNote": "An accepted quote without the slightest deposit is not a sale: it is a verbal agreement that nothing holds.",
+    "ar.confirmeesTitre": "Confirmed without a quote in the system",
+    "ar.confirmeesNote": "A missing record, not an unpaid bill.",
+    "ar.aucunContractuel": "no contractual amount",
+    "ar.chargement": "Loading amounts…",
     "pc.titre": "8-step journey",
     "pc.e1": "Know what she is asking for",
     "pc.e2": "Questionnaire and PHOTOS",
@@ -4435,17 +4455,14 @@ const I18N = {
     "af.avert1": "Bu ekran olanı değil, sistemin bildiğini gösterir. « Tahsil edilen: 0 € » hastanın hiç ödemediği anlamına gelebilir — ya da ödemesi Ceyda'dan geçti ve henüz girilmedi.",
     "af.avert2": "Altı konaklama takip sütunu (pasaport, uçuş, otel, tercüman, cerrah onayı, belgeler) tüm dosyalarda boş: bu tablo konaklama hazırlığı hakkında hiçbir şey söyleyemez.",
     "af.sansNumero": "numarasız dosya",
-    "af.sommeRestes": "kalan bakiye (grup 1–4)",
     "af.encaisse": "Tahsil edilen",
-    "af.convenu": "Anlaşılan",
-    "af.reste": "Kalan",
     "af.dansJours": "{n} gün sonra",
     "af.ilYA": "{n} gün önce",
     "af.aujourdhui": "bugün",
     "af.prochaineAction": "Sıradaki adım",
     "af.mTel": "numara yok",
     "af.mDate": "ameliyat tarihi yok",
-    "af.mBudget": "anlaşılan tutar yok",
+    "af.mBudget": "beyan edilen bütçe yok",
     "af.mDevis": "kayıtlı teklif yok",
     "af.mEncaissement": "hiç tahsilat yok",
     "af.mArrivee": "varış tarihi yok",
@@ -4459,6 +4476,19 @@ const I18N = {
     "af.chargement": "Finansal veriler yükleniyor…",
     "af.vide": "Bu grupta dosya yok.",
     "af.horsEuro": "€ dışı girişler sayılmadı",
+    "ar.budgetAnnonce": "beyan edilen bütçe",
+    "ar.devisAccepte": "kabul edilen teklif",
+    "ar.enAttente": "beklemede",
+    "ar.reste": "ödenecek kalan",
+    "ar.pasDeDevis": "sistemde teklif yok",
+    "ar.sommeReste": "ödenecek kalan (kabul edilen teklifler, pozitif bakiyeler)",
+    "ar.actionSansDevis": "Sistemde kabul edilmiş teklif yok — önce sözleşmeyi oluştur.",
+    "ar.sansAcompteTitre": "Kaporasız imzalanan teklifler",
+    "ar.sansAcompteNote": "En ufak kapora alınmadan kabul edilen bir teklif satış değildir: hiçbir şeyin tutmadığı sözlü bir anlaşmadır.",
+    "ar.confirmeesTitre": "Sistemde teklifi olmayan onaylılar",
+    "ar.confirmeesNote": "Bu bir iz eksikliği, ödenmemiş borç değil.",
+    "ar.aucunContractuel": "sözleşmesel tutar yok",
+    "ar.chargement": "Tutarlar yükleniyor…",
     "pc.titre": "8 adımlı yolculuk",
     "pc.e1": "Ne istediğini öğren",
     "pc.e2": "Anket ve FOTOĞRAFLAR",
@@ -5856,17 +5886,14 @@ const I18N = {
     "af.avert1": "Esta pantalla dice lo que el sistema sabe, no lo que ocurrió. Un « cobrado: 0 € » puede significar que la paciente no pagó nada — o que su pago pasó por Ceyda y aún no se ha registrado.",
     "af.avert2": "Las seis columnas de seguimiento de la estancia (pasaporte, vuelo, hotel, traductor, validación del cirujano, documentos) están vacías en todas las fichas: este tablero no puede decir nada de la preparación de las estancias.",
     "af.sansNumero": "fichas sin número",
-    "af.sommeRestes": "de saldos pendientes (grupos 1–4)",
     "af.encaisse": "Cobrado",
-    "af.convenu": "Convenido",
-    "af.reste": "Pendiente",
     "af.dansJours": "en {n} d",
     "af.ilYA": "hace {n} d",
     "af.aujourdhui": "hoy",
     "af.prochaineAction": "Próxima acción",
     "af.mTel": "sin número",
     "af.mDate": "sin fecha de operación",
-    "af.mBudget": "sin importe convenido",
+    "af.mBudget": "sin presupuesto anunciado",
     "af.mDevis": "sin presupuesto registrado",
     "af.mEncaissement": "nada cobrado",
     "af.mArrivee": "sin fecha de llegada",
@@ -5880,6 +5907,19 @@ const I18N = {
     "af.chargement": "Cargando datos financieros…",
     "af.vide": "Ningún expediente en este grupo.",
     "af.horsEuro": "entradas fuera de € no contadas",
+    "ar.budgetAnnonce": "presupuesto anunciado",
+    "ar.devisAccepte": "presupuesto aceptado",
+    "ar.enAttente": "en espera",
+    "ar.reste": "resta por pagar",
+    "ar.pasDeDevis": "sin presupuesto en el sistema",
+    "ar.sommeReste": "por pagar (presupuestos aceptados, saldos positivos)",
+    "ar.actionSansDevis": "Sin presupuesto aceptado en el sistema — establecer primero lo contractual.",
+    "ar.sansAcompteTitre": "Presupuestos firmados sin anticipo",
+    "ar.sansAcompteNote": "Un presupuesto aceptado sin el menor anticipo no es una venta: es un acuerdo verbal que nada retiene.",
+    "ar.confirmeesTitre": "Confirmadas sin presupuesto en el sistema",
+    "ar.confirmeesNote": "Es una falta de registro, no un impago.",
+    "ar.aucunContractuel": "sin importe contractual",
+    "ar.chargement": "Cargando importes…",
     "pc.titre": "Recorrido en 8 etapas",
     "pc.e1": "Saber qué pide",
     "pc.e2": "Cuestionario y FOTOS",
@@ -20152,8 +20192,12 @@ function WaMessages({user, patients, messages, liens, chargement, onRecharger, o
 //    date passe change de groupe tout seul.
 //  · Aucune donnée manquante n'est inventée ni masquée : un budget vide
 //    s'affiche « — » et reste visible, c'est précisément lui qu'il faut voir.
-//  · Les règles reproduisent EXACTEMENT la mesure du 31/08/2026 (48 en file
-//    d'alerte, 4/5/6/21/12, 174 270 € de restes sur les groupes 1–4).
+//  · Les règles de classement reproduisent EXACTEMENT la mesure du 31/08/2026
+//    (48 en file d'alerte, 4/5/6/21/12).
+//  · Lot « l'argent dit juste » (01/09) : un budget est une INTENTION, pas une
+//    créance — le reste à régler vient de vue_argent (devis_net − encaisse sur
+//    les devis ACCEPTÉS), null = « pas de devis au système », et le total ne
+//    somme que les soldes positifs. Chaque montant porte son étiquette.
 // ══════════════════════════════════════════════════════════════════════════════
 // Montant texte → nombre : espaces (fines et insécables comprises) retirés,
 // virgule décimale acceptée ; une ligne illisible est IGNORÉE, jamais une erreur.
@@ -20209,7 +20253,9 @@ function afClasser(patients, finances, nwDevis, refStr){
     // virgule décimale) ; un budget négatif ou illisible reste « — ».
     const bNet = afMontant(p.budget);
     const budget = (bNet!==null && bNet>=0) ? bNet : null;
-    const reste = budget!==null ? budget - encaisse : null;
+    // Lot « l'argent dit juste » : plus AUCUN reste calculé sur le budget — un
+    // budget est une intention, pas une créance. Le reste à régler vient de
+    // vue_argent.reste_du, lu par l'écran.
     // Ce qui manque — calculé, jamais saisi. Rien n'est inventé.
     const manques = [];
     if(!String(p.tel||"").trim()) manques.push("af.mTel");
@@ -20219,7 +20265,7 @@ function afClasser(patients, finances, nwDevis, refStr){
     if(p.stade==="Confirmé" && encaisse===0) manques.push("af.mEncaissement");
     if(dop!==null && !String(p.dateArrivee||"").trim()) manques.push("af.mArrivee");
     if(dop!==null && !String(p.medecin||"").trim()) manques.push("af.mChirurgien");
-    return { p, g, dop, jours, encaisse, horsEuro, budget, reste, manques };
+    return { p, g, dop, jours, encaisse, horsEuro, budget, manques };
   });
   // Tri : par date d'opération quand le groupe en a une, sinon par dernier
   // contact (la plus ancienne relance d'abord), le nom en départage.
@@ -20232,7 +20278,6 @@ function afClasser(patients, finances, nwDevis, refStr){
     lignes, parGroupe,
     alerte: lignes.filter(l=>l.g>=1&&l.g<=5).length,
     sansNumero: lignes.filter(l=>!String(l.p.tel||"").trim()).length,
-    sommeRestes14: Math.round(lignes.filter(l=>l.g>=1&&l.g<=4&&l.reste!==null).reduce((a,l)=>a+l.reste,0)*100)/100,
     // Convention maison (logIsUnset) : la sentinelle « Non renseigné » et toute
     // valeur inconnue comptent comme une ABSENCE d'information — le bandeau ne
     // s'éteint que devant une vraie donnée de séjour.
@@ -20243,17 +20288,35 @@ function afClasser(patients, finances, nwDevis, refStr){
 }
 const afFmtEur = (n)=> n===null||n===undefined ? "—" : (Math.round(n*100)/100).toLocaleString("fr-FR")+" €";
 
-function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, pret, onOpenPatient}){
+function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, argent, argentPret, pret, onOpenPatient}){
   const tt = t;
   const ref = todayStr();   // recalculé à chaque rendu : la date qui passe reclasse toute seule
   const R = afClasser(patients, finances, nwDevis, ref);
+  // ── L'argent dit juste : les montants contractuels viennent de vue_argent. ──
+  // Un budget est une INTENTION notée à l'accueil ; le reste à régler vient de
+  // devis_net − encaisse, et `null` a un sens : sans devis accepté, on ne sait
+  // pas ce qui est dû — on l'écrit, on ne retombe jamais sur le budget.
+  // Les colonnes sont déjà numériques (montant_num vit dans la vue) : Number()
+  // n'est qu'un cast de sécurité, pas un second parseur.
+  const arNum = (v)=>{ if(v===null||v===undefined) return null; const n=Number(v); return isFinite(n)?n:null; };
+  const arg = {}; (argent||[]).forEach(v=>{ if(v && v.id!=null) arg[String(v.id)]=v; });
+  const arResteTotal = (argent||[]).reduce((s,v)=>{ const r=arNum(v&&v.reste_du); return r!==null&&r>0 ? s+r : s; },0);
   const AF_COULEURS = {1:"#DC2626", 2:"#B45309", 3:"#D97706", 4:"#7C3AED", 5:"#1D73C9", 6:"#0891B2", 7:"#7B8BA5", 8:"#7B8BA5"};
   const quand = (l)=> l.jours===null ? "" : l.jours===0 ? tt("af.aujourdhui")
     : l.jours>0 ? tt("af.dansJours").replace("{n}", String(l.jours))
     : tt("af.ilYA").replace("{n}", String(-l.jours));
   const action = (l)=>{
     if(l.g>6) return null;
-    return tt("af.a"+l.g).replace("{reste}", afFmtEur(l.reste));
+    const gab = tt("af.a"+l.g);
+    if(gab.indexOf("{reste}")<0) return gab;
+    if(!argentPret) return null;   // pas de phrase d'action sur un montant pas encore lu
+    const a = arg[String(l.p.id)];
+    const rd = a ? arNum(a.reste_du) : null;
+    // Sans devis accepté, « vérifier que {reste} est encaissé » serait un
+    // mensonge grammaticalement correct : l'action devient « établir le
+    // contractuel d'abord ».
+    if(rd===null) return tt("ar.actionSansDevis");
+    return gab.replace("{reste}", afFmtEur(rd));
   };
   return (
     <div style={{paddingBottom:80,minWidth:0}}>
@@ -20285,9 +20348,77 @@ function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, pret
         </div>
         <div style={{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap",marginTop:10,fontSize:11.5,color:C.muted}}>
           <span><b style={{color:C.text}}>{R.sansNumero}</b> {tt("af.sansNumero")}</span>
-          <span><b style={{color:C.text}}>{afFmtEur(R.sommeRestes14)}</b> {tt("af.sommeRestes")}</span>
+          {/* Le total vient de vue_argent : somme des reste_du POSITIFS — un
+              solde négatif est une anomalie, pas une créance négative à déduire.
+              Rien n'est affirmé avant la lecture de la vue. */}
+          {argentPret && <span><b style={{color:C.text}}>{afFmtEur(arResteTotal)}</b> {tt("ar.sommeReste")}</span>}
         </div>
       </Card>
+
+      {/* ── L'ARGENT DIT JUSTE — deux groupes nourris par vue_argent. Un budget
+          est une intention ; seul un devis accepté est contractuel ; seul un
+          encaissement est un fait. Les trois ne s'additionnent jamais. ── */}
+      {(()=>{
+        const rows = (argent||[]);
+        const sansAcompte = rows
+          .filter(v=>v && String(v.anomalie||"").includes("devis accepté, pas un euro encaissé"))
+          .sort((x,y)=>(arNum(y.devis_net)||0)-(arNum(x.devis_net)||0) || String(x.nom||"").localeCompare(String(y.nom||"")));
+        const saSomme = sansAcompte.reduce((s,v)=>s+(arNum(v.devis_net)||0),0);
+        const confirmees = rows
+          .filter(v=>v && v.stade==="Confirmé" && v.devis_net==null)
+          .sort((x,y)=>(arNum(y.budget_declare)||0)-(arNum(x.budget_declare)||0) || String(x.nom||"").localeCompare(String(y.nom||"")));
+        const ligneArgent = (v, alarme)=>(
+          <Card key={v.id} onClick={onOpenPatient?()=>onOpenPatient(v.id):undefined}
+            style={{padding:"11px 13px",borderLeft:`3px solid ${alarme?C.gold:C.border}`,cursor:onOpenPatient?"pointer":"default"}}>
+            <div style={{display:"flex",alignItems:"baseline",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontWeight:800,fontSize:13.5,color:C.text,flex:1,minWidth:120,overflowWrap:"break-word"}}>{v.nom||"—"}</span>
+              {alarme ? (
+                <span style={{fontSize:11.5,color:C.muted}}>{tt("ar.devisAccepte")} <b style={{color:C.text,fontSize:12.5}}>{afFmtEur(arNum(v.devis_net))}</b></span>
+              ) : (
+                <span style={{fontSize:11.5,color:C.muted}}>{tt("ar.budgetAnnonce")} <b style={{color:C.text,fontSize:12.5}}>{afFmtEur(arNum(v.budget_declare))}</b></span>
+              )}
+            </div>
+            <div style={{display:"flex",gap:12,flexWrap:"wrap",marginTop:5,fontSize:11.5,color:C.muted}}>
+              <Badge text={stageLabel(v.stade)} color={SC[v.stade]||C.muted} small/>
+              {alarme
+                ? <span>{tt("af.encaisse")} <b style={{color:C.text}}>{afFmtEur(0)}</b></span>
+                : <span style={{fontStyle:"italic"}}>{tt("ar.aucunContractuel")}</span>}
+            </div>
+            {v.anomalie && <div style={{marginTop:5,fontSize:11,color:C.muted}}>{v.anomalie}</div>}
+          </Card>
+        );
+        return (
+          <React.Fragment>
+            <div style={{marginTop:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <span style={{fontSize:16}}>✍️</span>
+                <span style={{fontWeight:800,fontSize:14,color:C.gold}}>{tt("ar.sansAcompteTitre")}</span>
+                {argentPret && <Badge text={`${sansAcompte.length} · ${afFmtEur(saSomme)}`} color={C.gold} small/>}
+              </div>
+              <div style={{fontSize:11,color:C.muted,margin:"0 0 8px 24px"}}>{tt("ar.sansAcompteNote")}</div>
+              {!argentPret ? (
+                <Card><div style={{fontSize:13,color:C.muted}}>⏳ {tt("ar.chargement")}</div></Card>
+              ) : sansAcompte.length===0 ? (
+                <div style={{fontSize:11.5,color:C.muted,margin:"0 0 4px 24px"}}>{tt("af.vide")}</div>
+              ) : sansAcompte.map(v=>ligneArgent(v, true))}
+            </div>
+            <div style={{marginTop:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <span style={{fontSize:16}}>🗂️</span>
+                <span style={{fontWeight:800,fontSize:14,color:C.text}}>{tt("ar.confirmeesTitre")}</span>
+                {argentPret && <Badge text={String(confirmees.length)} color={C.muted} small/>}
+              </div>
+              {/* Pas d'alarme, pas de rouge : un manque de trace, pas un impayé. */}
+              <div style={{fontSize:11,color:C.muted,margin:"0 0 8px 24px"}}>{tt("ar.confirmeesNote")}</div>
+              {!argentPret ? (
+                <Card><div style={{fontSize:13,color:C.muted}}>⏳ {tt("ar.chargement")}</div></Card>
+              ) : confirmees.length===0 ? (
+                <div style={{fontSize:11.5,color:C.muted,margin:"0 0 4px 24px"}}>{tt("af.vide")}</div>
+              ) : confirmees.map(v=>ligneArgent(v, false))}
+            </div>
+          </React.Fragment>
+        );
+      })()}
 
       {/* ── LE GARDIEN — « s'il y a des étapes que j'oublie, l'IA me dira » ──
           Alimenté par vue_parcours (des PREUVES, pas des stades). Lecture seule,
@@ -20364,11 +20495,28 @@ function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, pret
                 {l.p.pays && <span>{l.p.pays}</span>}
                 {l.p.medecin && <span>🩺 {l.p.medecin}</span>}
               </div>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:6,fontSize:11.5}}>
-                <span style={{color:C.muted}}>{tt("af.convenu")} <b style={{color:C.text}}>{afFmtEur(l.budget)}</b></span>
-                <span style={{color:C.muted}}>{tt("af.encaisse")} <b style={{color:l.encaisse>0?C.green:C.text}}>{afFmtEur(l.encaisse)}</b></span>
-                <span style={{color:C.muted}}>{tt("af.reste")} <b style={{color:l.reste!==null&&l.reste>0.009?"#B45309":C.text}}>{afFmtEur(l.reste)}</b></span>
-              </div>
+              {/* Chaque montant porte son étiquette : trois mots de plus qui
+                  évitent une décision à 75 000 € près. Le reste vient de
+                  vue_argent (devis_net − encaisse) ; `null` = pas de devis
+                  accepté → on l'écrit, on ne retombe JAMAIS sur le budget. */}
+              {(()=>{ const a = argentPret ? arg[String(l.p.id)] : undefined;
+                const dn = a ? arNum(a.devis_net) : null;
+                const rd = a ? arNum(a.reste_du) : null;
+                return (
+                <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:6,fontSize:11.5}}>
+                  <span style={{color:C.muted}}>{tt("ar.budgetAnnonce")} <b style={{color:C.text}}>{afFmtEur(l.budget)}</b></span>
+                  {argentPret && (dn!==null
+                    ? <span style={{color:C.muted}}>{tt("ar.devisAccepte")} <b style={{color:C.text}}>{afFmtEur(dn)}</b></span>
+                    : <span style={{color:C.muted,fontStyle:"italic"}}>{tt("ar.pasDeDevis")}</span>)}
+                  <span style={{color:C.muted}}>{tt("af.encaisse")} <b style={{color:(a?arNum(a.encaisse):l.encaisse)>0?C.green:C.text}}>{afFmtEur(a ? (arNum(a.encaisse)||0) : l.encaisse)}</b></span>
+                  {argentPret && rd!==null && (
+                    <span style={{color:C.muted}}>{tt("ar.reste")} <b style={{color:rd>0.009?"#B45309":C.text}}>{afFmtEur(rd)}</b></span>
+                  )}
+                </div>
+                ); })()}
+              {argentPret && arg[String(l.p.id)] && arg[String(l.p.id)].anomalie && (
+                <div style={{marginTop:5,fontSize:11,color:C.muted}}>{arg[String(l.p.id)].anomalie}</div>
+              )}
               {(l.manques.length>0 || l.horsEuro) && (
                 <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:6}}>
                   {l.manques.map(m=><Badge key={m} text={tt(m)} color={C.red} small/>)}
@@ -20637,6 +20785,10 @@ function App() {
   const [parcoursVue,setParcoursVue] = useState(()=>cache.load("vue_parcours")||[]);
   const [parcoursLignes,setParcoursLignes] = useState(()=>cache.load("patient_parcours")||[]);
   const [parcoursPret,setParcoursPret] = useState(false);
+  // L'argent dit juste : vue_argent (lecture seule, security invoker) — budget
+  // annoncé / contractuel / encaissé / reste à régler, jamais additionnés.
+  const [argentVue,setArgentVue] = useState(()=>cache.load("vue_argent")||[]);
+  const [argentPret,setArgentPret] = useState(false);
   // Messages WhatsApp (wa_messages) — lecture seule + rattachement.
   const [waMessages,setWaMessages] = useState(()=>cache.load("wa_messages")||[]);
   const [waLiens,setWaLiens] = useState(()=>cache.load("wa_liens")||{});   // numero → patientId (survit à la fenêtre des 2000)
@@ -20849,6 +21001,25 @@ function App() {
     try{ await chargerParcours(); } finally { parcoursBusyRef.current = false; }
   };
 
+  // ── vue_argent : mêmes règles que le parcours — la vue vit côté serveur,
+  // on la RELIT à chaque passage sur « À faire », on ne la recalcule jamais.
+  const argentRef = React.useRef(false);
+  const argentBusyRef = React.useRef(false);
+  const chargerArgent = async () => {
+    try{
+      if(!sbClient) return false;
+      const { data, error } = await sbClient.from("vue_argent").select("*");
+      if(error) throw error;
+      if(Array.isArray(data)){ setArgentVue(data); cache.save("vue_argent", data); setArgentPret(true); argentRef.current = true; return true; }
+      return false;
+    }catch(e){ console.error("argent:", e); argentRef.current = false; return false; }
+  };
+  const ensureArgent = async () => {
+    if(argentBusyRef.current) return;
+    argentBusyRef.current = true;
+    try{ await chargerArgent(); } finally { argentBusyRef.current = false; }
+  };
+
   // loadAll(showLoad) : showLoad=true seulement pour "Synchroniser maintenant".
   // En arrière-plan (showLoad=false) l'écran reste sur le cache, mis à jour à l'arrivée des données.
   const loadAll = async (showLoad=true) => {
@@ -20874,6 +21045,7 @@ function App() {
       // Le parcours suit la règle des finances : une fois consulté dans la
       // session, « Synchroniser maintenant » le relit aussi.
       if(parcoursRef.current) await chargerParcours();
+      if(argentRef.current) await chargerArgent();
       await refreshPermissionsFromServer();   // rôles + overrides : serveur = source de vérité
       setPermVer(v=>v+1);
       if(failed===0){
@@ -21306,6 +21478,8 @@ function App() {
   useEffect(()=>{ if(user && (activeView==="caisse"||activeView==="fiche"||activeView==="afaire")) ensureCaisseRefs(); },[activeView, user]);
   // Le parcours : la fiche (bandeau) et « À faire » (le gardien).
   useEffect(()=>{ if(user && (activeView==="fiche"||activeView==="afaire")) ensureParcours(); },[activeView, user]);
+  // L'argent : « À faire » seulement — relu à chaque passage, comme le parcours.
+  useEffect(()=>{ if(user && activeView==="afaire") ensureArgent(); },[activeView, user]);
   // Messages : chargement à l'ouverture + rafraîchissement toutes les 60 s tant
   // que l'écran est affiché (pas de realtime dans l'application).
   useEffect(()=>{
@@ -21509,7 +21683,9 @@ function App() {
             // de l'écran : vue_parcours réduite aux fiches que vPatients montre.
             const pcIds = new Set(vPatients.map(p2=>String(p2.id)));
             const afParcours = (parcoursVue||[]).filter(v=>v && pcIds.has(String(v.id)));
-            return <AFaire user={userFull} patients={vPatients} finances={afFin} nwDevis={nwDevis} parcours={afParcours} parcoursPret={parcoursPret} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onOpenPatient={openPatientById}/>; })()}
+            // vue_argent respecte le même périmètre de visibilité que le reste.
+            const afArgent = (argentVue||[]).filter(v=>v && pcIds.has(String(v.id)));
+            return <AFaire user={userFull} patients={vPatients} finances={afFin} nwDevis={nwDevis} parcours={afParcours} parcoursPret={parcoursPret} argent={afArgent} argentPret={argentPret} pret={finLoadedRef.current&&!finLoading&&caisseRefsReady} onOpenPatient={openPatientById}/>; })()}
           {activeView==="hopitaux"&&<Hopitaux user={userFull} patients={patients} rdvs={rdvs} hopitaux={hopitaux} setHopitaux={setHopitaux} syncing={syncing} setSyncing={setSyncing}/>}
           {activeView==="equipe"&&<VueEquipe patients={patients} rdvs={rdvs} taches={taches} finances={finances}/>}
           {activeView==="medecins"&&<Medecins user={userFull} patients={patients} rdvs={rdvs} finances={finances} medecins={medecins} setMedecins={setMedecins}/>}
