@@ -1605,10 +1605,10 @@ const I18N = {
     "af.horsEuro": "entrées hors € non comptées",
     "pc.titre": "Parcours en 8 étapes",
     "pc.e1": "Savoir ce qu'elle demande",
-    "pc.e2": "Questionnaire et photos",
+    "pc.e2": "Questionnaire et PHOTOS",
     "pc.e3": "Orienter vers la bonne opération",
-    "pc.e4": "Proposer les opérations (devis)",
-    "pc.e5": "Envoyer des avant/après",
+    "pc.e4": "Envoyer des avant/après",
+    "pc.e5": "Le devis avec le package",
     "pc.e6": "Présenter le chirurgien",
     "pc.e7": "Obtenir des dates",
     "pc.e8": "L'acompte",
@@ -3012,10 +3012,10 @@ const I18N = {
     "af.horsEuro": "non-€ entries not counted",
     "pc.titre": "8-step journey",
     "pc.e1": "Know what she is asking for",
-    "pc.e2": "Questionnaire and photos",
+    "pc.e2": "Questionnaire and PHOTOS",
     "pc.e3": "Steer to the right operation",
-    "pc.e4": "Propose the operations (quote)",
-    "pc.e5": "Send before/after photos",
+    "pc.e4": "Send before/after photos",
+    "pc.e5": "The quote with the package",
     "pc.e6": "Introduce the surgeon",
     "pc.e7": "Get dates",
     "pc.e8": "The deposit",
@@ -4419,10 +4419,10 @@ const I18N = {
     "af.horsEuro": "€ dışı girişler sayılmadı",
     "pc.titre": "8 adımlı yolculuk",
     "pc.e1": "Ne istediğini öğren",
-    "pc.e2": "Anket ve fotoğraflar",
+    "pc.e2": "Anket ve FOTOĞRAFLAR",
     "pc.e3": "Doğru ameliyata yönlendir",
-    "pc.e4": "Ameliyatları öner (teklif)",
-    "pc.e5": "Öncesi/sonrası gönder",
+    "pc.e4": "Öncesi/sonrası gönder",
+    "pc.e5": "Paketiyle birlikte teklif",
     "pc.e6": "Cerrahı tanıt",
     "pc.e7": "Tarihleri al",
     "pc.e8": "Kapora",
@@ -5826,10 +5826,10 @@ const I18N = {
     "af.horsEuro": "entradas fuera de € no contadas",
     "pc.titre": "Recorrido en 8 etapas",
     "pc.e1": "Saber qué pide",
-    "pc.e2": "Cuestionario y fotos",
+    "pc.e2": "Cuestionario y FOTOS",
     "pc.e3": "Orientar hacia la operación correcta",
-    "pc.e4": "Proponer las operaciones (presupuesto)",
-    "pc.e5": "Enviar antes/después",
+    "pc.e4": "Enviar antes/después",
+    "pc.e5": "El presupuesto con el paquete",
     "pc.e6": "Presentar al cirujano",
     "pc.e7": "Obtener fechas",
     "pc.e8": "El anticipo",
@@ -20160,8 +20160,9 @@ function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, pret
 // LE PARCOURS EN 8 ÉTAPES — le chemin que Veys pratique avec chaque patiente.
 // La règle qui gouverne tout : un stade est une DÉCLARATION, une ligne dans une
 // table est une PREUVE — le parcours ne lit que des preuves (vue_parcours).
-//  · patient_parcours (étapes ②③⑤ uniquement) est en AJOUT SEUL : dételer une
-//    étape pose une ligne fait=false — on n'update jamais, on n'efface jamais.
+//  · patient_parcours (étapes ②③④ uniquement — règle du 01/09 : les avant/après
+//    passent AVANT le devis) est en AJOUT SEUL : dételer une étape pose une
+//    ligne fait=false — on n'update jamais, on n'efface jamais.
 //  · Les cinq autres étapes se prouvent dans patients, nw_devis et finances :
 //    leurs pastilles ne se cochent pas à la main — une pastille cochable à la
 //    main est une pastille qui mentira un jour.
@@ -20170,8 +20171,8 @@ function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, pret
 //    questionnaire, patientes payées comprises. La vue les sépare — l'écran aussi.
 // ══════════════════════════════════════════════════════════════════════════════
 const PC_RONDS = {1:"①",2:"②",3:"③",4:"④",5:"⑤",6:"⑥",7:"⑦",8:"⑧"};
-const PC_COCHABLES = [2,3,5];
-// La vérité d'une étape ②③⑤ : sa ligne la plus récente dans patient_parcours.
+const PC_COCHABLES = [2,3,4];
+// La vérité d'une étape ②③④ : sa ligne la plus récente dans patient_parcours.
 function pcDerniereLigne(lignes, pid, etape){
   let best=null;
   (lignes||[]).forEach(l=>{
@@ -20193,16 +20194,16 @@ function pcJourIstanbul(ts){
 // Une pastille qui ne sait pas dire pourquoi elle est verte ne sert à rien.
 function pcPreuve(n, p, vp, lignes, nwDevis, finances){
   if(n===1) return String(p.procedure||"");
-  if(n===2||n===3||n===5){
+  if(n===2||n===3||n===4){
     const l = pcDerniereLigne(lignes, p.id, n);
     if(!l) return "";
     const d = l.fait_le ? `${t("pc.faiteLe")} ${fmtJour(pcJourIstanbul(l.fait_le))}` : "";
     return [String(l.detail||"").trim(), d].filter(Boolean).join(" — ");
   }
-  if(n===4){
+  if(n===5){
     const dv = nwDevisOf(nwDevis, p.id);
     if(!dv) return "";
-    return `devis ${dv.numero||"NobelWorld"}${dv.date?` du ${fmtJour(dv.date)}`:""}${vp&&vp.e4_accepte?" — accepté":""}`;
+    return `devis ${dv.numero||"NobelWorld"}${dv.date?` du ${fmtJour(dv.date)}`:""}${vp&&vp.devis_accepte?" — accepté":""}`;
   }
   if(n===6) return String(p.medecin||"");
   if(n===7){
@@ -20398,7 +20399,7 @@ function App() {
   // « Jamais chargé » ≠ « chargé vide » : le verrou du budget et l'arrêté ne
   // doivent pas se décider sur une liste simplement pas encore arrivée.
   const [caisseRefsReady,setCaisseRefsReady] = useState(()=>!!cache.load("nw_devis"));
-  // Parcours en 8 étapes : la vue (preuves) et les lignes ②③⑤ (ajout seul).
+  // Parcours en 8 étapes : la vue (preuves) et les lignes ②③④ (ajout seul).
   const [parcoursVue,setParcoursVue] = useState(()=>cache.load("vue_parcours")||[]);
   const [parcoursLignes,setParcoursLignes] = useState(()=>cache.load("patient_parcours")||[]);
   const [parcoursPret,setParcoursPret] = useState(false);
@@ -20586,7 +20587,7 @@ function App() {
   };
 
   // ── Parcours : la vue se recalcule à chaque select — on la RELIT, on ne la
-  // recalcule jamais côté client. patient_parcours pour les preuves ②③⑤.
+  // recalcule jamais côté client. patient_parcours pour les preuves ②③④.
   const parcoursRef = React.useRef(false);
   const chargerParcours = async () => {
     try{
@@ -20899,7 +20900,7 @@ function App() {
   // une insertion — wa_messages n'a qu'un écrivain automatique par porte), pose
   // le numéro sur la fiche si elle n'en a pas, et journalise dans
   // patients.historique (heure d'Istanbul), comme toute écriture de dossier.
-  // ── Cocher / dételer une étape du parcours (②③⑤ seulement) ──
+  // ── Cocher / dételer une étape du parcours (②③④ seulement) ──
   // AJOUT SEUL dans patient_parcours (id et fait_le viennent des défauts de la
   // table — jamais d'update, jamais de delete) + entrée de journal ajoutée à la
   // FIN de patients.historique (heure d'Istanbul), comme toutes les autres.
