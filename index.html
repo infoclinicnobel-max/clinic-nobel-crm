@@ -187,7 +187,7 @@ if("serviceWorker" in navigator){
       les échecs transitoires de CDN, exactement le symptôme constaté) ;
    3) si le second essai échoue aussi → message d'erreur clair + bouton Recharger. */
 (function(){
-  window.__CRM_VERSION = "v7.8 — Copilote de réponse dans Messages (2026-09-01)";
+  window.__CRM_VERSION = "v7.9 — Nouvelles demandes avec pastille de comptage (2026-09-16)";
   /* SAS localStorage : toute clé applicative (cn_*) illisible en JSON est supprimée
      INDIVIDUELLEMENT avant le démarrage de React. Un stockage corrompu ne peut donc
      jamais empêcher le boot, et on ne perd que la clé abîmée — jamais tout. */
@@ -1581,6 +1581,24 @@ const I18N = {
     "wa.echecJournal": "La conversation est rattachée, mais le journal de la fiche n'a pas pu être vérifié — rouvrez la fiche pour contrôler.",
     "nav.afaire": "À faire",
     "title.afaire": "À faire",
+    "nav.demandes": "Nouvelles demandes",
+    "title.demandes": "Nouvelles demandes",
+    "dem.nonVues": "demandes non vues",
+    "dem.total": "{n} fiche(s) au stade « Nouveau »",
+    "dem.aide": "Chaque demande du formulaire du site arrive ici, la plus récente en premier. Un appui ouvre la fiche patiente et retire la demande du compteur ; elle reste dans cette liste tant que son stade vaut « Nouveau ».",
+    "dem.toutVu": "Tout marquer comme vu",
+    "dem.toutVuConfirm": "Marquer les {n} demande(s) non vue(s) comme vues ?\n\nLe stade des fiches ne change pas : seul le compteur repart de zéro.",
+    "dem.toutVuErreur": "Le marquage n'a pas pu être enregistré. Vérifiez la connexion et réessayez.",
+    "dem.vide": "Aucune demande au stade « Nouveau ».",
+    "dem.nouvelle": "Non vue",
+    "dem.recue": "Reçue le",
+    "dem.vueLe": "Vue le",
+    "dem.heureIstanbul": "heure d'Istanbul",
+    "dem.appeler": "Appeler",
+    "dem.whatsapp": "WhatsApp",
+    "dem.notes": "Demande transmise",
+    "dem.sansNotes": "Aucun détail transmis.",
+    "dem.bandeau": "{n} nouvelle(s) demande(s) non vue(s)",
     "af.alerte": "dossiers dans la file d'alerte",
     "af.g1": "Opère dans les 14 jours",
     "af.g2": "Opérée, dossier jamais clôturé",
@@ -3002,6 +3020,24 @@ const I18N = {
     "wa.echecJournal": "The conversation is linked, but the record's journal could not be verified — open the record to check.",
     "nav.afaire": "To do",
     "title.afaire": "To do",
+    "nav.demandes": "New requests",
+    "title.demandes": "New requests",
+    "dem.nonVues": "unseen requests",
+    "dem.total": "{n} record(s) at the “New” stage",
+    "dem.aide": "Every request from the website form lands here, newest first. Tapping opens the patient record and removes the request from the counter; it stays in this list as long as its stage is “New”.",
+    "dem.toutVu": "Mark all as seen",
+    "dem.toutVuConfirm": "Mark the {n} unseen request(s) as seen?\n\nThe records' stage does not change: only the counter resets to zero.",
+    "dem.toutVuErreur": "The marking could not be saved. Check the connection and try again.",
+    "dem.vide": "No request at the “New” stage.",
+    "dem.nouvelle": "Unseen",
+    "dem.recue": "Received on",
+    "dem.vueLe": "Seen on",
+    "dem.heureIstanbul": "Istanbul time",
+    "dem.appeler": "Call",
+    "dem.whatsapp": "WhatsApp",
+    "dem.notes": "Submitted request",
+    "dem.sansNotes": "No details submitted.",
+    "dem.bandeau": "{n} unseen new request(s)",
     "af.alerte": "files in the alert queue",
     "af.g1": "Operates within 14 days",
     "af.g2": "Operated, file never closed",
@@ -4423,6 +4459,24 @@ const I18N = {
     "wa.echecJournal": "Konuşma bağlandı ancak dosya günlüğü doğrulanamadı — kontrol için dosyayı açın.",
     "nav.afaire": "Yapılacaklar",
     "title.afaire": "Yapılacaklar",
+    "nav.demandes": "Yeni talepler",
+    "title.demandes": "Yeni talepler",
+    "dem.nonVues": "görülmemiş talep",
+    "dem.total": "“Yeni” aşamasında {n} dosya",
+    "dem.aide": "Web sitesi formundan gelen her talep buraya düşer, en yenisi en üstte. Dokunmak hasta dosyasını açar ve talebi sayaçtan düşer; aşaması “Yeni” kaldığı sürece bu listede kalır.",
+    "dem.toutVu": "Tümünü görüldü olarak işaretle",
+    "dem.toutVuConfirm": "Görülmemiş {n} talep görüldü olarak işaretlensin mi?\n\nDosyaların aşaması değişmez: yalnızca sayaç sıfırlanır.",
+    "dem.toutVuErreur": "İşaretleme kaydedilemedi. Bağlantıyı kontrol edip yeniden deneyin.",
+    "dem.vide": "“Yeni” aşamasında talep yok.",
+    "dem.nouvelle": "Görülmedi",
+    "dem.recue": "Alındı",
+    "dem.vueLe": "Görüldü",
+    "dem.heureIstanbul": "İstanbul saati",
+    "dem.appeler": "Ara",
+    "dem.whatsapp": "WhatsApp",
+    "dem.notes": "İletilen talep",
+    "dem.sansNotes": "Ayrıntı iletilmedi.",
+    "dem.bandeau": "{n} görülmemiş yeni talep",
     "af.alerte": "dosya uyarı kuyruğunda",
     "af.g1": "14 gün içinde ameliyat",
     "af.g2": "Ameliyat oldu, dosya hiç kapatılmadı",
@@ -5844,6 +5898,24 @@ const I18N = {
     "wa.echecJournal": "La conversación está vinculada, pero el registro de la ficha no pudo verificarse — abra la ficha para comprobar.",
     "nav.afaire": "Pendientes",
     "title.afaire": "Pendientes",
+    "nav.demandes": "Nuevas solicitudes",
+    "title.demandes": "Nuevas solicitudes",
+    "dem.nonVues": "solicitudes no vistas",
+    "dem.total": "{n} ficha(s) en la etapa «Nuevo»",
+    "dem.aide": "Cada solicitud del formulario del sitio llega aquí, la más reciente primero. Un toque abre la ficha de la paciente y retira la solicitud del contador; permanece en esta lista mientras su etapa sea «Nuevo».",
+    "dem.toutVu": "Marcar todo como visto",
+    "dem.toutVuConfirm": "¿Marcar las {n} solicitud(es) no vista(s) como vistas?\n\nLa etapa de las fichas no cambia: solo el contador vuelve a cero.",
+    "dem.toutVuErreur": "No se pudo guardar la marca. Compruebe la conexión e inténtelo de nuevo.",
+    "dem.vide": "Ninguna solicitud en la etapa «Nuevo».",
+    "dem.nouvelle": "No vista",
+    "dem.recue": "Recibida el",
+    "dem.vueLe": "Vista el",
+    "dem.heureIstanbul": "hora de Estambul",
+    "dem.appeler": "Llamar",
+    "dem.whatsapp": "WhatsApp",
+    "dem.notes": "Solicitud transmitida",
+    "dem.sansNotes": "Sin detalles transmitidos.",
+    "dem.bandeau": "{n} nueva(s) solicitud(es) no vista(s)",
     "af.alerte": "expedientes en la cola de alerta",
     "af.g1": "Se opera en 14 días",
     "af.g2": "Operada, expediente nunca cerrado",
@@ -6375,7 +6447,7 @@ function effPermsObj(user){
 // Ces règles priment sur toute permission cochée par erreur dans la matrice RBAC.
 const isSurgeon = (u) => u?.role === "chirurgien";
 const canViewSensitivePatientData = (u) => !isSurgeon(u);
-const SURGEON_BLOCKED_MODULES = ["finances","financesAdmin","commissions","caisse","messages","afaire","analyses","utilisateurs","equipe","messagerie","ventes","devis","factures","paiements"];
+const SURGEON_BLOCKED_MODULES = ["finances","financesAdmin","commissions","caisse","messages","afaire","demandes","analyses","utilisateurs","equipe","messagerie","ventes","devis","factures","paiements"];
 
 // ═══ PERMISSION INDÉPENDANTE « ACCÈS FINANCES ADMINISTRATEUR » ═══════════════
 // Donne accès aux onglets sensibles (Finances Administrateur, Paiements
@@ -6432,6 +6504,17 @@ function hasAFaire(user){
   if(can(user,"finances","view")) return true;
   const p = effPermsObj(user);
   return !!(p.afaire && p.afaire.view);
+}
+
+// ═══ ACCÈS « NOUVELLES DEMANDES » (16/09/2026) ═══════════════════════════════
+// L'écran affiche des attentes médicales (le bloc notes du formulaire du site).
+// Il suit EXACTEMENT les droits de la liste des patients : rien de nouveau, rien
+// de plus permissif. Chirurgien : jamais (comme onSelect de la liste et la RLS
+// patients_staff) ; sinon la permission patients.view, celle de la liste.
+function hasDemandes(user){
+  if(!user) return false;
+  if(isSurgeon(user)) return false;
+  return can(user,"patients","view");
 }
 
 // ═══ PERMISSION INDÉPENDANTE « COMMISSIONS » (A1) ════════════════════════════
@@ -9196,7 +9279,7 @@ function ModalEditTache({user, tache, patients, rdvs, hopitauxNames, onSave, onC
   );
 }
 
-function Patients({user, patients, onSelect, onAdd, onDelete}) {
+function Patients({user, patients, onSelect, onAdd, onDelete, demandesNonVues, onDemandes}) {
   const tt = t; // alias sûr : évite toute collision avec variables locales "t"
   const [q,setQ] = useState("");
   const [fs,setFs] = useState("Tous");
@@ -9207,6 +9290,14 @@ function Patients({user, patients, onSelect, onAdd, onDelete}) {
   });
   return (
     <div>
+      {/* Bandeau vers « Nouvelles demandes » — là où mène la pastille de la barre du bas */}
+      {onDemandes&&demandesNonVues>0&&(
+        <button onClick={onDemandes} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"11px 14px",marginBottom:12,border:`1px solid ${C.red}44`,borderRadius:12,background:C.red+"10",color:C.text,cursor:"pointer",textAlign:"left",fontSize:13,fontWeight:700}}>
+          <span style={{fontSize:18}}>📥</span>
+          <span style={{flex:1,minWidth:0}}>{tt("dem.bandeau").replace("{n}", String(demandesNonVues))}</span>
+          <span style={{color:C.red,fontWeight:800}}>›</span>
+        </button>
+      )}
       <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
         <input style={{flex:1,minWidth:140,padding:"9px 14px",border:`1px solid ${C.border}`,borderRadius:10,fontSize:13,outline:"none",background:C.white}} placeholder={tt("patient.search")} value={q} onChange={e=>setQ(e.target.value)}/>
         <select style={sel} value={fs} onChange={e=>setFs(e.target.value)}>
@@ -20243,6 +20334,89 @@ function afClasser(patients, finances, nwDevis, refStr){
 }
 const afFmtEur = (n)=> n===null||n===undefined ? "—" : (Math.round(n*100)/100).toLocaleString("fr-FR")+" €";
 
+// ══════════════════════════════════════════════════════════════════════════════
+// NOUVELLES DEMANDES (16/09/2026) — rendre visible ce qui est déjà en base.
+// Les demandes du formulaire du site arrivent déjà dans `patients` (creePar =
+// 'site-web', stade = 'Nouveau', assigneA = 'veys'). Cet écran ne lit que ce
+// tableau, déjà chargé et déjà réduit par scopeArray ; il n'écrit que `vu_le`,
+// par l'appelant (marquerDemandeVue / toutMarquerVu). Aucune messagerie.
+// Tri sur created_at (timestamptz) — jamais sur `cree`, colonne texte.
+// ══════════════════════════════════════════════════════════════════════════════
+function NouvellesDemandes({user, patients, onOuvrir, onToutVu}){
+  const tt = t;
+  const liste = (patients||[]).filter(p=>p && p.stade==="Nouveau")
+    .sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+  const nonVues = liste.filter(p=>!p.vu_le);
+  const stop = e=>e.stopPropagation();
+  const quand = (ts)=> ts ? `${waFmtJour(ts)} · ${waFmtHeure(ts)}` : "—";
+  const lien = (href, ic, label, color, externe) => (
+    <a data-stop href={href} onClick={stop} target={externe?"_blank":undefined} rel={externe?"noopener":undefined}
+      style={{display:"inline-flex",alignItems:"center",gap:5,padding:"8px 12px",borderRadius:10,background:color+"14",color,fontWeight:800,fontSize:12.5,textDecoration:"none",border:`1px solid ${color}33`,minHeight:38,boxSizing:"border-box",whiteSpace:"nowrap"}}>
+      {ic} {label}
+    </a>
+  );
+  return (
+    <div style={{paddingBottom:80,minWidth:0}}>
+      <Card style={{padding:"16px 14px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <div style={{fontSize:40,fontWeight:900,color:nonVues.length?C.red:C.green,lineHeight:1,minWidth:44,textAlign:"center"}}>{nonVues.length}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13.5,fontWeight:800,color:C.text}}>{tt("dem.nonVues")}</div>
+            <div style={{fontSize:12,color:C.muted,marginTop:2}}>{tt("dem.total").replace("{n}", String(liste.length))}</div>
+          </div>
+        </div>
+        {nonVues.length>0 && onToutVu && (
+          <button onClick={()=>onToutVu(nonVues.map(p=>p.id))} style={{marginTop:12,width:"100%",padding:"12px",border:`1px solid ${C.border}`,borderRadius:12,background:C.bg,color:C.navy,fontWeight:800,fontSize:13,cursor:"pointer"}}>
+            ✅ {tt("dem.toutVu")}
+          </button>
+        )}
+        <div style={{fontSize:11,color:C.muted,marginTop:10,lineHeight:1.5}}>{tt("dem.aide")}</div>
+      </Card>
+
+      {liste.length===0 && <div style={{textAlign:"center",padding:40,color:C.muted,fontSize:14}}>{tt("dem.vide")}</div>}
+
+      {liste.map(p=>{
+        const vue = !!p.vu_le;
+        const notes = String(p.notes||"").trim();
+        return (
+          <Card key={p.id} onClick={()=>onOuvrir(p)} style={{padding:"13px 14px",borderLeft:`4px solid ${vue?C.border:C.red}`,background:vue?C.white:"#FFFBFB"}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+              <Avatar p={p} size={40}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                  <span style={{fontWeight:800,fontSize:14.5,color:C.text,overflowWrap:"anywhere"}}>{p.prenom} {p.nom}</span>
+                  {!vue && <Badge text={tt("dem.nouvelle")} color={C.red} small/>}
+                </div>
+                <div style={{fontSize:13,fontWeight:700,color:C.navy,marginTop:3,overflowWrap:"anywhere"}}>{p.procedure||"—"}</div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:6}}>
+                  {p.source && <Badge text={sourceLabel(p.source)} color={C.blue} small/>}
+                  {p.pays && <Badge text={`📍 ${p.pays}`} color={C.muted} small/>}
+                </div>
+                <div style={{fontSize:11.5,color:C.muted,marginTop:6}}>🕐 {tt("dem.recue")} {quand(p.created_at)} <span style={{opacity:0.75}}>({tt("dem.heureIstanbul")})</span></div>
+                {vue && <div style={{fontSize:11,color:C.muted,marginTop:2}}>👁 {tt("dem.vueLe")} {quand(p.vu_le)}</div>}
+              </div>
+            </div>
+            {(p.tel||p.email) && (
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:10}}>
+                {p.tel && lien(telLink(p.tel),"📞",tt("dem.appeler"),C.green,false)}
+                {p.tel && lien(waLink(p.tel),"💬",tt("dem.whatsapp"),"#128C7E",true)}
+                {p.email && lien(`mailto:${p.email}`,"📧",tt("patient.email"),C.blue,false)}
+              </div>
+            )}
+            {(p.tel||p.email) && (
+              <div style={{fontSize:11.5,color:C.muted,marginTop:6,overflowWrap:"anywhere"}}>{p.tel}{p.tel&&p.email?" · ":""}{p.email}</div>
+            )}
+            <div style={{marginTop:10,background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 11px"}}>
+              <div style={{fontSize:10.5,fontWeight:800,color:C.muted,textTransform:"uppercase",letterSpacing:"0.04em",marginBottom:4}}>{tt("dem.notes")}</div>
+              <div style={{fontSize:12.5,color:C.text,whiteSpace:"pre-wrap",overflowWrap:"anywhere",lineHeight:1.5}}>{notes||tt("dem.sansNotes")}</div>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
 function AFaire({user, patients, finances, nwDevis, parcours, parcoursPret, pret, onOpenPatient}){
   const tt = t;
   const ref = todayStr();   // recalculé à chaque rendu : la date qui passe reclasse toute seule
@@ -21074,6 +21248,49 @@ function App() {
     if(p){ setSelected(p); setView("patients"); setModal(null); }
     else alert("Fiche patient introuvable.");
   };
+  // ── Nouvelles demandes : le marqueur « vu » ────────────────────────────────
+  // UPDATE seulement, sur la seule colonne vu_le (règle permanente du CRM :
+  // jamais d'INSERT ni de DELETE sur patients depuis l'application). Posé UNE
+  // fois : une fiche déjà vue n'est pas réécrite, la pastille ne bouge donc
+  // qu'une seule fois par fiche. Le stade n'est jamais touché.
+  const marquerDemandeVue = async (pid) => {
+    const p = patients.find(x=>String(x.id)===String(pid));
+    if(!p || p.vu_le) return;
+    const vu_le = new Date().toISOString();
+    setPatients(ps=>{ const np=ps.map(x=>String(x.id)===String(pid)?{...x, vu_le}:x); cache.save("patients", np); return np; });
+    await syncPost("patients","update",{ id:p.id, vu_le });
+  };
+  const ouvrirDemande = (p) => { if(!p) return; marquerDemandeVue(p.id); openPatientById(p.id); };
+  // « Tout marquer comme vu » : solde le retard existant, à la demande de
+  // l'utilisateur seulement (confirmation), sur les fiches qu'il voit dans la
+  // liste (ids explicites), et uniquement celles encore non vues (is null).
+  const toutMarquerVu = async (ids) => {
+    const liste = (ids||[]).map(String).filter(Boolean);
+    if(!liste.length) return;
+    if(!window.confirm(t("dem.toutVuConfirm").replace("{n}", String(liste.length)))) return;
+    const vu_le = new Date().toISOString();
+    setSyncing(true); setSaveStatus("saving");
+    try{
+      if(!sbClient) throw new Error("supabase indisponible");
+      const { data, error } = await sbClient.from("patients").update({ vu_le }).in("id", liste).is("vu_le", null).select("id");
+      if(error) throw error;
+      const faits = new Set((data||[]).map(r=>String(r.id)));
+      if(faits.size){
+        setPatients(ps=>{ const np=ps.map(x=>faits.has(String(x.id))?{...x, vu_le}:x); cache.save("patients", np); return np; });
+      }
+      setSaveStatus("saved");
+    }catch(e){
+      console.error("toutMarquerVu:", e);
+      try{
+        const log = JSON.parse(localStorage.getItem("cnsb_sync_errors")||"[]");
+        log.push({ t:new Date().toISOString().slice(0,19).replace("T"," "), type:"patients", err:("vu_le tout : "+String(e&&e.message||e)).slice(0,80) });
+        localStorage.setItem("cnsb_sync_errors", JSON.stringify(log.slice(-20)));
+      }catch(x){}
+      setSaveStatus("unsaved");
+      alert(t("dem.toutVuErreur"));
+    }
+    setSyncing(false);
+  };
   const saveFinance = async (f) => {
     if(!f.montant) { alert(t("finance.amountRequired")); return; }
     // Lot 73 : sens + lieu + devise posés dès la création (les écrans caisse les
@@ -21246,10 +21463,17 @@ function App() {
   };
 
   const navUser = USERS.find(u2=>u2.id===user?.id)||user;
+  // Pastille « Nouvelles demandes » : fiches au stade « Nouveau » ET jamais
+  // ouvertes depuis la rubrique (vu_le vide), dans le périmètre que l'utilisateur
+  // voit (même scopeArray que la liste des patients). Équivalent SQL pour un
+  // administrateur : select count(*) from patients where stade='Nouveau' and vu_le is null.
+  const demandesNonVues = (user && navUser && hasDemandes(navUser))
+    ? scopeArray(patients, navUser, "patients").filter(p=>p && p.stade==="Nouveau" && !p.vu_le).length : 0;
   const NAV_ITEMS = [
     {id:"dashboard",label:t("nav.dashboard"),icon:"🏠"},
     {id:"equipe",label:t("nav.equipe"),icon:"👁️"},
     {id:"patients",label:t("nav.patients"),icon:"👥"},
+    {id:"demandes",label:t("nav.demandes"),icon:"📥",badge:demandesNonVues},
     {id:"rdvs",label:t("nav.rdvs"),icon:"📅"},
     {id:"taches",label:t("nav.taches"),icon:"✅"},
     {id:"agenda",label:t("nav.agenda"),icon:"🗓️"},
@@ -21265,7 +21489,7 @@ function App() {
     {id:"medecins",label:t("nav.medecins"),icon:"🩺"},
     {id:"utilisateurs",label:t("nav.utilisateurs"),icon:"🔐"},
     {id:"knowledge-graph",label:t("kg.title"),icon:"🕸"},
-  ].filter(n=> n.id==="dashboard" || (n.id==="knowledge-graph" ? (navUser && aiCan(navUser,"ai_admin")) : n.id==="caisse" ? (navUser && hasCaisse(navUser)) : n.id==="messages" ? (navUser && hasMessages(navUser)) : n.id==="afaire" ? (navUser && hasAFaire(navUser)) : (navUser && can(navUser, n.id, "view"))));
+  ].filter(n=> n.id==="dashboard" || (n.id==="knowledge-graph" ? (navUser && aiCan(navUser,"ai_admin")) : n.id==="caisse" ? (navUser && hasCaisse(navUser)) : n.id==="messages" ? (navUser && hasMessages(navUser)) : n.id==="afaire" ? (navUser && hasAFaire(navUser)) : n.id==="demandes" ? (navUser && hasDemandes(navUser)) : (navUser && can(navUser, n.id, "view"))));
 
   const goTo = v => { setView(v); setSelected(null); setMenuOpen(false); };
   const logout = () => {
@@ -21315,7 +21539,7 @@ function App() {
       return ()=>clearInterval(iv);
     }
   },[activeView, user]);
-  const TITLES = {dashboard:t("title.dashboard"),equipe:t("title.equipe")+" — Veys Turan "+t("role.pdg"),patients:t("title.patients"),rdvs:t("title.rdvs"),taches:t("title.taches"),agenda:t("title.agenda"),analyses:t("title.analyses"),finances:t("title.finances"),caisse:t("title.caisse"),messages:t("title.messages"),afaire:t("title.afaire"),hopitaux:t("title.hopitaux"),medecins:t("title.medecins"),messagerie:t("title.messagerie"),notifications:t("title.notifications"),recherche:t("title.recherche"),utilisateurs:t("title.utilisateurs"),devis:t("devis.title")};
+  const TITLES = {dashboard:t("title.dashboard"),equipe:t("title.equipe")+" — Veys Turan "+t("role.pdg"),patients:t("title.patients"),rdvs:t("title.rdvs"),taches:t("title.taches"),agenda:t("title.agenda"),analyses:t("title.analyses"),finances:t("title.finances"),caisse:t("title.caisse"),messages:t("title.messages"),afaire:t("title.afaire"),demandes:t("title.demandes"),hopitaux:t("title.hopitaux"),medecins:t("title.medecins"),messagerie:t("title.messagerie"),notifications:t("title.notifications"),recherche:t("title.recherche"),utilisateurs:t("title.utilisateurs"),devis:t("devis.title")};
 
   // Prioritaire sur l'écran de connexion : on arrive ici avec une session ouverte
   // par le lien de récupération, mais l'ancien mot de passe est encore actif.
@@ -21350,7 +21574,7 @@ function App() {
 
   // ── Garde d'accès aux vues ──
   const viewKey = activeView==="fiche" ? "patients" : activeView;
-  const viewAllowed = activeView==="dashboard" || (activeView==="knowledge-graph" && aiCan(userFull,"ai_admin")) || (activeView==="caisse" ? hasCaisse(userFull) : activeView==="messages" ? hasMessages(userFull) : activeView==="afaire" ? hasAFaire(userFull) : can(userFull, viewKey, "view"));
+  const viewAllowed = activeView==="dashboard" || (activeView==="knowledge-graph" && aiCan(userFull,"ai_admin")) || (activeView==="caisse" ? hasCaisse(userFull) : activeView==="messages" ? hasMessages(userFull) : activeView==="afaire" ? hasAFaire(userFull) : activeView==="demandes" ? hasDemandes(userFull) : can(userFull, viewKey, "view"));
   const AccessDenied = () => (
     <div style={{textAlign:"center",padding:"60px 20px",color:C.muted}}>
       <div style={{fontSize:42,marginBottom:12}}>🔒</div>
@@ -21436,7 +21660,8 @@ function App() {
               <button key={item.id} onClick={()=>goTo(item.id)} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"13px 14px",borderRadius:12,border:"none",cursor:"pointer",marginBottom:4,textAlign:"left",fontSize:14,background:isActive?userFull.color+"18":"transparent",color:isActive?userFull.color:C.text,fontWeight:isActive?700:500,transition:"all 0.15s"}}>
                 <span style={{fontSize:20,width:28,textAlign:"center"}}>{item.icon}</span>
                 <span>{item.label}</span>
-                {isActive&&<div style={{marginLeft:"auto",width:6,height:6,borderRadius:99,background:userFull.color}}/>}
+                {item.badge>0&&<span style={{marginLeft:"auto",minWidth:22,height:22,padding:"0 7px",borderRadius:99,background:C.red,color:C.white,fontSize:12,fontWeight:800,display:"inline-flex",alignItems:"center",justifyContent:"center",boxSizing:"border-box",flexShrink:0}}>{item.badge>99?"99+":item.badge}</span>}
+                {isActive&&<div style={{marginLeft:item.badge>0?8:"auto",width:6,height:6,borderRadius:99,background:userFull.color,flexShrink:0}}/>}
               </button>
             );
           })}
@@ -21485,7 +21710,10 @@ function App() {
         {loading?<Spinner text={t("common.loadingSheets")}/>:!viewAllowed?<AccessDenied/>:<ErrorBoundary key={activeView}>
           {activeView==="dashboard"&&<DashboardPersonnel user={userFull} patients={vPatients} rdvs={vRdvs} taches={vTaches} finances={vFinances} financesLoaded={finLoadedRef.current&&!finLoading} onOpenPatient={openPatientById}/>}
           {activeView==="knowledge-graph"&&<KnowledgeGraphAdmin user={userFull}/>}
-          {activeView==="patients"&&<Patients user={userFull} patients={vPatients} onSelect={p=>{ if(isSurgeon(userFull)) return; setSelected(p); }} onAdd={()=>setModal({type:"patient"})} onDelete={deletePatient}/>}
+          {activeView==="patients"&&<Patients user={userFull} patients={vPatients} onSelect={p=>{ if(isSurgeon(userFull)) return; setSelected(p); }} onAdd={()=>setModal({type:"patient"})} onDelete={deletePatient} demandesNonVues={demandesNonVues} onDemandes={hasDemandes(userFull)?()=>goTo("demandes"):undefined}/>}
+          {/* Nouvelles demandes : mêmes fiches, même périmètre (vPatients) que la
+              liste des patients ; ouvre la fiche existante. Accès = hasDemandes. */}
+          {activeView==="demandes"&&hasDemandes(userFull)&&<NouvellesDemandes user={userFull} patients={vPatients} onOuvrir={ouvrirDemande} onToutVu={toutMarquerVu}/>}
           {activeView==="fiche"&&selected&&<FichePatient user={userFull} patient={selected} patients={vPatients} rdvs={vRdvs} finances={vFinances} taches={vTaches} nwDevis={nwDevis} parcoursVue={parcoursVue} parcoursLignes={parcoursLignes} parcoursPret={parcoursPret} onCocherParcours={cocherParcours} onEdit={()=>setModal({type:"patient",data:selected})} onDelete={()=>deletePatient(selected.id)} onStageChange={changeStage} onBack={goBack} onSavePatient={savePatient} onUpdateRdv={updateRdv}/>}
           {activeView==="rdvs"&&<Rdvs user={userFull} rdvs={vRdvs} patients={vPatients} taches={vTaches} finances={vFinances} setRdvs={setRdvs} setTaches={setTaches} onAdd={()=>setModal({type:"rdv"})} onDelete={deleteRdv} onEdit={(r)=>setModal({type:"rdv",data:r})} onUpdate={(r)=>setModal({type:"rdv",data:r})} onOpenPatient={openPatientById}/>}
           {activeView==="taches"&&<Taches user={userFull} taches={vTaches} setTaches={setTaches} patients={vPatients} rdvs={vRdvs} hopitaux={hopitaux} syncing={syncing} setSyncing={setSyncing}/>}
@@ -21574,8 +21802,11 @@ function App() {
           const isActive = view===item.id||(item.id==="patients"&&activeView==="fiche");
           return (
             <button key={item.id} onClick={()=>goTo(item.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,border:"none",background:"none",cursor:"pointer",padding:"4px 8px",flex:1,minWidth:0}}>
-              <div style={{width:36,height:36,borderRadius:12,background:isActive?userFull.color+"18":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,transition:"all 0.15s"}}>
+              <div style={{width:36,height:36,borderRadius:12,background:isActive?userFull.color+"18":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,transition:"all 0.15s",position:"relative"}}>
                 {item.icon}
+                {/* Pastille des nouvelles demandes, portée par l'onglet Patients
+                    (la barre du bas garde ses six onglets) */}
+                {item.id==="patients"&&demandesNonVues>0&&<span style={{position:"absolute",top:-3,right:-6,minWidth:18,height:18,padding:"0 5px",borderRadius:99,background:C.red,color:C.white,fontSize:10.5,fontWeight:800,display:"inline-flex",alignItems:"center",justifyContent:"center",boxSizing:"border-box",border:`2px solid ${C.white}`,lineHeight:1}}>{demandesNonVues>99?"99+":demandesNonVues}</span>}
               </div>
               <span style={{fontSize:9,fontWeight:isActive?700:500,color:isActive?userFull.color:C.muted,letterSpacing:"0.02em"}}>{item.label}</span>
             </button>
