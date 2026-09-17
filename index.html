@@ -187,7 +187,7 @@ if("serviceWorker" in navigator){
       les échecs transitoires de CDN, exactement le symptôme constaté) ;
    3) si le second essai échoue aussi → message d'erreur clair + bouton Recharger. */
 (function(){
-  window.__CRM_VERSION = "v7.9 — Nouvelles demandes avec pastille de comptage (2026-09-16)";
+  window.__CRM_VERSION = "v7.10 — WhatsApp Business ciblé, contacter = vu (2026-09-17)";
   /* SAS localStorage : toute clé applicative (cn_*) illisible en JSON est supprimée
      INDIVIDUELLEMENT avant le démarrage de React. Un stockage corrompu ne peut donc
      jamais empêcher le boot, et on ne perd que la clé abîmée — jamais tout. */
@@ -1585,7 +1585,11 @@ const I18N = {
     "title.demandes": "Nouvelles demandes",
     "dem.nonVues": "demandes non vues",
     "dem.total": "{n} fiche(s) au stade « Nouveau »",
-    "dem.aide": "Chaque demande du formulaire du site arrive ici, la plus récente en premier. Un appui ouvre la fiche patiente et retire la demande du compteur ; elle reste dans cette liste tant que son stade vaut « Nouveau ».",
+    "dem.aide": "Chaque demande du formulaire du site arrive ici, la plus récente en premier. Ouvrir la fiche, appeler, écrire sur WhatsApp ou par e-mail retire la demande du compteur ; elle reste dans cette liste tant que son stade vaut « Nouveau ».",
+    "dem.waApp": "Ouvrir WhatsApp dans…",
+    "dem.waBusiness": "WhatsApp Business",
+    "dem.waClassique": "WhatsApp",
+    "dem.waDemander": "Demander à chaque fois",
     "dem.toutVu": "Tout marquer comme vu",
     "dem.toutVuConfirm": "Marquer les {n} demande(s) non vue(s) comme vues ?\n\nLe stade des fiches ne change pas : seul le compteur repart de zéro.",
     "dem.toutVuErreur": "Le marquage n'a pas pu être enregistré. Vérifiez la connexion et réessayez.",
@@ -3024,7 +3028,11 @@ const I18N = {
     "title.demandes": "New requests",
     "dem.nonVues": "unseen requests",
     "dem.total": "{n} record(s) at the “New” stage",
-    "dem.aide": "Every request from the website form lands here, newest first. Tapping opens the patient record and removes the request from the counter; it stays in this list as long as its stage is “New”.",
+    "dem.aide": "Every request from the website form lands here, newest first. Opening the record, calling, writing on WhatsApp or by e-mail removes the request from the counter; it stays in this list as long as its stage is “New”.",
+    "dem.waApp": "Open WhatsApp in…",
+    "dem.waBusiness": "WhatsApp Business",
+    "dem.waClassique": "WhatsApp",
+    "dem.waDemander": "Ask every time",
     "dem.toutVu": "Mark all as seen",
     "dem.toutVuConfirm": "Mark the {n} unseen request(s) as seen?\n\nThe records' stage does not change: only the counter resets to zero.",
     "dem.toutVuErreur": "The marking could not be saved. Check the connection and try again.",
@@ -4463,7 +4471,11 @@ const I18N = {
     "title.demandes": "Yeni talepler",
     "dem.nonVues": "görülmemiş talep",
     "dem.total": "“Yeni” aşamasında {n} dosya",
-    "dem.aide": "Web sitesi formundan gelen her talep buraya düşer, en yenisi en üstte. Dokunmak hasta dosyasını açar ve talebi sayaçtan düşer; aşaması “Yeni” kaldığı sürece bu listede kalır.",
+    "dem.aide": "Web sitesi formundan gelen her talep buraya düşer, en yenisi en üstte. Dosyayı açmak, aramak, WhatsApp'tan veya e-postayla yazmak talebi sayaçtan düşer; aşaması “Yeni” kaldığı sürece bu listede kalır.",
+    "dem.waApp": "WhatsApp'ı şurada aç…",
+    "dem.waBusiness": "WhatsApp Business",
+    "dem.waClassique": "WhatsApp",
+    "dem.waDemander": "Her seferinde sor",
     "dem.toutVu": "Tümünü görüldü olarak işaretle",
     "dem.toutVuConfirm": "Görülmemiş {n} talep görüldü olarak işaretlensin mi?\n\nDosyaların aşaması değişmez: yalnızca sayaç sıfırlanır.",
     "dem.toutVuErreur": "İşaretleme kaydedilemedi. Bağlantıyı kontrol edip yeniden deneyin.",
@@ -5902,7 +5914,11 @@ const I18N = {
     "title.demandes": "Nuevas solicitudes",
     "dem.nonVues": "solicitudes no vistas",
     "dem.total": "{n} ficha(s) en la etapa «Nuevo»",
-    "dem.aide": "Cada solicitud del formulario del sitio llega aquí, la más reciente primero. Un toque abre la ficha de la paciente y retira la solicitud del contador; permanece en esta lista mientras su etapa sea «Nuevo».",
+    "dem.aide": "Cada solicitud del formulario del sitio llega aquí, la más reciente primero. Abrir la ficha, llamar, escribir por WhatsApp o por correo retira la solicitud del contador; permanece en esta lista mientras su etapa sea «Nuevo».",
+    "dem.waApp": "Abrir WhatsApp en…",
+    "dem.waBusiness": "WhatsApp Business",
+    "dem.waClassique": "WhatsApp",
+    "dem.waDemander": "Preguntar cada vez",
     "dem.toutVu": "Marcar todo como visto",
     "dem.toutVuConfirm": "¿Marcar las {n} solicitud(es) no vista(s) como vistas?\n\nLa etapa de las fichas no cambia: solo el contador vuelve a cero.",
     "dem.toutVuErreur": "No se pudo guardar la marca. Compruebe la conexión e inténtelo de nuevo.",
@@ -7164,7 +7180,34 @@ const buildHistGeneric = (oldR, newR, user, labels) => {
   return entries.length ? JSON.stringify([...prev, ...entries]) : (oldR.historique || JSON.stringify(prev));
 };
 const pad2 = n => String(n).padStart(2,"0");
-const waLink  = (tel,msg) => `https://wa.me/${String(tel||"").replace(/\D/g,"")}${msg?`?text=${encodeURIComponent(msg)}`:""}`;
+// ── Ouvrir WhatsApp dans… (17/09/2026) ───────────────────────────────────────
+// Un lien wa.me est réclamé par WhatsApp ET WhatsApp Business : Android sert
+// l'application associée par défaut, donc parfois le numéro personnel. Sur
+// Android, on désigne explicitement le paquet par un lien intent:// avec repli
+// wa.me si le paquet est absent. Hors Android (iPhone, ordinateur), lien wa.me
+// inchangé : le schéma intent:// n'y existe pas.
+// Réglage PAR UTILISATEUR (clé cnsb_cfg_wa_app_<id>, localStorage sans
+// expiration) : "business" (défaut), "classique", "demander" (wa.me simple).
+const WA_APP_CHOIX  = ["business","classique","demander"];
+const WA_APP_DEFAUT = "business";
+const WA_APP_PAQUET = { business:"com.whatsapp.w4b", classique:"com.whatsapp" };
+const waAppUserId = () => { try{ const u=JSON.parse(localStorage.getItem("cnsb_user")||"null"); return u&&u.id?String(u.id):""; }catch(e){ return ""; } };
+const waAppPref = (userId) => { const id=userId?String(userId):waAppUserId(); if(!id) return WA_APP_DEFAUT; const v=cfgStore.load("wa_app_"+id); return WA_APP_CHOIX.indexOf(v)>=0 ? v : WA_APP_DEFAUT; };
+const waAppSet  = (userId, v) => { const id=userId?String(userId):waAppUserId(); if(!id || WA_APP_CHOIX.indexOf(v)<0) return; cfgStore.save("wa_app_"+id, v); };
+const isAndroid = () => { try{ return /android/i.test(navigator.userAgent||""); }catch(e){ return false; } };
+const waLinkSimple = (tel,msg) => `https://wa.me/${String(tel||"").replace(/\D/g,"")}${msg?`?text=${encodeURIComponent(msg)}`:""}`;
+// Syntaxe retenue : scheme=whatsapp + send?phone= (le lien profond documenté
+// de WhatsApp, commun aux deux applications), package= pour viser l'une des
+// deux, S.browser_fallback_url= vers wa.me. La variante smsto:/SENDTO ne porte
+// que le numéro et dépend du filtre SMS de l'application : écartée.
+const waLink  = (tel,msg) => {
+  const simple = waLinkSimple(tel,msg);
+  const num = String(tel||"").replace(/\D/g,"");
+  if(!num || !isAndroid()) return simple;
+  const paquet = WA_APP_PAQUET[waAppPref()];
+  if(!paquet) return simple;                           // « demander » : lien simple, Android choisit
+  return `intent://send?phone=${num}${msg?`&text=${encodeURIComponent(msg)}`:""}#Intent;scheme=whatsapp;package=${paquet};S.browser_fallback_url=${encodeURIComponent(simple)};end`;
+};
 const telLink = (tel) => `tel:${String(tel||"").replace(/[^\d+]/g,"")}`;
 const mailLink= (email,subj,body) => `mailto:${email||""}?subject=${encodeURIComponent(subj||"")}&body=${encodeURIComponent(body||"")}`;
 const googleCalUrl = (rdv, patient) => {
@@ -20342,15 +20385,22 @@ const afFmtEur = (n)=> n===null||n===undefined ? "—" : (Math.round(n*100)/100)
 // par l'appelant (marquerDemandeVue / toutMarquerVu). Aucune messagerie.
 // Tri sur created_at (timestamptz) — jamais sur `cree`, colonne texte.
 // ══════════════════════════════════════════════════════════════════════════════
-function NouvellesDemandes({user, patients, onOuvrir, onToutVu}){
+function NouvellesDemandes({user, patients, onOuvrir, onToutVu, onVu}){
   const tt = t;
   const liste = (patients||[]).filter(p=>p && p.stade==="Nouveau")
     .sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
   const nonVues = liste.filter(p=>!p.vu_le);
   const stop = e=>e.stopPropagation();
   const quand = (ts)=> ts ? `${waFmtJour(ts)} · ${waFmtHeure(ts)}` : "—";
-  const lien = (href, ic, label, color, externe) => (
-    <a data-stop href={href} onClick={stop} target={externe?"_blank":undefined} rel={externe?"noopener":undefined}
+  // Réglage « Ouvrir WhatsApp dans… » : par utilisateur, lu/écrit par waAppPref/
+  // waAppSet ; l'état local ne sert qu'à recalculer les liens sans rechargement.
+  const [waApp, setWaApp] = useState(()=>waAppPref(user && user.id));
+  const choisirWaApp = (v)=>{ waAppSet(user && user.id, v); setWaApp(waAppPref(user && user.id)); };
+  // Contacter = vu (17/09/2026) : Appeler, WhatsApp et Email marquent la demande
+  // comme vue, comme l'ouverture de la fiche. Le lien part quoi qu'il arrive :
+  // pas de preventDefault, le marquage est lancé sans être attendu.
+  const lien = (p, href, ic, label, color, externe) => (
+    <a data-stop href={href} onClick={e=>{ stop(e); try{ onVu && onVu(p.id); }catch(x){} }} target={externe?"_blank":undefined} rel={externe?"noopener":undefined}
       style={{display:"inline-flex",alignItems:"center",gap:5,padding:"8px 12px",borderRadius:10,background:color+"14",color,fontWeight:800,fontSize:12.5,textDecoration:"none",border:`1px solid ${color}33`,minHeight:38,boxSizing:"border-box",whiteSpace:"nowrap"}}>
       {ic} {label}
     </a>
@@ -20370,6 +20420,14 @@ function NouvellesDemandes({user, patients, onOuvrir, onToutVu}){
             ✅ {tt("dem.toutVu")}
           </button>
         )}
+        <label style={{display:"flex",flexDirection:"column",gap:5,marginTop:12,fontSize:12,fontWeight:700,color:C.text}}>
+          <span>📲 {tt("dem.waApp")}</span>
+          <select value={waApp} onChange={e=>choisirWaApp(e.target.value)} data-wa-app style={{width:"100%",padding:"9px 10px",border:`1px solid ${C.border}`,borderRadius:8,fontSize:13,color:C.text,background:C.white,outline:"none",boxSizing:"border-box"}}>
+            <option value="business">{tt("dem.waBusiness")}</option>
+            <option value="classique">{tt("dem.waClassique")}</option>
+            <option value="demander">{tt("dem.waDemander")}</option>
+          </select>
+        </label>
         <div style={{fontSize:11,color:C.muted,marginTop:10,lineHeight:1.5}}>{tt("dem.aide")}</div>
       </Card>
 
@@ -20398,9 +20456,11 @@ function NouvellesDemandes({user, patients, onOuvrir, onToutVu}){
             </div>
             {(p.tel||p.email) && (
               <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:10}}>
-                {p.tel && lien(telLink(p.tel),"📞",tt("dem.appeler"),C.green,false)}
-                {p.tel && lien(waLink(p.tel),"💬",tt("dem.whatsapp"),"#128C7E",true)}
-                {p.email && lien(`mailto:${p.email}`,"📧",tt("patient.email"),C.blue,false)}
+                {p.tel && lien(p, telLink(p.tel),"📞",tt("dem.appeler"),C.green,false)}
+                {/* Lien intent:// (Android) : même onglet, Chrome lance l'application ;
+                    wa.me (ailleurs) : nouvel onglet comme avant. */}
+                {p.tel && (()=>{ const h = waLink(p.tel); return lien(p, h,"💬",tt("dem.whatsapp"),"#128C7E", h.indexOf("intent:")!==0); })()}
+                {p.email && lien(p, `mailto:${p.email}`,"📧",tt("patient.email"),C.blue,false)}
               </div>
             )}
             {(p.tel||p.email) && (
@@ -21713,7 +21773,7 @@ function App() {
           {activeView==="patients"&&<Patients user={userFull} patients={vPatients} onSelect={p=>{ if(isSurgeon(userFull)) return; setSelected(p); }} onAdd={()=>setModal({type:"patient"})} onDelete={deletePatient} demandesNonVues={demandesNonVues} onDemandes={hasDemandes(userFull)?()=>goTo("demandes"):undefined}/>}
           {/* Nouvelles demandes : mêmes fiches, même périmètre (vPatients) que la
               liste des patients ; ouvre la fiche existante. Accès = hasDemandes. */}
-          {activeView==="demandes"&&hasDemandes(userFull)&&<NouvellesDemandes user={userFull} patients={vPatients} onOuvrir={ouvrirDemande} onToutVu={toutMarquerVu}/>}
+          {activeView==="demandes"&&hasDemandes(userFull)&&<NouvellesDemandes user={userFull} patients={vPatients} onOuvrir={ouvrirDemande} onToutVu={toutMarquerVu} onVu={marquerDemandeVue}/>}
           {activeView==="fiche"&&selected&&<FichePatient user={userFull} patient={selected} patients={vPatients} rdvs={vRdvs} finances={vFinances} taches={vTaches} nwDevis={nwDevis} parcoursVue={parcoursVue} parcoursLignes={parcoursLignes} parcoursPret={parcoursPret} onCocherParcours={cocherParcours} onEdit={()=>setModal({type:"patient",data:selected})} onDelete={()=>deletePatient(selected.id)} onStageChange={changeStage} onBack={goBack} onSavePatient={savePatient} onUpdateRdv={updateRdv}/>}
           {activeView==="rdvs"&&<Rdvs user={userFull} rdvs={vRdvs} patients={vPatients} taches={vTaches} finances={vFinances} setRdvs={setRdvs} setTaches={setTaches} onAdd={()=>setModal({type:"rdv"})} onDelete={deleteRdv} onEdit={(r)=>setModal({type:"rdv",data:r})} onUpdate={(r)=>setModal({type:"rdv",data:r})} onOpenPatient={openPatientById}/>}
           {activeView==="taches"&&<Taches user={userFull} taches={vTaches} setTaches={setTaches} patients={vPatients} rdvs={vRdvs} hopitaux={hopitaux} syncing={syncing} setSyncing={setSyncing}/>}
